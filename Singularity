@@ -1,0 +1,110 @@
+# Generate the Singularity container to run PrimerFinder on Kive.
+Bootstrap: docker
+From: centos:7
+
+%help
+    Primer finder help.
+    This Singularity container can be run on Kive: http://cfe-lab.github.io/Kive
+
+
+%labels
+    MAINTAINER BC CfE in HIV/AIDS https://github.com/cfe-lab/
+    KIVE_INPUTS conseqs name
+    KIVE_OUTPUTS filtered
+    KIVE_THREADS 1
+    KIVE_MEMORY 6000
+
+%setup
+    # Unneeded once Singularity creates parent dirs:
+    # https://github.com/singularityware/singularity/issues/1549
+    mkdir ${SINGULARITY_ROOTFS}/opt/primer_finder
+
+%files
+    ## Primer Finder
+    primer_finder.py /opt/primer_finder/
+
+
+    ## Gotoh
+    primer_finder/alignment /opt/primer_finder/alignment
+    requirements.txt /opt/primer_finder/
+
+%post
+    echo ===== Installing Prerequisites ===== >/dev/null
+    yum update -q -y
+
+    yum groupinstall -q -y 'development tools'
+    yum install -q -y epel-release
+    yum install -q -y unzip wget fontconfig bzip2-devel xz-devel openssl-devel libffi-devel
+
+    echo ===== Installing Python ===== >/dev/null
+    wget -q https://www.python.org/ftp/python/3.7.6/Python-3.7.6.tgz
+    tar xzf Python*
+    rm Python*.tgz
+    cd Python*
+    ./configure --enable-optimizations
+    make altinstall
+    cd ..
+    rm -rf Python*
+    ln -s /usr/local/bin/python3.7 /usr/local/bin/python3
+
+    echo ===== Installing IVA dependencies ===== >/dev/null
+    yum install -q -y tcsh ncurses-devel zlib-devel
+    cd /bin
+    wget -q http://sun.aei.polsl.pl/kmc/download-2.1.1/linux/kmc
+    wget -q http://sun.aei.polsl.pl/kmc/download-2.1.1/linux/kmc_dump
+    chmod +x kmc kmc_dump
+    cd /opt
+    wget -q https://sourceforge.net/projects/mummer/files/mummer/3.23/MUMmer3.23.tar.gz
+    tar -xzf MUMmer3.23.tar.gz --no-same-owner
+    cd MUMmer3.23
+    make --quiet install
+    rm -r docs src ../MUMmer3.23.tar.gz
+    ln -s /opt/MUMmer3.23/nucmer \
+        /opt/MUMmer3.23/delta-filter \
+        /opt/MUMmer3.23/show-coords \
+        /bin
+    cd /opt
+    wget -q https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2
+    tar -xf samtools-1.3.1.tar.bz2 --no-same-owner --bzip2
+    cd samtools-1.3.1
+    ./configure --quiet --prefix=/
+    make --quiet
+    make --quiet install
+    cd /opt
+    rm -rf samtools-1.3.1*
+    wget -q http://downloads.sourceforge.net/project/smalt/smalt-0.7.6-bin.tar.gz
+    tar -xzf smalt-0.7.6-bin.tar.gz --no-same-owner
+    ln -s /opt/smalt-0.7.6-bin/smalt_x86_64 /bin/smalt
+
+    echo ===== Installing Python packages ===== >/dev/null
+    # Also trigger matplotlib to build its font cache.
+    wget -q https://bootstrap.pypa.io/get-pip.py
+    python3 get-pip.py
+    rm get-pip.py
+    cd /opt
+    pip install --quiet -r /opt/primer_finder/requirements.txt
+    ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
+    python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
+
+    # Install dependencies for genetracks/drawSvg
+    yum install -q -y cairo-devel cairo cairo-tools zlib-devel
+
+    yum groupremove -q -y 'development tools'
+    yum remove -q -y epel-release wget unzip
+    yum autoremove -q -y
+    yum clean all
+
+    rm -rf /var/cache/yum
+
+    ## CAUTION! This changes the default python command to python3!
+    ## This breaks many things, including yum!
+    ## To switch back to python2, use this command:
+    # sudo alternatives --set python /usr/bin/python2
+    alternatives --install /usr/bin/python python /usr/bin/python2 50
+    alternatives --install /usr/bin/python python /usr/local/bin/python3 60
+
+%environment
+    export LANG=en_US.UTF-8
+
+%runscript
+    python /opt/primer_finder/primer_finder_kive.py "$@"
