@@ -17,9 +17,15 @@ from pathlib import Path
 import Levenshtein
 from gotoh import align_it
 
-from micall.core.project_config import ProjectConfig
-from micall.utils.translation import mixture_dict, reverse_and_complement
-from micall.utils.probe_finder import ProbeFinder
+import utils
+mixture_dict = utils.mixture_dict
+reverse_and_complement = utils.reverse_and_complement
+
+# from micall.core.project_config import ProjectConfig
+# from micall.utils.translation import mixture_dict, reverse_and_complement
+from probe_finder import ProbeFinder
+
+cwd = Path(os.path.realpath(__file__)).parent
 
 logger = logging.getLogger('micall')
 
@@ -178,8 +184,9 @@ def find_primers(csv_filepath, outpath, run_name):
     writer = DictWriter(outfile, columns, lineterminator='\n')
     writer.writeheader()
     reader = DictReader(csv_filepath)
-    projects = ProjectConfig.loadDefault()
-    hxb2 = projects.getReference('HIV1-B-FR-K03455-seed')
+    # projects = ProjectConfig.loadDefault()
+    # hxb2 = projects.getReference('HIV1-B-FR-K03455-seed')
+    hxb2 = utils.hxb2
     skipped = {}
     total = 0
     viable = 0
