@@ -25,7 +25,7 @@ From: centos:7
 
 
     ## Gotoh
-    primer_finder/alignment /opt/primer_finder/alignment
+    alignment /opt/primer_finder/alignment
     requirements.txt /opt/primer_finder/
 
 %post
@@ -107,4 +107,4 @@ From: centos:7
     export LANG=en_US.UTF-8
 
 %runscript
-    python /opt/primer_finder/primer_finder_kive.py "$@"
+    python3 /opt/primer_finder/primer_finder.py "$@"
