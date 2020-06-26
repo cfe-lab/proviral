@@ -22,6 +22,9 @@ From: centos:7
 %files
     ## Primer Finder
     primer_finder.py /opt/primer_finder/
+    utils.py /opt/primer_finder/
+    probe_finder.py /opt/primer_finder/
+    hxb2.fasta /opt/primer_finder/
 
 
     ## Gotoh
