@@ -20,7 +20,18 @@ From: centos:7
     mkdir ${SINGULARITY_ROOTFS}/opt/primer_finder
 
 %files
-    gene_splicer /opt/gene_splicer
+    ## Primer Finder
+    primer_finder.py /opt/primer_finder/
+    utils.py /opt/primer_finder/
+    probe_finder.py /opt/primer_finder/
+    hxb2.fasta /opt/primer_finder/
+    gene_splicer.py /opt/primer_finder/
+    logger.py /opt/primer_finder/
+    annot.csv /opt/primer_finder/
+
+    ## Gotoh
+    alignment /opt/primer_finder/alignment
+    requirements.txt /opt/primer_finder/
 
 %post
     echo ===== Installing Prerequisites ===== >/dev/null
