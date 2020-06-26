@@ -13,6 +13,7 @@ import io
 import zipfile
 import shutil
 from pathlib import Path
+import sys
 
 import Levenshtein
 from gotoh import align_it
