@@ -25,8 +25,6 @@ reverse_and_complement = utils.reverse_and_complement
 # from micall.utils.translation import mixture_dict, reverse_and_complement
 from probe_finder import ProbeFinder
 
-cwd = Path(os.path.realpath(__file__)).parent
-
 logger = logging.getLogger('micall')
 
 class Hivseqinr:

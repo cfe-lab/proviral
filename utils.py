@@ -19,5 +19,6 @@ def read_fasta(fasta_file):
         if name:
             yield (name, ''.join(seq))
 
+cwd = Path(os.path.realpath(__file__)).parent
 
 hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]
