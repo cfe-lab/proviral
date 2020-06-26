@@ -4,20 +4,6 @@ from pathlib import Path
 from csv import DictWriter, DictReader
 
 
-mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
-                'M': 'AC', 'V': 'AGC', 'H': 'ATC', 'D': 'ATG',
-                'B': 'TGC', 'N': 'ATGC', '-': 'ATGC'}
-
-complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                   'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
-                   'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
-                   '*': '*', 'N': 'N', '-': '-'}
-
-cwd = Path(os.path.realpath(__file__)).parent
-
-hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]
-
-
 def reverse_and_complement(seq):
     return ''.join(complement_dict[nuc] for nuc in reversed(seq))
 
@@ -114,3 +100,17 @@ def get_genes(annot, pos, offset_start=0, offset_end=0, offset=None):
         if annot[gene][0] - offset_start <= pos <= annot[gene][1] - offset_end:
             genes.append(gene)
     return genes
+
+# Define some global variables
+mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
+                'M': 'AC', 'V': 'AGC', 'H': 'ATC', 'D': 'ATG',
+                'B': 'TGC', 'N': 'ATGC', '-': 'ATGC'}
+
+complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
+                   'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
+                   'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
+                   '*': '*', 'N': 'N', '-': '-'}
+
+cwd = Path(os.path.realpath(__file__)).parent
+
+hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]

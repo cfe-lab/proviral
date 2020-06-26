@@ -25,6 +25,8 @@ From: centos:7
     utils.py /opt/primer_finder/
     probe_finder.py /opt/primer_finder/
     hxb2.fasta /opt/primer_finder/
+    gene_splicer.py /opt/primer_finder/
+    logger.py /opt/primer_finder/
 
 
     ## Gotoh
