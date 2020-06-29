@@ -1,3 +1,5 @@
+import logging
+
 logger = logging.getLogger('minimap')
 if logger.handlers:
     logger.handlers = []

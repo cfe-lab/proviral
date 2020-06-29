@@ -1,8 +1,14 @@
 import os
 import re
+import yaml
 from pathlib import Path
 from csv import DictWriter, DictReader
 from logger import logger
+
+
+def load_yaml(afile):
+    with open(afile) as f:
+        return yaml.load(f, Loader=yaml.SafeLoader)
 
 
 def reverse_and_complement(seq):
@@ -305,3 +311,7 @@ complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
 cwd = Path(os.path.realpath(__file__)).parent
 
 hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]
+mod_hxb2 = modify_reference(hxb2)
+
+annot = {x['gene']: [int(x['start']), int(x['stop'])] for x in read_csv(cwd / 'annot.csv')}
+mod_annot = modify_annot(annot)
