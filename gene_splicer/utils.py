@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+import pandas as pd
 from pathlib import Path
 from csv import DictWriter, DictReader
 from logger import logger
@@ -15,11 +16,11 @@ def reverse_and_complement(seq):
     return ''.join(complement_dict[nuc] for nuc in reversed(seq))
 
 
-def write_annot(adict, filename):
+def write_annot(adict, filepath):
     """
         adict: {gene (str): [start (int), stop (int)], ...}
     """
-    with open(filename, 'w', newline='') as o:
+    with open(filepath, 'w', newline='') as o:
         fieldnames = ['gene', 'start', 'stop']
         writer = DictWriter(o, fieldnames)
         writer.writeheader()
@@ -104,7 +105,7 @@ def get_genes(annot, pos, offset_start=0, offset_end=0, offset=None):
         pos (int)
     """
     for gene in annot:
-        if annot[gene][0] - offset_start <= pos <= annot[gene][1] - offset_end:
+        if ((annot[gene][0] - offset_start) <= pos <= (annot[gene][1] - offset_end)):
             genes.append(gene)
     return genes
 
@@ -158,7 +159,10 @@ def modify_annot(annot):
         'GP120',
         'GP41',
         'NEF',
-        'PSI'
+        'PSI_SL1',
+        'PSI_SL2',
+        'PSI_SL3',
+        'PSI_SL4'
     ]
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:
@@ -178,12 +182,61 @@ def modify_annot(annot):
         elif stop >= 5108:
             stop -=1
         # Convert to 0 base
-        newannot[gene] = [start - 1, stop]
+        newannot[gene] = [start - 1, stop - 1]
 
     return newannot
 
 
 def splice_genes(query, target, samfile, annotation):
+    results = {}
+    for i, row in samfile.iterrows():
+        # Subtract 1 to convert target position to zero-base
+        target_pos = int(row[3]) - 1
+        query_pos = None
+        for size, op in row['cigar']:
+            size = int(size)
+            # If the first section is hard-clipped the query should start at
+            # the first non-hard-clipped-based. The target should also be offset
+            # by the size of the hard-clip
+            if op == 'H' and query_pos is None:
+                query_pos = size
+                continue
+            elif query_pos is None:
+                query_pos = 0
+            if op == 'S':
+                query_pos += size
+                continue
+            elif op in ('M', '=', 'X'):
+                for j in range(size):
+                    try:
+                        target_nuc = target[target_pos]
+                    except IndexError:
+                        break
+                    query_nuc = query[query_pos]
+                    match = (target_nuc == query_nuc)
+                    genes = get_genes(annotation, target_pos)
+                    for gene in genes:
+                        if gene not in results:
+                            results[gene] = [query_pos, query_pos]
+                        elif query_pos > results[gene][1]:
+                            results[gene][1] = query_pos
+                    query_pos += 1
+                    target_pos += 1
+            elif op == 'D':
+                target_pos += size
+                continue
+            elif op == 'I':
+                query_pos += size
+                continue
+    return results
+
+
+def coords_to_genes(results, query):
+    genes = {gene:query[coords[0]:coords[1] + 1] for gene, coords in results.items()}
+    return genes
+
+
+def getgot(query, target, samfile, annotation):
     results = {}
     for i, row in samfile.iterrows():
         # Subtract 1 to convert target position to zero-base
@@ -221,7 +274,7 @@ def splice_genes(query, target, samfile, annotation):
                         if gene not in results:
                             results[gene] = [query_pos, query_pos]
                         elif query_pos > results[gene][1]:
-                                results[gene][1] = query_pos
+                            results[gene][1] = query_pos
                     query_pos += 1
                     target_pos += 1
             elif op == 'D':
@@ -297,6 +350,12 @@ def get_sequences(query, target, samfile, annotation):
             print('='*50)
         print('new alignment row'.center(50, '~'))
     return results, sequences
+
+
+def load_samfile(samfile_path):
+    result = pd.read_table(samfile_path, skiprows=2, header=None)
+    result['cigar'] = result.apply(split_cigar, axis=1)
+    return result
 
 # Define some global variables
 mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
