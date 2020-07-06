@@ -42,15 +42,15 @@ From: centos:7
     yum install -q -y unzip wget fontconfig bzip2-devel xz-devel openssl-devel libffi-devel
 
     echo ===== Installing Python ===== >/dev/null
-    wget -q https://www.python.org/ftp/python/3.7.6/Python-3.7.6.tgz
-    tar xzf Python*
-    rm Python*.tgz
+    wget -q https://www.python.org/ftp/python/3.8.3/Python-3.8.3.tar.xz
+    tar xJf Python*
+    rm Python*.xz
     cd Python*
     ./configure --enable-optimizations
     make altinstall
     cd ..
     rm -rf Python*
-    ln -s /usr/local/bin/python3.7 /usr/local/bin/python3
+    ln -s /usr/local/bin/python3.8 /usr/local/bin/python3
 
     echo ===== Installing IVA dependencies ===== >/dev/null
     yum install -q -y tcsh ncurses-devel zlib-devel
@@ -87,7 +87,7 @@ From: centos:7
     python3 get-pip.py
     rm get-pip.py
     cd /opt
-    pip install --quiet -r /opt/primer_finder/requirements.txt
+    pip install --quiet -r /opt/micall/requirements.txt
     ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
     python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
 

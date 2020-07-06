@@ -11,11 +11,12 @@ setup(
         'python-Levenshtein==0.12.0',
         'pandas==1.0.5',
         'matplotlib==3.2.1',
-        'requests==2.24.0'
+        'requests==2.24.0',
+        'pyyaml'
     ],
     entry_points={
         'console_scripts': [
-            'ihec_run = gene_splicer.master:main',
+            'gene_splicer_run = gene_splicer.master:main',
         ]
     }
 )
