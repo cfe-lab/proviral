@@ -382,7 +382,7 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def align(target_seq, query_seq, query_name, outdir=Path(os.path.cwd()).resolve(), aligner_path='minimap2'):
+def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)

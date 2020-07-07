@@ -16,9 +16,9 @@ def main():
     args = parse_args()
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(args.query_fasta):
-        samfile = utils.align(target, query_seq, query_name)
-        results = utils.splice_genes(query, target, samfile, utils.mod_annot)
-        genes = utils.coords_to_genes(results, query)
+        samfile = utils.align(target, query_seq, query_name[1:])
+        results = utils.splice_genes(query_seq, target, samfile, utils.mod_annot)
+        genes = utils.coords_to_genes(results, query_seq)
         genes_path = samfile.parent / 'genes.fasta'
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
