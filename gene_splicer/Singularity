@@ -87,7 +87,7 @@ From: centos:7
     python3 get-pip.py
     rm get-pip.py
     cd /opt
-    pip install --quiet -r /opt/micall/requirements.txt
+    pip install --quiet -r /opt/primer_finder/requirements.txt
     ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
     python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
 
