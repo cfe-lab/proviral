@@ -20,7 +20,7 @@ def main():
         samfile = utils.load_samfile(samfile_path)
         results = utils.splice_genes(query_seq, target, samfile, utils.mod_annot)
         genes = utils.coords_to_genes(results, query_seq)
-        genes_path = samfile.parent / 'genes.fasta'
+        genes_path = samfile_path.parent / 'genes.fasta'
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
                 o.write(f'>{gene}\n{seq}\n')
