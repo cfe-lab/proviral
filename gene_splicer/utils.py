@@ -1,6 +1,8 @@
 import os
 import re
 import yaml
+import shutil
+import subprocess as sp
 import pandas as pd
 from pathlib import Path
 from csv import DictWriter, DictReader
@@ -36,6 +38,7 @@ def write_fasta(adict, filename):
     with open(filename, 'w') as o:
         for key, value in adict.items():
             o.write(f'>{key}\n{value}\n')
+    return filename
 
 
 def read_csv(csvfile):
@@ -356,6 +359,52 @@ def load_samfile(samfile_path):
     result = pd.read_table(samfile_path, skiprows=2, header=None)
     result['cigar'] = result.apply(split_cigar, axis=1)
     return result
+
+
+def minimap2_available(aligner_path='minimap2'):
+    cmd = [aligner_path]
+    process = sp.run(cmd)
+    if process.returncode == 0:
+        return True
+    return False
+
+
+# Removes all files in a directory
+def clean_dir(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
+def align(target_seq, query_seq, query_name, outdir=Path(os.path.cwd()).resolve(), aligner_path='minimap2'):
+    outdir = outdir / query_name
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+    # Write the query fasta
+    query_fasta_path = write_fasta({query_name: query_seq}, outdir / 'query.fasta')
+    # Write the target fasta
+    target_fasta_path = write_fasta({'MOD_HXB2': target_seq}, outdir / 'target.fasta')
+    cmd = [
+        aligner_path,
+        '-a',
+        target_fasta_path,
+        query_fasta_path
+    ]
+    alignment_path = outdir / 'alignment.sam'
+    with open(alignment_path, 'w') as alignment:
+        process = sp.run(cmd, stdout=alignment, errors=True)
+    if process.returncode != 0:
+        raise UserWarning(f'Alignment failed! Error: {process.stderr}')
+    else:
+        return alignment_path
+
 
 # Define some global variables
 mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
