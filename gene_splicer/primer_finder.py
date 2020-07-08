@@ -518,7 +518,7 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
         for row in joined.itertuples():
             # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
             header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
-            header = '::'.join((
+            header = '>' + '::'.join((
                 row.name,
                 row.sample,
                 row.reference,
