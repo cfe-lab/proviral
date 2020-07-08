@@ -165,7 +165,12 @@ def modify_annot(annot):
         'PSI_SL1',
         'PSI_SL2',
         'PSI_SL3',
-        'PSI_SL4'
+        'PSI_SL4',
+        'D4',
+        'X1',
+        'X2',
+        'X3',
+        '3LTR'
     ]
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:

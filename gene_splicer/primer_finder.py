@@ -149,7 +149,8 @@ def parse_args():
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',
-                        default=os.getcwd())
+                        default=Path(os.getcwd()),
+                        type=Path)
     parser.add_argument('--disable_hivseqinr',
                         action='store_true',
                         help='Disable running hivseqinr')
@@ -503,15 +504,19 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
             os.path.join(outpath, f'{name}_filtered.csv'),
             index=False
         )
-        fasta_outpath = os.path.join(outpath, f'{name}.fasta')
-        with open(
-            fasta_outpath, 'w'
-        ) as o:
-            for row in joined.itertuples():
-                header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
-                o.write(f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n')
-            if not disable_hivseqinr:
-                hivseqinr = Hivseqinr(os.path.join(outpath, 'hivseqinr'), fasta_outpath)
+        fasta_outpath = os.path.join(outpath, f'{name}_synthetic_primers.fasta')
+        fasta_outpath2 = Path(outpath) / f'{name}_no_primers.fasta'
+        o = open(fasta_outpath, 'w')
+        o2 = open(fasta_outpath2, 'w')
+        for row in joined.itertuples():
+            # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
+            header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
+            o.write(f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n')
+            o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
+        if not disable_hivseqinr:
+            hivseqinr = Hivseqinr(os.path.join(outpath, 'hivseqinr'), fasta_outpath)
+        o.close()
+        o2.close()
 
 
 def main():
