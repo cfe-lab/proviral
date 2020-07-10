@@ -154,6 +154,7 @@ def parse_args():
     parser.add_argument('--disable_hivseqinr',
                         action='store_true',
                         help='Disable running hivseqinr')
+    parser.add_argument('--nodups', action='store_false', help='Set this flag to disable the removal of duplicate samples that pass QC')
     return parser.parse_args()
 
 
@@ -462,21 +463,27 @@ def remove_primers(row):
     return row
 
 
-def filter_df(df):
+def filter_df(df, nodups=True):
     filtered = df[(
         df['error'].isna()
         & df['fwd_error'].isna()
         & df['rev_error'].isna()
     )]
     filtered = filtered.apply(remove_primers, axis=1)
-    # filtered = filtered.drop_duplicates(subset='sample', keep=False)
+    if nodups:
+        filtered = filtered.drop_duplicates(subset='sample', keep=False)
+    # Remove any rows with references containing "reverse" or "unknown"
+    filtered[
+        (filtered['reference'].str.contains('reverse'))
+        | (filtered['reference'].str.contains('unknown'))
+    ]
     # duplicates = filtered.duplicated(subset='sample', keep=False)
     # duplicates = filtered[duplicates[duplicates].index]['sample'].unique()
     filtered = filtered[['name', 'sample', 'reference', 'sequence', 'seqtype']]
     return filtered
 
 
-def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr):
+def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
     contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs')
     conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs')
     dfs = load_csv(contigs_out, name, 'contigs')
@@ -484,8 +491,8 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
     for name in dfs:
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
-        filtered_contigs = filter_df(contigs_df)
-        filtered_conseqs = filter_df(conseqs_df)
+        filtered_contigs = filter_df(contigs_df, nodups)
+        filtered_conseqs = filter_df(conseqs_df, nodups)
         joined = filtered_contigs.merge(
             filtered_conseqs,
             on='sample',
@@ -534,7 +541,7 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
 
 def main():
     args = parse_args()
-    output_filtered_data(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr)
+    output_filtered_data(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr, args.nodups)
 
 
 if __name__ in ('__main__', '__live_coding__'):

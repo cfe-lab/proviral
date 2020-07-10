@@ -81,6 +81,14 @@ From: centos:7
     tar -xzf smalt-0.7.6-bin.tar.gz --no-same-owner
     ln -s /opt/smalt-0.7.6-bin/smalt_x86_64 /bin/smalt
 
+    echo ===== Installing blast ===== >/dev/null
+    cd /root
+    # Saved our own copy, because download was slow from ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.6.0/ncbi-blast-2.6.0+-1.x86_64.rpm
+    wget https://github.com/cfe-lab/MiCall/releases/download/v7.12.dev28/ncbi-blast-2.6.0+-1.x86_64.rpm
+    yum install -q -y ncbi-blast-2.6.0+-1.x86_64.rpm
+    rm ncbi-blast-2.6.0+-1.x86_64.rpm
+    python3 /opt/micall/micall/blast_db/make_blast_db.py
+
     echo ===== Installing Python packages ===== >/dev/null
     # Also trigger matplotlib to build its font cache.
     wget -q https://bootstrap.pypa.io/get-pip.py
