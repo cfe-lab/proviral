@@ -33,6 +33,9 @@ From: centos:7
     alignment /opt/primer_finder/alignment
     requirements.txt /opt/primer_finder/
 
+     ## HCV genotyping database
+    proviral/blast_db /opt/proviral/blast_db
+
 %post
     echo ===== Installing Prerequisites ===== >/dev/null
     yum update -q -y
@@ -87,7 +90,6 @@ From: centos:7
     wget https://github.com/cfe-lab/MiCall/releases/download/v7.12.dev28/ncbi-blast-2.6.0+-1.x86_64.rpm
     yum install -q -y ncbi-blast-2.6.0+-1.x86_64.rpm
     rm ncbi-blast-2.6.0+-1.x86_64.rpm
-    python3 /opt/micall/micall/blast_db/make_blast_db.py
 
     echo ===== Installing Python packages ===== >/dev/null
     # Also trigger matplotlib to build its font cache.
