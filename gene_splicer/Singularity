@@ -111,7 +111,7 @@ From: centos:7
     # Note that yum installs need to happen before the alternatives command is run, yum will not work with Python3
     echo ===== Installing R ===== >/dev/null
     yes | yum install epel-release
-    yes | yum install R
+    yes y | yum install R -y
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
