@@ -33,6 +33,9 @@ From: centos:7
     alignment /opt/primer_finder/alignment
     requirements.txt /opt/primer_finder/
 
+    # R
+    configure_r.sh /opt/primer_finder/
+
 %post
     echo ===== Installing Prerequisites ===== >/dev/null
     yum update -q -y
@@ -112,6 +115,7 @@ From: centos:7
     echo ===== Installing R ===== >/dev/null
     yes | yum install epel-release
     yes y | yum install R -y
+    Rscript /opt/primer_finder/configure_r.sh
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
