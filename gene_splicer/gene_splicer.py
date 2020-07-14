@@ -12,10 +12,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
+def run(query_fasta):
     target = utils.mod_hxb2
-    for query_name, query_seq in utils.read_fasta(args.query_fasta):
+    for query_name, query_seq in utils.read_fasta(query_fasta):
+        # Splitting by '::' is quite specific, make sure primer_finder joins using this
         samfile_path = utils.align(target, query_seq, query_name[1:].split('::')[1])
         samfile = utils.load_samfile(samfile_path)
         results = utils.splice_genes(query_seq, target, samfile, utils.mod_annot)
@@ -24,6 +24,11 @@ def main():
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
                 o.write(f'>{gene}\n{seq}\n')
+
+
+def main():
+    args = parse_args()
+    run(args.query_fasta)
 
 
 if __name__ == '__main__':

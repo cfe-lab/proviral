@@ -483,11 +483,12 @@ def filter_df(df, nodups=True):
     return filtered
 
 
-def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
+def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
     contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs')
     conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs')
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
+    files = []
     for name in dfs:
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
@@ -525,6 +526,7 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
         for row in joined.itertuples():
             # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
             header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
+            # The header delimiter, this must match the split in gene_splicer
             header = '>' + '::'.join((
                 row.name,
                 row.sample,
@@ -537,12 +539,14 @@ def output_filtered_data(contigs_csv, conseqs_csv, name, outpath, disable_hivseq
             hivseqinr = Hivseqinr(os.path.join(outpath, 'hivseqinr'), fasta_outpath)
         o.close()
         o2.close()
+        files.append(fasta_outpath2)
+    return files
 
 
 def main():
     args = parse_args()
-    output_filtered_data(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr, args.nodups)
-
+    fasta_files = run(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr, args.nodups)
+    return fasta_files
 
 if __name__ in ('__main__', '__live_coding__'):
     main()
