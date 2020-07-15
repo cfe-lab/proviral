@@ -101,7 +101,7 @@ class Hivseqinr:
                     if 'MyWD <- getwd()' in line:
                         line = line.replace('MyWD <- getwd()', f'MyWD = "{self.outpath}"\n')
                     elif line.startswith('MyBlastnDir <-'):
-                        line = f'MyBlastnDir = "{self.dbdir + os.path.sep*2}"\n'
+                        line = f'MyBlastnDir = "{str(self.dbdir) + os.path.sep*2}"\n'
                     outfile.write(line)
 
 
