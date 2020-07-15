@@ -119,11 +119,11 @@ From: centos:7
     ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
 
     # CLean up
-    yum groupremove -q -y 'development tools'
-    yum remove -q -y epel-release wget unzip
-    yum autoremove -q -y
-    yum clean all
-    rm -rf /var/cache/yum
+    # yum groupremove -q -y 'development tools'
+    # yum remove -q -y epel-release wget unzip
+    # yum autoremove -q -y
+    # yum clean all
+    # rm -rf /var/cache/yum
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
