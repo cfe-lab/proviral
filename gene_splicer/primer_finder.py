@@ -158,8 +158,14 @@ def parse_args():
     return parser.parse_args()
 
 
+def make_path(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+
 def find_primers(csv_filepath, outpath, run_name):
     print(run_name)
+    make_path(outpath)
     columns = ['run_name', 'sample', 'reference', 'error', 'sequence', 'seqlen', 'nmixtures']
     for target_name in primers:
         for column_type in [
@@ -525,7 +531,8 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
         o2 = open(fasta_outpath2, 'w')
         for row in joined.itertuples():
             # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
-            header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
+            # I've commented it out for now
+            # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
             # The header delimiter, this must match the split in gene_splicer
             header = '>' + '::'.join((
                 row.name,
@@ -546,7 +553,11 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
 def main():
     args = parse_args()
     fasta_files = run(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr, args.nodups)
-    return fasta_files
+    return {
+        'fasta_files': fasta_files,
+        'args': args
+    }
+
 
 if __name__ in ('__main__', '__live_coding__'):
     main()

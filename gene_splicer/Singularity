@@ -27,6 +27,7 @@ From: centos:7
     hxb2.fasta /opt/primer_finder/
     gene_splicer.py /opt/primer_finder/
     logger.py /opt/primer_finder/
+    pipeline.py /opt/primer_finder/
     annot.csv /opt/primer_finder/
 
     ## Gotoh
@@ -116,6 +117,12 @@ From: centos:7
     yes | yum install epel-release
     yes y | yum install R -y
     Rscript /opt/primer_finder/configure_r.sh
+
+    echo ===== Installing minimap2 ===== >/dev/null
+    cd /opt
+    wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
+    tar -jxvf minimap2-2.17_x64-linux.tar.bz2
+    ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
