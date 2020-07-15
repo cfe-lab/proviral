@@ -105,27 +105,24 @@ From: centos:7
     # Install dependencies for genetracks/drawSvg
     yum install -q -y cairo-devel cairo cairo-tools zlib-devel
 
-    yum groupremove -q -y 'development tools'
-    yum remove -q -y epel-release wget unzip
-    yum autoremove -q -y
-    yum clean all
-
-    rm -rf /var/cache/yum
-
     # Note that yum installs need to happen before the alternatives command is run, yum will not work with Python3
     echo ===== Installing R ===== >/dev/null
     yes | yum install epel-release
     yes y | yum install R -y
     Rscript /opt/primer_finder/configure_r.sh
 
-    echo ===== Installing wget ===== >/dev/null
-    yes | yum install wget
-
     echo ===== Installing minimap2 ===== >/dev/null
     cd /opt
     wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
     tar -jxvf minimap2-2.17_x64-linux.tar.bz2
     ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
+
+    # CLean up
+    yum groupremove -q -y 'development tools'
+    yum remove -q -y epel-release wget unzip
+    yum autoremove -q -y
+    yum clean all
+    rm -rf /var/cache/yum
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
