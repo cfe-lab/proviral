@@ -107,8 +107,8 @@ From: centos:7
 
     # Note that yum installs need to happen before the alternatives command is run, yum will not work with Python3
     echo ===== Installing R ===== >/dev/null
-    yes | yum install epel-release
-    yes y | yum install R -y
+    yum install epel-release -y
+    yum install R -y
     Rscript /opt/primer_finder/configure_r.sh
 
     echo ===== Installing minimap2 ===== >/dev/null
