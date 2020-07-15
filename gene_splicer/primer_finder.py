@@ -49,14 +49,20 @@ class Hivseqinr:
 
     def copy_fasta(self):
         raw_fastas_path = os.path.join(self.outpath, 'RAW_FASTA')
-        os.mkdir(raw_fastas_path)
+        try:
+            os.mkdir(raw_fastas_path)
+        except FileExistsError:
+            pass
         shutil.copy(self.fasta, raw_fastas_path)
         return True
 
 
     def make_blast_dir(self):
         dbdir = os.path.join(self.outpath, 'hxb2_blast_db')
-        os.mkdir(dbdir)
+        try:
+            os.mkdir(dbdir)
+        except FileExistsError:
+            pass
         hxb2_path = os.path.join(dbdir, 'HXB2.fasta')
         shutil.copyfile(
             os.path.join(self.outpath, 'R_HXB2.fasta'),
