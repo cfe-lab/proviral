@@ -58,14 +58,14 @@ class Hivseqinr:
 
 
     def make_blast_dir(self):
-        dbdir = os.path.join(self.outpath, 'hxb2_blast_db')
+        dbdir = self.outpath / 'hxb2_blast_db'
         try:
             os.mkdir(dbdir)
         except FileExistsError:
             pass
-        hxb2_path = os.path.join(dbdir, 'HXB2.fasta')
+        hxb2_path = dbdir / 'HXB2.fasta'
         shutil.copyfile(
-            os.path.join(self.outpath, 'R_HXB2.fasta'),
+            self.outpath / 'R_HXB2.fasta',
             hxb2_path
         )
         cmd = [
@@ -99,9 +99,9 @@ class Hivseqinr:
             with open(rscript_path, 'r') as infile:
                 for line in infile:
                     if 'MyWD <- getwd()' in line:
-                        line = line.replace('MyWD <- getwd()', f'MyWD = "{self.to_rpath(self.outpath)}"\n')
+                        line = line.replace('MyWD <- getwd()', f'MyWD = "{self.outpath}"\n')
                     elif line.startswith('MyBlastnDir <-'):
-                        line = f'MyBlastnDir = "{self.to_rpath(self.dbdir) + os.path.sep*2}"\n'
+                        line = f'MyBlastnDir = "{self.dbdir + os.path.sep*2}"\n'
                     outfile.write(line)
 
 
@@ -528,11 +528,11 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
             by='sample'
         )
         joined.to_csv(
-            os.path.join(outpath, f'{name}_filtered.csv'),
+            outpath / f'{name}_filtered.csv',
             index=False
         )
-        fasta_outpath = os.path.join(outpath, f'{name}_synthetic_primers.fasta')
-        fasta_outpath2 = Path(outpath) / f'{name}_no_primers.fasta'
+        fasta_outpath = outpath / f'{name}_synthetic_primers.fasta'
+        fasta_outpath2 = outpath / f'{name}_no_primers.fasta'
         o = open(fasta_outpath, 'w')
         o2 = open(fasta_outpath2, 'w')
         for row in joined.itertuples():
@@ -549,7 +549,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
             o.write(f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n')
             o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
         if not disable_hivseqinr:
-            hivseqinr = Hivseqinr(os.path.join(outpath, 'hivseqinr'), fasta_outpath)
+            hivseqinr = Hivseqinr(outpath / 'hivseqinr', fasta_outpath)
         o.close()
         o2.close()
         files.append(fasta_outpath2)
@@ -558,7 +558,14 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
 
 def main():
     args = parse_args()
-    fasta_files = run(args.contigs_csv, args.conseqs_csv, args.name, args.outpath, args.disable_hivseqinr, args.nodups)
+    fasta_files = run(
+        contigs_csv=args.contigs_csv,
+        conseqs_csv=args.conseqs_csv,
+        name=args.name,
+        outpath=args.outpath.resolve(),
+        disable_hivseqinr=args.disable_hivseqinr,
+        nodups=args.nodups
+    )
     return {
         'fasta_files': fasta_files,
         'args': args
