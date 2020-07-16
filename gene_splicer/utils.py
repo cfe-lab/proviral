@@ -144,33 +144,6 @@ def modify_reference(refseq):
 
 def modify_annot(annot):
     newannot = {}
-    genes_of_interest = [
-        'GAG',
-        'POL',
-        'PROTEASE',
-        'RT',
-        'INTEGRASE',
-        'VIF',
-        'VPR',
-        'ENV',
-        'TAT_EXON1',
-        'TAT_EXON2',
-        'REV_EXON1',
-        'REV_EXON2',
-        'VPU',
-        'GP120',
-        'GP41',
-        'NEF',
-        'PSI_SL1',
-        'PSI_SL2',
-        'PSI_SL3',
-        'PSI_SL4',
-        'D4',
-        'X1',
-        'X2',
-        'X3',
-        '3LTR'
-    ]
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:
             newannot[gene] = [start, stop]
@@ -202,26 +175,32 @@ def splice_genes(query, target, samfile, annotation):
         query_pos = None
         for size, op in row['cigar']:
             size = int(size)
+            logger.debug(f'size: {size}, op: {op}')
+            logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
             # If the first section is hard-clipped the query should start at
             # the first non-hard-clipped-based. The target should also be offset
             # by the size of the hard-clip
             if op == 'H' and query_pos is None:
                 query_pos = size
+                logger.debug('='*50)
                 continue
             elif query_pos is None:
                 query_pos = 0
             if op == 'S':
                 query_pos += size
+                logger.debug('='*50)
                 continue
             elif op in ('M', '=', 'X'):
                 for j in range(size):
                     try:
                         target_nuc = target[target_pos]
                     except IndexError:
+                        logger.warning(f'{target_pos} not in range of target')
                         break
                     query_nuc = query[query_pos]
                     match = (target_nuc == query_nuc)
                     genes = get_genes(annotation, target_pos)
+                    logger.debug(target_pos, query_pos, target_nuc, query_nuc, match, genes)
                     for gene in genes:
                         if gene not in results:
                             results[gene] = [query_pos, query_pos]
@@ -231,70 +210,20 @@ def splice_genes(query, target, samfile, annotation):
                     target_pos += 1
             elif op == 'D':
                 target_pos += size
+                logger.debug('='*50)
                 continue
             elif op == 'I':
                 query_pos += size
+                logger.debug('='*50)
                 continue
+            logger.debug('='*50)
+        logger.debug('new alignment row'.center(50, '~'))
     return results
 
 
 def coords_to_genes(results, query):
     genes = {gene:query[coords[0]:coords[1] + 1] for gene, coords in results.items()}
     return genes
-
-
-def getgot(query, target, samfile, annotation):
-    results = {}
-    for i, row in samfile.iterrows():
-        # Subtract 1 to convert target position to zero-base
-        target_pos = int(row[3]) - 1
-        query_pos = None
-        for size, op in row['cigar']:
-            size = int(size)
-            print(f'size: {size}, op: {op}')
-            print(f'target_pos: {target_pos}, query_pos: {query_pos}')
-            # If the first section is hard-clipped the query should start at
-            # the first non-hard-clipped-based. The target should also be offset
-            # by the size of the hard-clip
-            if op == 'H' and query_pos is None:
-                query_pos = size
-                print('='*50)
-                continue
-            elif query_pos is None:
-                query_pos = 0
-            if op == 'S':
-                query_pos += size
-                print('='*50)
-                continue
-            elif op in ('M', '=', 'X'):
-                for i in range(size):
-                    try:
-                        target_nuc = target[target_pos]
-                    except IndexError:
-                        print(f'{target_pos} not in range of target')
-                        break
-                    query_nuc = query[query_pos]
-                    match = (target_nuc == query_nuc)
-                    genes = get_genes(annotation, target_pos)
-                    print(target_pos, query_pos, target_nuc, query_nuc, match, genes)
-                    for gene in genes:
-                        if gene not in results:
-                            results[gene] = [query_pos, query_pos]
-                        elif query_pos > results[gene][1]:
-                            results[gene][1] = query_pos
-                    query_pos += 1
-                    target_pos += 1
-            elif op == 'D':
-                target_pos += size
-                print('='*50)
-                continue
-            elif op == 'I':
-                query_pos += size
-                print('='*50)
-                continue
-            print('='*50)
-        print('new alignment row'.center(50, '~'))
-    return results
 
 
 # This function has not been tested yet
@@ -410,6 +339,57 @@ def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(),
         return alignment_path
 
 
+def generate_table_precursor(name, outpath):
+    # Load hivseqinr data
+    seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
+    seqinr = pd.read_csv(seqinr_path)
+    # Assign new columns based on split
+    seqinr[[
+        'name',
+        'sample',
+        'reference',
+        'seqtype'
+    ]] = seqinr['SEQID'].str.split('::', expand=True)
+
+    # Load filtered sequences
+    filtered_path = outpath / f'{name}_filtered.csv'
+    filtered = pd.read_csv(filtered_path)
+
+    # Merge
+    merged = seqinr.merge(filtered, on='sample')
+    for gene in genes_of_interest:
+        merged[gene] = None
+
+    data = {}
+    for index, row in merged.iterrows():
+        folder = Path(row['SEQID'].replace(':','_'))
+        genes_fasta = read_fasta(folder / 'genes.fasta')
+        genes = dict([x for x in genes_fasta])
+        for gene in genes_of_interest:
+            try:
+                seq = genes[f'>{gene}']
+            except KeyError:
+                seq = None
+            data.setdefault(gene, []).append(seq)
+    for gene, seqs in data.items():
+        merged[gene] = seqs
+
+    # Output csv
+    outfile = outpath / 'table_precursor.csv'
+    merged[[
+        'sample',
+        'sequence',
+        'MyVerdict'
+    ] + genes_of_interest].to_csv(outfile, index=False)
+    return outfile
+
+
+## Define some variables
+cwd = Path(os.path.realpath(__file__)).parent
+
+# Define genes of interest
+genes_of_interest = load_yaml(cwd / 'genes_of_interest.yaml')
+
 # Define some global variables
 mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
                 'M': 'AC', 'V': 'AGC', 'H': 'ATC', 'D': 'ATG',
@@ -420,7 +400,6 @@ complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
                    'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
                    '*': '*', 'N': 'N', '-': '-'}
 
-cwd = Path(os.path.realpath(__file__)).parent
 
 hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]
 mod_hxb2 = modify_reference(hxb2)

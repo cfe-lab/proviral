@@ -12,7 +12,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run(query_fasta, outdir=Path(os.getcwd()).resolve()):
+def run(query_fasta, name, outdir=Path(os.getcwd()).resolve()):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
@@ -24,6 +24,7 @@ def run(query_fasta, outdir=Path(os.getcwd()).resolve()):
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
                 o.write(f'>{gene}\n{seq}\n')
+    utils.generate_table_precursor(name, outdir)
 
 
 def main():
