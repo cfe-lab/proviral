@@ -175,20 +175,20 @@ def splice_genes(query, target, samfile, annotation):
         query_pos = None
         for size, op in row['cigar']:
             size = int(size)
-            logger.debug(f'size: {size}, op: {op}')
-            logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
+            # logger.debug(f'size: {size}, op: {op}')
+            # logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
             # If the first section is hard-clipped the query should start at
             # the first non-hard-clipped-based. The target should also be offset
             # by the size of the hard-clip
             if op == 'H' and query_pos is None:
                 query_pos = size
-                logger.debug('='*50)
+                # logger.debug('='*50)
                 continue
             elif query_pos is None:
                 query_pos = 0
             if op == 'S':
                 query_pos += size
-                logger.debug('='*50)
+                # logger.debug('='*50)
                 continue
             elif op in ('M', '=', 'X'):
                 for j in range(size):
@@ -200,7 +200,7 @@ def splice_genes(query, target, samfile, annotation):
                     query_nuc = query[query_pos]
                     match = (target_nuc == query_nuc)
                     genes = get_genes(annotation, target_pos)
-                    logger.debug(target_pos, query_pos, target_nuc, query_nuc, match, genes)
+                    # logger.debug(target_pos, query_pos, target_nuc, query_nuc, match, genes)
                     for gene in genes:
                         if gene not in results:
                             results[gene] = [query_pos, query_pos]
@@ -210,14 +210,14 @@ def splice_genes(query, target, samfile, annotation):
                     target_pos += 1
             elif op == 'D':
                 target_pos += size
-                logger.debug('='*50)
+                # logger.debug('='*50)
                 continue
             elif op == 'I':
                 query_pos += size
-                logger.debug('='*50)
+                # logger.debug('='*50)
                 continue
-            logger.debug('='*50)
-        logger.debug('new alignment row'.center(50, '~'))
+            # logger.debug('='*50)
+        # logger.debug('new alignment row'.center(50, '~'))
     return results
 
 
@@ -362,7 +362,7 @@ def generate_table_precursor(name, outpath):
 
     data = {}
     for index, row in merged.iterrows():
-        folder = Path(row['SEQID'].replace(':','_'))
+        folder = outpath / row['sample']
         genes_fasta = read_fasta(folder / 'genes.fasta')
         genes = dict([x for x in genes_fasta])
         for gene in genes_of_interest:
