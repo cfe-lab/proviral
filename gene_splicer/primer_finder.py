@@ -485,7 +485,7 @@ def filter_df(df, nodups=True):
     if nodups:
         filtered = filtered.drop_duplicates(subset='sample', keep=False)
     # Remove any rows with references containing "reverse" or "unknown"
-    filtered[
+    filtered = filtered[
         (filtered['reference'].str.contains('reverse'))
         | (filtered['reference'].str.contains('unknown'))
     ]
