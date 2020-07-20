@@ -2,6 +2,7 @@ import utils
 import argparse
 import os
 from pathlib import Path
+import logger
 
 
 def parse_args():
@@ -9,10 +10,12 @@ def parse_args():
         description='Splice out HIV genes from a sequence',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('query_fasta', help='A fasta file containing one or more query sequences')
+    parser.add_argument('--name', help='A name for your analysis', default='default_name')
+    parser.add_argument('--outdir', type=Path, default=Path(os.getcwd()).resolve(), help='Path to output files')
     return parser.parse_args()
 
 
-def run(query_fasta, name, outdir=Path(os.getcwd()).resolve()):
+def run(query_fasta, name, outdir):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
@@ -29,7 +32,12 @@ def run(query_fasta, name, outdir=Path(os.getcwd()).resolve()):
 
 def main():
     args = parse_args()
-    run(args.query_fasta)
+    logger.debug(args)
+    run(
+        query_fasta=args.query_fasta,
+        name=args.name,
+        outdir=args.outdir
+    )
 
 
 if __name__ == '__main__':
