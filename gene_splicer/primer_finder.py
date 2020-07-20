@@ -488,10 +488,8 @@ def filter_df(df, nodups=True):
         filtered = filtered.drop_duplicates(subset='sample', keep=False)
     # Remove any rows with references containing "reverse" or "unknown"
     filtered = filtered[
-        (
-            (~filtered['reference'].str.contains('reverse'))
-            & (~filtered['reference'].str.contains('unknown'))
-        )
+        (~filtered['reference'].str.contains('reverse'))
+        & (~filtered['reference'].str.contains('unknown'))
     ]
     # duplicates = filtered.duplicated(subset='sample', keep=False)
     # duplicates = filtered[duplicates[duplicates].index]['sample'].unique()
