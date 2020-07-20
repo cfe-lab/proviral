@@ -54,7 +54,7 @@ class Hivseqinr:
             os.makedirs(raw_fastas_path)
         except FileExistsError:
             pass
-        logger.debug('Attempting to copy "%s" to "%s"' % *self.fasta, raw_fastas_path))
+        logger.debug('Attempting to copy "%s" to "%s"' % (self.fasta, raw_fastas_path))
         shutil.copy(self.fasta, raw_fastas_path)
         return True
 
