@@ -4,7 +4,6 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader, DictWriter
 from itertools import groupby
 from operator import itemgetter
-import logging
 import os
 import pandas as pd
 import subprocess
@@ -14,9 +13,11 @@ import zipfile
 import shutil
 from pathlib import Path
 import sys
+import logging
 
 import Levenshtein
 from gotoh import align_it
+import logger
 
 import utils
 mixture_dict = utils.mixture_dict
@@ -26,7 +27,7 @@ reverse_and_complement = utils.reverse_and_complement
 # from micall.utils.translation import mixture_dict, reverse_and_complement
 from probe_finder import ProbeFinder
 
-logger = logging.getLogger('micall')
+logger = logging.getLogger('gene_splicer')
 
 class Hivseqinr:
 
@@ -53,6 +54,7 @@ class Hivseqinr:
             os.makedirs(raw_fastas_path)
         except FileExistsError:
             pass
+        logger.debug('Attempting to copy "%s" to "%s"' % self.fasta, raw_fastas_path)
         shutil.copy(self.fasta, raw_fastas_path)
         return True
 
@@ -86,7 +88,7 @@ class Hivseqinr:
         file_like_object = io.BytesIO(response.content)
         zipfile_obj = zipfile.ZipFile(file_like_object)
         if not os.path.isdir(self.outpath):
-            os.mkdir(self.outpath)
+            os.makedirs(self.outpath)
         zipfile_obj.extractall(self.outpath)
         return True
 

@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger('minimap')
+logger = logging.getLogger('gene_splicer')
 if logger.handlers:
     logger.handlers = []
 
