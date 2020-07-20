@@ -48,9 +48,9 @@ class Hivseqinr:
 
 
     def copy_fasta(self):
-        raw_fastas_path = os.path.join(self.outpath, 'RAW_FASTA')
+        raw_fastas_path = self.outpath / 'RAW_FASTA'
         try:
-            os.mkdir(raw_fastas_path)
+            os.makedirs(raw_fastas_path)
         except FileExistsError:
             pass
         shutil.copy(self.fasta, raw_fastas_path)
@@ -548,10 +548,10 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups):
             ))
             o.write(f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n')
             o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
-        if not disable_hivseqinr:
-            hivseqinr = Hivseqinr(outpath / 'hivseqinr', fasta_outpath)
         o.close()
         o2.close()
+        if not disable_hivseqinr:
+            hivseqinr = Hivseqinr(outpath / 'hivseqinr', fasta_outpath)
         files.append(fasta_outpath2)
     return files
 
