@@ -29,6 +29,7 @@ From: centos:7
     logger.py /opt/primer_finder/
     pipeline.py /opt/primer_finder/
     annot.csv /opt/primer_finder/
+    genes_of_interest.yaml /opt/primer_finder/
 
     ## Gotoh
     alignment /opt/primer_finder/alignment
