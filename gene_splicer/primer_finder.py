@@ -169,9 +169,9 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath, outpath):
+def find_primers(csv_filepath, outpath, seqtype):
     make_path(outpath)
-    columns = ['reference', 'error', 'sequence', 'seqlen', 'nmixtures']
+    columns = ['reference', 'error', 'sequence', 'seqlen', 'nmixtures', 'seqtype']
     for target_name in primers:
         for column_type in [
             'probe_hxb2_start',
@@ -191,7 +191,7 @@ def find_primers(csv_filepath, outpath):
         ]:
             columns.append(target_name + '_' + column_type)
     non_tcga = re.compile(r'[^TCGA-]+')
-    outfilepath = outpath / 'primer_analysis.csv'
+    outfilepath = outpath / f'{seqtype}_primer_analysis.csv'
     outfile = open(outfilepath, 'w')
     writer = DictWriter(outfile, columns, lineterminator='\n')
     writer.writeheader()
@@ -218,7 +218,7 @@ def find_primers(csv_filepath, outpath):
         #  and (run_name.endswith('conseqs'))):
         #     pause = True
 
-        new_row = dict(reference=contig_name)
+        new_row = dict(reference=contig_name, seqtype=seqtype)
         contig_seq: str = row.get('contig') or row['sequence']
         contig_seq = contig_seq.upper()
         new_row['seqlen'] = len(contig_seq)
@@ -260,7 +260,7 @@ def find_primers(csv_filepath, outpath):
         gap_extend_penalty = 3
         use_terminal_gap_penalty = 1
         for key in columns:
-            if key not in ['contig', 'seqlen', 'error', 'sequence', 'reference']:
+            if key not in ['contig', 'seqlen', 'error', 'sequence', 'reference', 'seqtype']:
                 new_row[key] = None
         for end, seq in [(5, prime5_seq), (3, prime3_seq)]:
             if end == 5:
