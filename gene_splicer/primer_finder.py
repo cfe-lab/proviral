@@ -473,7 +473,7 @@ def filter_df(df, nodups=True):
     )]
     filtered = filtered.apply(remove_primers, axis=1)
     if nodups:
-        if len(filtered > 1):
+        if len(filtered) > 1:
             # Return empty dataframe
             return pd.DataFrame(columns=df.columns, index=df.index)
     # Remove any rows with references containing "reverse" or "unknown"
