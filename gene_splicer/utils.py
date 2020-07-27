@@ -4,6 +4,7 @@ import yaml
 import shutil
 import subprocess as sp
 import pandas as pd
+import sys
 from pathlib import Path
 from csv import DictWriter, DictReader
 from logger import logger
@@ -315,13 +316,13 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
-    outdir = outdir / query_name
+def align(target_seq, query_seq, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
+    outdir = outdir / 'minimap2_aln'
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
     # Write the query fasta
-    query_fasta_path = write_fasta({query_name: query_seq}, outdir / 'query.fasta')
+    query_fasta_path = write_fasta({'query': query_seq}, outdir / 'query.fasta')
     # Write the target fasta
     target_fasta_path = write_fasta({'MOD_HXB2': target_seq}, outdir / 'target.fasta')
     cmd = [
@@ -339,30 +340,38 @@ def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(),
         return alignment_path
 
 
-def generate_table_precursor(name, outpath):
+def generate_table_precursor(outpath):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
-    seqinr = pd.read_csv(seqinr_path)
+    try:
+        seqinr = pd.read_csv(seqinr_path)
+    except FileNotFoundError:
+        logger.error('hivseqinr could not produce results, exiting')
+        sys.exit(1)
     # Assign new columns based on split
+    # Make sure this matches the join in primer_finder run()
     seqinr[[
-        'name',
-        'sample',
         'reference',
         'seqtype'
     ]] = seqinr['SEQID'].str.split('::', expand=True)
 
     # Load filtered sequences
-    filtered_path = outpath / f'{name}_filtered.csv'
+    filtered_path = outpath / 'filtered.csv'
     filtered = pd.read_csv(filtered_path)
 
     # Merge
-    merged = seqinr.merge(filtered, on='sample')
+    merged = seqinr.merge(
+        filtered,
+        left_index=True,
+        right_index=True,
+        how='outer'
+    )
     for gene in genes_of_interest:
         merged[gene] = None
 
     data = {}
     for index, row in merged.iterrows():
-        folder = outpath / row['sample']
+        folder = outpath / 'minimap2_aln'
         genes_fasta = read_fasta(folder / 'genes.fasta')
         genes = dict([x for x in genes_fasta])
         for gene in genes_of_interest:
@@ -377,7 +386,6 @@ def generate_table_precursor(name, outpath):
     # Output csv
     outfile = outpath / 'table_precursor.csv'
     merged[[
-        'sample',
         'sequence',
         'MyVerdict'
     ] + genes_of_interest].to_csv(outfile, index=False)
