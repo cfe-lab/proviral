@@ -342,7 +342,11 @@ def align(target_seq, query_seq, outdir=Path(os.getcwd()).resolve(), aligner_pat
 def generate_table_precursor(outpath):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
-    seqinr = pd.read_csv(seqinr_path)
+    try:
+        seqinr = pd.read_csv(seqinr_path)
+    except FileNotFoundError:
+        logger.error('hivseqinr could not produce results, exiting')
+        sys.exit(1)
     # Assign new columns based on split
     # Make sure this matches the join in primer_finder run()
     seqinr[[
@@ -366,7 +370,7 @@ def generate_table_precursor(outpath):
 
     data = {}
     for index, row in merged.iterrows():
-        folder = outpath / str(index)
+        folder = outpath / 'minimap2_aln'
         genes_fasta = read_fasta(folder / 'genes.fasta')
         genes = dict([x for x in genes_fasta])
         for gene in genes_of_interest:
@@ -381,7 +385,6 @@ def generate_table_precursor(outpath):
     # Output csv
     outfile = outpath / 'table_precursor.csv'
     merged[[
-        'sample',
         'sequence',
         'MyVerdict'
     ] + genes_of_interest].to_csv(outfile, index=False)
