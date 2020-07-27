@@ -355,7 +355,6 @@ def generate_table_precursor(outpath):
     filtered = pd.read_csv(filtered_path)
 
     # Merge
-    merged = seqinr.merge(filtered, on='sample')
     merged = seqinr.merge(
         filtered,
         left_index=True,
