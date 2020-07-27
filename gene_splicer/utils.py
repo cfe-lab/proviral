@@ -356,6 +356,12 @@ def generate_table_precursor(outpath):
 
     # Merge
     merged = seqinr.merge(filtered, on='sample')
+    merged = seqinr.merge(
+        filtered,
+        left_index=True,
+        right_index=True,
+        how='outer'
+    )
     for gene in genes_of_interest:
         merged[gene] = None
 
