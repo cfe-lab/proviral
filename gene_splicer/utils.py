@@ -339,20 +339,19 @@ def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(),
         return alignment_path
 
 
-def generate_table_precursor(name, outpath):
+def generate_table_precursor(outpath):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
     seqinr = pd.read_csv(seqinr_path)
     # Assign new columns based on split
+    # Make sure this matches the join in primer_finder run()
     seqinr[[
-        'name',
-        'sample',
         'reference',
         'seqtype'
     ]] = seqinr['SEQID'].str.split('::', expand=True)
 
     # Load filtered sequences
-    filtered_path = outpath / f'{name}_filtered.csv'
+    filtered_path = outpath / 'filtered.csv'
     filtered = pd.read_csv(filtered_path)
 
     # Merge
