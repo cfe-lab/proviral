@@ -315,13 +315,13 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def align(target_seq, query_seq, query_name, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
-    outdir = outdir / query_name
+def align(target_seq, query_seq, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
+    outdir = outdir / 'minimap2_aln'
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
     # Write the query fasta
-    query_fasta_path = write_fasta({query_name: query_seq}, outdir / 'query.fasta')
+    query_fasta_path = write_fasta({'query': query_seq}, outdir / 'query.fasta')
     # Write the target fasta
     target_fasta_path = write_fasta({'MOD_HXB2': target_seq}, outdir / 'target.fasta')
     cmd = [
@@ -366,7 +366,7 @@ def generate_table_precursor(outpath):
 
     data = {}
     for index, row in merged.iterrows():
-        folder = outpath / row['sample']
+        folder = outpath / str(index)
         genes_fasta = read_fasta(folder / 'genes.fasta')
         genes = dict([x for x in genes_fasta])
         for gene in genes_of_interest:

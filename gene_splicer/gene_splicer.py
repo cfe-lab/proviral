@@ -19,7 +19,7 @@ def run(query_fasta, outdir):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
-        samfile_path = utils.align(target, query_seq, query_name[1:].split('::')[1], outdir=outdir)
+        samfile_path = utils.align(target, query_seq, outdir=outdir)
         samfile = utils.load_samfile(samfile_path)
         results = utils.splice_genes(query_seq, target, samfile, utils.mod_annot)
         genes = utils.coords_to_genes(results, query_seq)
