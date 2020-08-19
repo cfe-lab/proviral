@@ -29,9 +29,8 @@ from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
 
+
 class Hivseqinr:
-
-
     def __init__(self, outpath, fasta):
         self.url = 'https://github.com/guineverelee/HIVSeqinR/raw/master/HIVSeqinR_ver2.7.1.zip'
         self.outpath = outpath
@@ -43,10 +42,8 @@ class Hivseqinr:
         self.run()
         self.finalize()
 
-
     def to_rpath(self, path):
         return path.replace('\\', '\\\\')
-
 
     def copy_fasta(self):
         raw_fastas_path = self.outpath / 'RAW_FASTA'
@@ -54,10 +51,10 @@ class Hivseqinr:
             os.makedirs(raw_fastas_path)
         except FileExistsError:
             pass
-        logger.debug('Attempting to copy "%s" to "%s"' % (self.fasta, raw_fastas_path))
+        logger.debug('Attempting to copy "%s" to "%s"' %
+                     (self.fasta, raw_fastas_path))
         shutil.copy(self.fasta, raw_fastas_path)
         return True
-
 
     def make_blast_dir(self):
         dbdir = self.outpath / 'hxb2_blast_db'
@@ -66,22 +63,13 @@ class Hivseqinr:
         except FileExistsError:
             pass
         hxb2_path = dbdir / 'HXB2.fasta'
-        shutil.copyfile(
-            self.outpath / 'R_HXB2.fasta',
-            hxb2_path
-        )
+        shutil.copyfile(self.outpath / 'R_HXB2.fasta', hxb2_path)
         cmd = [
-            'makeblastdb',
-            '-in',
-            hxb2_path,
-            '-parse_seqids',
-            '-dbtype',
-            'nucl'
+            'makeblastdb', '-in', hxb2_path, '-parse_seqids', '-dbtype', 'nucl'
         ]
         self.dbdir = dbdir
         job = subprocess.run(cmd)
         return job
-
 
     def download(self):
         response = requests.get(self.url)
@@ -92,28 +80,25 @@ class Hivseqinr:
         zipfile_obj.extractall(self.outpath)
         return True
 
-
     def fix_wds(self):
-        rscript_path = os.path.join(self.outpath, 'R_HIVSeqinR_Combined_ver09_ScrambleFix.R')
+        rscript_path = os.path.join(
+            self.outpath, 'R_HIVSeqinR_Combined_ver09_ScrambleFix.R')
         new_rscript_path = os.path.join(self.outpath, 'modified.R')
         self.new_rscript_path = new_rscript_path
         with open(self.new_rscript_path, 'w') as outfile:
             with open(rscript_path, 'r') as infile:
                 for line in infile:
                     if 'MyWD <- getwd()' in line:
-                        line = line.replace('MyWD <- getwd()', f'MyWD = "{self.outpath}"\n')
+                        line = line.replace('MyWD <- getwd()',
+                                            f'MyWD = "{self.outpath}"\n')
                     elif line.startswith('MyBlastnDir <-'):
                         line = f'MyBlastnDir = "{str(self.dbdir) + os.path.sep*2}"\n'
                     outfile.write(line)
 
-
     def run(self):
         cwd = os.getcwd()
         os.chdir(self.outpath)
-        cmd = [
-            'Rscript',
-            './modified.R'
-        ]
+        cmd = ['Rscript', './modified.R']
         job = subprocess.run(cmd)
         os.chdir(cwd)
         return job
@@ -146,12 +131,22 @@ def parse_args():
     parser = ArgumentParser(
         description='Search sequences for primers and identify errors',
         formatter_class=ArgumentDefaultsHelpFormatter)
+
+    # Inputs
     parser.add_argument('contigs_csv',
                         help='CSV file with contig sequences',
                         type=FileType())
     parser.add_argument('conseqs_csv',
                         help='CSV file with conseq sequences',
                         type=FileType())
+
+    # Outputs
+    parser.add_argument(
+        'table_precursor_csv',
+        help=
+        'CSV file containing gene regions and hivseqinr verdict for sample',
+        type=Path)
+
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',
@@ -160,7 +155,12 @@ def parse_args():
     parser.add_argument('--disable_hivseqinr',
                         action='store_true',
                         help='Disable running hivseqinr')
-    parser.add_argument('--nodups', action='store_false', help='Set this flag to disable the removal of duplicate samples that pass QC')
+    parser.add_argument(
+        '--nodups',
+        action='store_false',
+        help=
+        'Set this flag to disable the removal of duplicate samples that pass QC'
+    )
     return parser.parse_args()
 
 
@@ -171,23 +171,25 @@ def make_path(path):
 
 def find_primers(csv_filepath, outpath, seqtype):
     make_path(outpath)
-    columns = ['reference', 'error', 'sequence', 'seqlen', 'nmixtures', 'seqtype']
+    columns = [
+        'reference', 'error', 'sequence', 'seqlen', 'nmixtures', 'seqtype'
+    ]
     for target_name in primers:
         for column_type in [
-            'probe_hxb2_start',
-            'full_real_primer_seq',
-            'in_probe_start',
-            'in_probe_size',
-            'in_hxb2_start',
-            'in_hxb2_size',
-            'is_reversed',
-            'seq',
-            'actual_primer_seq',
-            'overhang',
-            'finder_dist',
-            'dist',
-            'error',
-            'warning',
+                'probe_hxb2_start',
+                'full_real_primer_seq',
+                'in_probe_start',
+                'in_probe_size',
+                'in_hxb2_start',
+                'in_hxb2_size',
+                'is_reversed',
+                'seq',
+                'actual_primer_seq',
+                'overhang',
+                'finder_dist',
+                'dist',
+                'error',
+                'warning',
         ]:
             columns.append(target_name + '_' + column_type)
     non_tcga = re.compile(r'[^TCGA-]+')
@@ -237,18 +239,17 @@ def find_primers(csv_filepath, outpath, seqtype):
         #     import pdb; pdb.set_trace()
 
         # Determine if sequence has internal Xs
-        x_locations = [i for i,j in enumerate(contig_seq) if j=='X']
+        x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
         probelen = 30
-        if any([(probelen < i < len(contig_seq) - (probelen)) for i in x_locations]):
+        if any([(probelen < i < len(contig_seq) - (probelen))
+                for i in x_locations]):
             skipped[uname] = 'contig sequence contained internal X'
             new_row['error'] = skipped[uname]
             writer.writerow(new_row)
             continue
         found_non_tcga = re.findall(non_tcga, contig_seq)
         mixtures = len([x for x in found_non_tcga if x[0].upper() != 'X'])
-        if (
-            mixtures > 1
-        ):
+        if (mixtures > 1):
             skipped[uname] = 'contig sequence contained non-TCGA/gap'
             new_row['error'] = skipped[uname]
             new_row['nmixtures'] = mixtures
@@ -260,7 +261,10 @@ def find_primers(csv_filepath, outpath, seqtype):
         gap_extend_penalty = 3
         use_terminal_gap_penalty = 1
         for key in columns:
-            if key not in ['contig', 'seqlen', 'error', 'sequence', 'reference', 'seqtype']:
+            if key not in [
+                    'contig', 'seqlen', 'error', 'sequence', 'reference',
+                    'seqtype'
+            ]:
                 new_row[key] = None
         for end, seq in [(5, prime5_seq), (3, prime3_seq)]:
             if end == 5:
@@ -294,8 +298,11 @@ def find_primers(csv_filepath, outpath, seqtype):
             new_row[prefix + 'full_real_primer_seq'] = primers[name]['seq']
 
             # If the segment overlaps the primer
-            if primers[name]['hxb2_start'] - probelen <= finder.start <= primers[name]['hxb2_end']:
-                primer = validate_primer(finder, seq, primers[name], hxb2_target_seq)
+            if primers[name][
+                    'hxb2_start'] - probelen <= finder.start <= primers[name][
+                        'hxb2_end']:
+                primer = validate_primer(finder, seq, primers[name],
+                                         hxb2_target_seq)
                 if primer['error']:
                     skipped[uname] = primer['error']
                     new_row[prefix + 'error'] = skipped[uname]
@@ -303,33 +310,41 @@ def find_primers(csv_filepath, outpath, seqtype):
             else:
                 # If contig ends before hxb2 primer start
                 if primers[name]['hxb2_start'] - probelen > finder.start:
-                    skipped[uname] = f'{end} contig probe ends before hxb2 primer start'
+                    skipped[
+                        uname] = f'{end} contig probe ends before hxb2 primer start'
                 # If contig starts after hxb2 primer start
                 elif finder.start > primers[name]['hxb2_end']:
-                    skipped[uname] = f'{end} contig probe starts after hxb2 primer end'
+                    skipped[
+                        uname] = f'{end} contig probe starts after hxb2 primer end'
                 new_row[prefix + 'error'] = skipped[uname]
-                primer = validate_primer(finder, seq, primers[name], hxb2_target_seq)
+                primer = validate_primer(finder, seq, primers[name],
+                                         hxb2_target_seq)
                 if primer['error']:
                     skipped[uname] = primer['error']
-                    new_row[prefix + 'error'] += f' primer_error: {skipped[uname]}'
+                    new_row[prefix +
+                            'error'] += f' primer_error: {skipped[uname]}'
 
             new_row[prefix + 'finder_dist'] = primer['finder_dist']
             if primer['finder_dist'] > (probelen / 10):
-                new_row[prefix + 'warning'] = f'Finder distance > {probelen / 10}'
+                new_row[prefix +
+                        'warning'] = f'Finder distance > {probelen / 10}'
 
             new_row[prefix + 'in_probe_start'] = primer['seq_start']
             try:
-                new_row[prefix + 'in_probe_size'] = primer['seq_end'] - primer['seq_start']
+                new_row[
+                    prefix +
+                    'in_probe_size'] = primer['seq_end'] - primer['seq_start']
             except TypeError:
                 new_row[prefix + 'in_probe_size'] = None
             new_row[prefix + 'in_hxb2_start'] = primer['hxb2_start']
             try:
-                new_row[prefix + 'in_hxb2_size'] = primer['hxb2_end'] - primer['hxb2_start']
+                new_row[
+                    prefix +
+                    'in_hxb2_size'] = primer['hxb2_end'] - primer['hxb2_start']
             except TypeError:
                 new_row[prefix + 'in_hxb2_size'] = None
-            new_row[prefix + 'is_reversed'] = ('Y'
-                                                if finder.is_reversed
-                                                else 'N')
+            new_row[prefix +
+                    'is_reversed'] = ('Y' if finder.is_reversed else 'N')
             new_row[prefix + 'seq'] = primer['target_seq']
             new_row[prefix + 'overhang'] = primer['overhang']
             new_row[prefix + 'dist'] = primer['dist']
@@ -343,7 +358,7 @@ def find_primers(csv_filepath, outpath, seqtype):
 def handle_x(sequence):
     length = len(sequence)
     midpoint = length / 2
-    x_positions = [i for i,j in enumerate(sequence) if j == 'X']
+    x_positions = [i for i, j in enumerate(sequence) if j == 'X']
     try:
         rightmost_x = max([x for x in x_positions if x <= midpoint])
     except ValueError:
@@ -353,9 +368,9 @@ def handle_x(sequence):
     except ValueError:
         leftmost_x = None
     if rightmost_x is not None and leftmost_x is not None:
-        sequence = sequence[rightmost_x+1:leftmost_x]
+        sequence = sequence[rightmost_x + 1:leftmost_x]
     elif rightmost_x is not None:
-        sequence = sequence[rightmost_x+1:]
+        sequence = sequence[rightmost_x + 1:]
     elif leftmost_x is not None:
         sequence = sequence[:leftmost_x]
     return sequence
@@ -370,28 +385,23 @@ def validate_primer(finder, finder_seq, target, hxb2_target, tolerance=1):
     matched_finder_size = len(finder.contig_match)
     overhang = matched_finder_size - finder_seqsize
     primer_in_finder_hxb2_start_coord = max(finder.start, target['hxb2_start'])
-    primer_in_finder_hxb2_end_coord = min(
-        finder.start + finder_seqsize,
-        target['hxb2_end']
-    )
+    primer_in_finder_hxb2_end_coord = min(finder.start + finder_seqsize,
+                                          target['hxb2_end'])
     # Get the coordinates of the primer relative to the finder sequence
     primer_in_finder_start_coord = primer_in_finder_hxb2_start_coord - finder.start
     primer_in_finder_end_coord = primer_in_finder_hxb2_end_coord - finder.start
-    if (
-        (target['hxb2_start'] == 9603)
-        and (primer_in_finder_end_coord >= matched_finder_size - overhang)
-    ):
+    if ((target['hxb2_start'] == 9603) and
+        (primer_in_finder_end_coord >= matched_finder_size - overhang)):
         primer_in_finder_start_coord -= overhang
         primer_in_finder_end_coord -= overhang
 
     # Get the primer sequence of the finder sequence
-    primer_in_finder = finder_seq[primer_in_finder_start_coord:primer_in_finder_end_coord]
+    primer_in_finder = finder_seq[
+        primer_in_finder_start_coord:primer_in_finder_end_coord]
 
     # Get the sequence of the true primer that overlaps the finder sequence
     primer_start_coord = max(
-        0,
-        primer_in_finder_hxb2_start_coord - target['hxb2_start']
-    )
+        0, primer_in_finder_hxb2_start_coord - target['hxb2_start'])
     primer_end_coord = primer_start_coord + len(primer_in_finder)
     real_primer = target['seq'][primer_start_coord:primer_end_coord]
     result = {
@@ -412,13 +422,15 @@ def validate_primer(finder, finder_seq, target, hxb2_target, tolerance=1):
     }
 
     if len(real_primer) != len(primer_in_finder):
-        result['error'] = 'Real primer did not match length of primer in finder'
+        result[
+            'error'] = 'Real primer did not match length of primer in finder'
         return result
     if not real_primer:
         result['error'] = 'real primer not found at expected coordinates'
         return result
     elif not primer_in_finder:
-        result['error'] = 'primer in contig sequence not found at expected coordinates'
+        result[
+            'error'] = 'primer in contig sequence not found at expected coordinates'
         return result
     for i in range(len(real_primer)):
         try:
@@ -451,36 +463,34 @@ def load_csv(csv_filepath, seqtype, results=None):
 
 def add_primers(row):
     # Strip the primers out
-    newseq = row.sequence[int(row.fwd_in_probe_size):-int(row.rev_in_probe_size)]
+    newseq = row.sequence[int(row.fwd_in_probe_size
+                              ):-int(row.rev_in_probe_size)]
     # Add the primers in
-#     newseq = primers['fwd']['seq'] + newseq + primers['rev']['seq']
+    #     newseq = primers['fwd']['seq'] + newseq + primers['rev']['seq']
     row.sequence = newseq
     return row
 
 
 def remove_primers(row):
     # Strip the primers out
-    newseq = row.sequence[int(row.fwd_in_probe_size):-int(row.rev_in_probe_size)]
+    newseq = row.sequence[int(row.fwd_in_probe_size
+                              ):-int(row.rev_in_probe_size)]
     row.sequence = newseq
     return row
 
 
 def filter_df(df, nodups=True):
-    filtered = df[(
-        df['error'].isna()
-        & df['fwd_error'].isna()
-        & df['rev_error'].isna()
-    )]
+    filtered = df[(df['error'].isna()
+                   & df['fwd_error'].isna()
+                   & df['rev_error'].isna())]
     filtered = filtered.apply(remove_primers, axis=1)
     if nodups:
         if len(filtered) > 1:
             # Return empty dataframe
             return pd.DataFrame(columns=df.columns, index=df.index)
     # Remove any rows with references containing "reverse" or "unknown"
-    filtered = filtered[
-        (~filtered['reference'].str.contains('reverse'))
-        & (~filtered['reference'].str.contains('unknown'))
-    ]
+    filtered = filtered[(~filtered['reference'].str.contains('reverse'))
+                        & (~filtered['reference'].str.contains('unknown'))]
     filtered = filtered[['reference', 'sequence', 'seqtype']]
     return filtered
 
@@ -495,27 +505,20 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
     conseqs_df = dfs['conseqs']
     filtered_contigs = filter_df(contigs_df, nodups)
     filtered_conseqs = filter_df(conseqs_df, nodups)
-    joined = filtered_contigs.merge(
-        filtered_conseqs,
-        left_index=True,
-        right_index=True,
-        suffixes=('_contig', '_conseq'),
-        how='outer'
-    )
-    joined['sequence'] = joined['sequence_conseq'].fillna(joined['sequence_contig'])
-    joined['seqtype'] = joined['seqtype_conseq'].fillna(joined['seqtype_contig'])
+    joined = filtered_contigs.merge(filtered_conseqs,
+                                    left_index=True,
+                                    right_index=True,
+                                    suffixes=('_contig', '_conseq'),
+                                    how='outer')
+    joined['sequence'] = joined['sequence_conseq'].fillna(
+        joined['sequence_contig'])
+    joined['seqtype'] = joined['seqtype_conseq'].fillna(
+        joined['seqtype_contig'])
     joined['seqlen'] = joined['sequence'].str.len()
-    joined['reference'] = joined['reference_conseq'].fillna(joined['reference_contig'])
-    joined = joined[[
-        'reference',
-        'seqtype',
-        'sequence',
-        'seqlen'
-    ]]
-    joined.to_csv(
-        outpath / 'filtered.csv',
-        index=False
-    )
+    joined['reference'] = joined['reference_conseq'].fillna(
+        joined['reference_contig'])
+    joined = joined[['reference', 'seqtype', 'sequence', 'seqlen']]
+    joined.to_csv(outpath / 'filtered.csv', index=False)
     fasta_outpath = outpath / 'synthetic_primers.fasta'
     fasta_outpath2 = outpath / 'no_primers.fasta'
     o = open(fasta_outpath, 'w')
@@ -525,11 +528,10 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
         # I've commented it out for now
         # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
         # The header delimiter, this must match the split in gene_splicer
-        header = '>' + '::'.join((
-            row.reference,
-            row.seqtype
-        ))
-        o.write(f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n')
+        header = '>' + '::'.join((row.reference, row.seqtype))
+        o.write(
+            f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n'
+        )
         o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
     o.close()
     o2.close()
@@ -541,17 +543,12 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
 
 def main():
     args = parse_args()
-    fasta_files = run(
-        contigs_csv=args.contigs_csv,
-        conseqs_csv=args.conseqs_csv,
-        outpath=args.outpath.resolve(),
-        disable_hivseqinr=args.disable_hivseqinr,
-        nodups=args.nodups
-    )
-    return {
-        'fasta_files': fasta_files,
-        'args': args
-    }
+    fasta_files = run(contigs_csv=args.contigs_csv,
+                      conseqs_csv=args.conseqs_csv,
+                      outpath=args.outpath.resolve(),
+                      disable_hivseqinr=args.disable_hivseqinr,
+                      nodups=args.nodups)
+    return {'fasta_files': fasta_files, 'args': args}
 
 
 if __name__ in ('__main__', '__live_coding__'):

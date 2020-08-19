@@ -54,14 +54,8 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
         reader = DictReader(f)
         with open(f'{csvfile}.bed', 'w', newline='') as o:
             fieldnames = [
-                'chrom',
-                'chromStart',
-                'chromEnd',
-                'name',
-                'score',
-                'strand',
-                'thickStart',
-                'thickEnd'
+                'chrom', 'chromStart', 'chromEnd', 'name', 'score', 'strand',
+                'thickStart', 'thickEnd'
             ]
             writer = DictWriter(o, fieldnames, delimiter='\t')
             for row in reader:
@@ -102,14 +96,14 @@ def get_genes(annot, pos, offset_start=0, offset_end=0, offset=None):
     genes = []
     if offset is not None:
         offset_start = offset_end = offset
-
     """
         annot (dict) => {gene: [start, end], ...}
         ref (str),
         pos (int)
     """
     for gene in annot:
-        if ((annot[gene][0] - offset_start) <= pos <= (annot[gene][1] - offset_end)):
+        if ((annot[gene][0] - offset_start) <= pos <=
+            (annot[gene][1] - offset_end)):
             genes.append(gene)
     return genes
 
@@ -137,7 +131,7 @@ def modify_reference(refseq):
     # Fix premature stop codon
     pos = 8499
     assert newseq[pos] == 'A'
-    newseq = newseq[:pos] + 'G' + newseq[pos+1:]
+    newseq = newseq[:pos] + 'G' + newseq[pos + 1:]
     assert newseq[pos] == 'G'
 
     return newseq
@@ -148,8 +142,10 @@ def modify_annot(annot):
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:
             newannot[gene] = [start, stop]
+
+
 #     newannot = dict(annot)
-    # Offset by second round fwd primer trim (666 trimmed from start)
+# Offset by second round fwd primer trim (666 trimmed from start)
     offset = -666
     for gene, (start, stop) in newannot.items():
         start += offset
@@ -161,7 +157,7 @@ def modify_annot(annot):
             start -= 1
             stop -= 1
         elif stop >= 5108:
-            stop -=1
+            stop -= 1
         # Convert to 0 base
         newannot[gene] = [start - 1, stop - 1]
 
@@ -223,7 +219,10 @@ def splice_genes(query, target, samfile, annotation):
 
 
 def coords_to_genes(results, query):
-    genes = {gene:query[coords[0]:coords[1] + 1] for gene, coords in results.items()}
+    genes = {
+        gene: query[coords[0]:coords[1] + 1]
+        for gene, coords in results.items()
+    }
     return genes
 
 
@@ -245,13 +244,13 @@ def get_sequences(query, target, samfile, annotation):
             # by the size of the hard-clip
             if op == 'H' and query_pos is None:
                 query_pos = size
-                print('='*50)
+                print('=' * 50)
                 continue
             elif query_pos is None:
                 query_pos = 0
             if op == 'S':
                 query_pos += size
-                print('='*50)
+                print('=' * 50)
                 continue
             elif op in ('M', '=', 'X'):
                 for i in range(size):
@@ -263,7 +262,8 @@ def get_sequences(query, target, samfile, annotation):
                     query_nuc = query[query_pos]
                     match = (target_nuc == query_nuc)
                     genes = get_genes(annotation, target_pos)
-                    print(target_pos, query_pos, target_nuc, query_nuc, match, genes)
+                    print(target_pos, query_pos, target_nuc, query_nuc, match,
+                          genes)
                     for gene in genes:
                         if gene not in results:
                             results[gene] = [query_pos, query_pos]
@@ -278,13 +278,13 @@ def get_sequences(query, target, samfile, annotation):
                 target_pos += size
                 for i in range(size):
                     sequences[gene].append('-')
-                print('='*50)
+                print('=' * 50)
                 continue
             elif op == 'I':
                 query_pos += size
-                print('='*50)
+                print('=' * 50)
                 continue
-            print('='*50)
+            print('=' * 50)
         print('new alignment row'.center(50, '~'))
     return results, sequences
 
@@ -316,21 +316,21 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
-def align(target_seq, query_seq, outdir=Path(os.getcwd()).resolve(), aligner_path='minimap2'):
+def align(target_seq,
+          query_seq,
+          outdir=Path(os.getcwd()).resolve(),
+          aligner_path='minimap2'):
     outdir = outdir / 'minimap2_aln'
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
     # Write the query fasta
-    query_fasta_path = write_fasta({'query': query_seq}, outdir / 'query.fasta')
+    query_fasta_path = write_fasta({'query': query_seq},
+                                   outdir / 'query.fasta')
     # Write the target fasta
-    target_fasta_path = write_fasta({'MOD_HXB2': target_seq}, outdir / 'target.fasta')
-    cmd = [
-        aligner_path,
-        '-a',
-        target_fasta_path,
-        query_fasta_path
-    ]
+    target_fasta_path = write_fasta({'MOD_HXB2': target_seq},
+                                    outdir / 'target.fasta')
+    cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
     alignment_path = outdir / 'alignment.sam'
     with open(alignment_path, 'w') as alignment:
         process = sp.run(cmd, stdout=alignment, errors=True)
@@ -340,7 +340,7 @@ def align(target_seq, query_seq, outdir=Path(os.getcwd()).resolve(), aligner_pat
         return alignment_path
 
 
-def generate_table_precursor(outpath):
+def generate_table_precursor(outpath, table_precursor_path):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
     try:
@@ -350,22 +350,18 @@ def generate_table_precursor(outpath):
         sys.exit(1)
     # Assign new columns based on split
     # Make sure this matches the join in primer_finder run()
-    seqinr[[
-        'reference',
-        'seqtype'
-    ]] = seqinr['SEQID'].str.split('::', expand=True)
+    seqinr[['reference', 'seqtype']] = seqinr['SEQID'].str.split('::',
+                                                                 expand=True)
 
     # Load filtered sequences
     filtered_path = outpath / 'filtered.csv'
     filtered = pd.read_csv(filtered_path)
 
     # Merge
-    merged = seqinr.merge(
-        filtered,
-        left_index=True,
-        right_index=True,
-        how='outer'
-    )
+    merged = seqinr.merge(filtered,
+                          left_index=True,
+                          right_index=True,
+                          how='outer')
     for gene in genes_of_interest:
         merged[gene] = None
 
@@ -384,12 +380,9 @@ def generate_table_precursor(outpath):
         merged[gene] = seqs
 
     # Output csv
-    outfile = outpath / 'table_precursor.csv'
-    merged[[
-        'sequence',
-        'MyVerdict'
-    ] + genes_of_interest].to_csv(outfile, index=False)
-    return outfile
+    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+        table_precursor_path, index=False)
+    return table_precursor_path
 
 
 ## Define some variables
@@ -399,18 +392,46 @@ cwd = Path(os.path.realpath(__file__)).parent
 genes_of_interest = load_yaml(cwd / 'genes_of_interest.yaml')
 
 # Define some global variables
-mixture_dict = {'W': 'AT', 'R': 'AG', 'K': 'GT', 'Y': 'CT', 'S': 'CG',
-                'M': 'AC', 'V': 'AGC', 'H': 'ATC', 'D': 'ATG',
-                'B': 'TGC', 'N': 'ATGC', '-': 'ATGC'}
+mixture_dict = {
+    'W': 'AT',
+    'R': 'AG',
+    'K': 'GT',
+    'Y': 'CT',
+    'S': 'CG',
+    'M': 'AC',
+    'V': 'AGC',
+    'H': 'ATC',
+    'D': 'ATG',
+    'B': 'TGC',
+    'N': 'ATGC',
+    '-': 'ATGC'
+}
 
-complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A',
-                   'W': 'S', 'R': 'Y', 'K': 'M', 'Y': 'R', 'S': 'W', 'M': 'K',
-                   'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
-                   '*': '*', 'N': 'N', '-': '-'}
-
+complement_dict = {
+    'A': 'T',
+    'C': 'G',
+    'G': 'C',
+    'T': 'A',
+    'W': 'S',
+    'R': 'Y',
+    'K': 'M',
+    'Y': 'R',
+    'S': 'W',
+    'M': 'K',
+    'B': 'V',
+    'D': 'H',
+    'H': 'D',
+    'V': 'B',
+    '*': '*',
+    'N': 'N',
+    '-': '-'
+}
 
 hxb2 = next(read_fasta(cwd / 'hxb2.fasta'))[1]
 mod_hxb2 = modify_reference(hxb2)
 
-annot = {x['gene']: [int(x['start']), int(x['stop'])] for x in read_csv(cwd / 'annot.csv')}
+annot = {
+    x['gene']: [int(x['start']), int(x['stop'])]
+    for x in read_csv(cwd / 'annot.csv')
+}
 mod_annot = modify_annot(annot)
