@@ -39,7 +39,7 @@ class Hivseqinr:
         self.make_blast_dir()
         self.fix_wds()
         self.copy_fasta()
-        self.run()
+        self.job = self.run()
         self.finalize()
 
     def to_rpath(self, path):
@@ -99,12 +99,18 @@ class Hivseqinr:
         cwd = os.getcwd()
         os.chdir(self.outpath)
         cmd = ['Rscript', './modified.R']
-        job = subprocess.run(cmd)
+        job = subprocess.run(cmd, capture_output=True)
+        print(self.clean_output(job.stdout))
+        print(self.clean_output(job.stdout), file=sys.stderr)
         os.chdir(cwd)
         return job
 
+    @staticmethod
+    def clean_output(output):
+        return ''.join([i if ord(i) < 128 else '\n' for i in output])
+
     def finalize(self):
-        path = os.path.join(self.outpath, 'COMPLETE')
+        path = os.path.join(self.outpath, 'HIVSEQINR_COMPLETE')
         Path(path).touch()
 
 
