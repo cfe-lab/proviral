@@ -99,15 +99,15 @@ class Hivseqinr:
         cwd = os.getcwd()
         os.chdir(self.outpath)
         cmd = ['Rscript', './modified.R']
-        job = subprocess.run(cmd, capture_output=True)
+        job = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(self.clean_output(job.stdout))
-        print(self.clean_output(job.stdout), file=sys.stderr)
+        print(self.clean_output(job.stderr), file=sys.stderr)
         os.chdir(cwd)
         return job
 
     @staticmethod
     def clean_output(output):
-        return ''.join([i if ord(i) < 128 else '\n' for i in output])
+        return ''.join([i if ord(str(i)) < 128 else '\n' for i in output.decode('utf')])
 
     def finalize(self):
         path = os.path.join(self.outpath, 'HIVSEQINR_COMPLETE')
@@ -520,10 +520,12 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
         joined['sequence_contig'])
     joined['seqtype'] = joined['seqtype_conseq'].fillna(
         joined['seqtype_contig'])
-    joined['seqlen'] = joined['sequence'].str.len()
+    joined['seqlen'] = joined['sequence'].fillna('').str.len()
     joined['reference'] = joined['reference_conseq'].fillna(
         joined['reference_contig'])
     joined = joined[['reference', 'seqtype', 'sequence', 'seqlen']]
+    if joined['sequence'].isnull().all():
+        raise NotImplementedError('No contigs and no conseqs passed QC, exiting')
     joined.to_csv(outpath / 'filtered.csv', index=False)
     fasta_outpath = outpath / 'synthetic_primers.fasta'
     fasta_outpath2 = outpath / 'no_primers.fasta'
