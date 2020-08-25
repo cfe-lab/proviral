@@ -15,6 +15,11 @@ def load_yaml(afile):
         return yaml.load(f, Loader=yaml.SafeLoader)
 
 
+def dump_yaml(data, afile):
+    with open(afile, 'w') as o:
+        yaml.dump(data, o)
+
+
 def reverse_and_complement(seq):
     return ''.join(complement_dict[nuc] for nuc in reversed(seq))
 
@@ -72,7 +77,7 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
 
 
 def split_cigar(row):
-    pattern = re.compile('(\d+)([A-Z])')
+    pattern = re.compile(r'(\d+)([A-Z])')
     cigar = re.findall(pattern, row[5])
     return cigar
 

@@ -34,9 +34,10 @@ def run(query_fasta, args):
                                      utils.mod_annot)
         genes = utils.coords_to_genes(results, query_seq)
         genes_path = samfile_path.parent / 'genes.fasta'
-        with open(genes_path, 'w') as o:
-            for gene, seq in genes.items():
-                o.write(f'>{gene}\n{seq}\n')
+        utils.write_fasta(genes, genes_path)
+        # with open(genes_path, 'w') as o:
+        #     for gene, seq in genes.items():
+        #         o.write(f'>{gene}\n{seq}\n')
     utils.generate_table_precursor(args.outpath, args.table_precursor_csv)
 
 

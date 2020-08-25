@@ -20,6 +20,11 @@ import utils
 
 def test_annotation():
     actual_annot = utils.mod_annot
-    expected_annot = {x['gene']: [int(x['start']), int(x['stop'])] for x in utils.read_csv(cwd / 'valid' / 'valid_mod_annot.csv')}
+    expected_annot = {
+        x['gene']: [int(x['start']), int(x['stop'])]
+        for x in utils.read_csv(cwd / 'valid' / 'valid_mod_annot.csv')
+    }
     utils.csv_to_bed(cwd / 'valid' / 'valid_mod_annot.csv', 'MOD_HXB2')
+    # for gene, (a, b) in actual_annot.items():
+    # print(','.join((gene, str(a), str(b))))
     assert actual_annot == expected_annot

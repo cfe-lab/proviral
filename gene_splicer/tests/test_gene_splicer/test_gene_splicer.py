@@ -31,16 +31,14 @@ def test_large_deletion1():
     # Just sanity check that my query sequence is GAG
     assert gag == query
     # Align the query to the target
-        # I have to skip this section because minimap2 does not run on windows
-        # Otherwise I could call it as a subprocess
-        # For now I will manually align the query to the target
+    # I have to skip this section because minimap2 does not run on windows
+    # Otherwise I could call it as a subprocess
+    # For now I will manually align the query to the target
     alignment = utils.load_samfile(cwd / f'{name}.sam')
     # Get the genes
-    results = utils.splice_genes(query, utils.mod_hxb2, alignment, utils.mod_annot)
-    # results = utils.getgot(query, utils.mod_hxb2, alignment, utils.mod_annot)
+    results = utils.splice_genes(query, utils.mod_hxb2, alignment,
+                                 utils.mod_annot)
     genes = utils.coords_to_genes(results, query)
-    print(genes)
-    # print(results)
     for gene in valid_genes:
         try:
             assert genes[gene] == valid_genes[gene]
