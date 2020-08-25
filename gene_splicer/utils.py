@@ -335,7 +335,8 @@ def align(target_seq,
     with open(alignment_path, 'w') as alignment:
         process = sp.run(cmd, stdout=alignment, errors=True)
     if process.returncode != 0:
-        raise UserWarning(f'Alignment failed! Error: {process.stderr}')
+        logger.error('Alignment failed! Error: %s' % process.stderr)
+        return False
     else:
         return alignment_path
 
@@ -346,8 +347,9 @@ def generate_table_precursor(outpath, table_precursor_path):
     try:
         seqinr = pd.read_csv(seqinr_path)
     except FileNotFoundError:
-        logger.error('hivseqinr could not produce results, exiting')
-        sys.exit(1)
+        logger.error('hivseqinr could not produce results!')
+        table_precursor_path.touch()
+        return False
     # Assign new columns based on split
     # Make sure this matches the join in primer_finder run()
     seqinr[['reference', 'seqtype']] = seqinr['SEQID'].str.split('::',

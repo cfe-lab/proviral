@@ -27,6 +27,8 @@ def run(query_fasta, args):
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
         samfile_path = utils.align(target, query_seq, outdir=args['outdir'])
+        if samfile_path is False:
+            continue
         samfile = utils.load_samfile(samfile_path)
         results = utils.splice_genes(query_seq, target, samfile,
                                      utils.mod_annot)
@@ -35,7 +37,7 @@ def run(query_fasta, args):
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
                 o.write(f'>{gene}\n{seq}\n')
-    utils.generate_table_precursor(args['outdir'], args['table_precursor_csv'])
+    utils.generate_table_precursor(args.outpath, args.table_precursor_csv)
 
 
 def main():
