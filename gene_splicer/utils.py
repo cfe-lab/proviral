@@ -1,5 +1,6 @@
 import os
 import re
+from typing import ContextManager
 import yaml
 import shutil
 import subprocess as sp
@@ -8,6 +9,27 @@ import sys
 from pathlib import Path
 from csv import DictWriter, DictReader
 from logger import logger
+import io
+
+
+class OutputFile:
+    def __init__(self, path: Path, inmem: bool = False):
+        self.path = path
+        self.file = self.get_file(path)
+
+    def get_file(self, path: Path, inmem: bool = False):
+        file_object = None
+        if inmem:
+            file_object = io.StringIO(mode='w')
+        else:
+            try:
+                path = path.resolve()
+            except FileNotFoundError:
+                # If the parent folder does not exist
+                if not os.path.isdir(path.parent):
+                    os.makedirs(path.parent)
+                file_object = open(path, 'w')
+        return file_object
 
 
 def load_yaml(afile):
@@ -40,11 +62,15 @@ def write_annot(adict, filepath):
             })
 
 
-def write_fasta(adict, filename):
-    with open(filename, 'w') as o:
+def write_fasta(adict, filepath_or_fileobject):
+    try:
+        with open(filepath_or_fileobject, 'w') as o:
+            for key, value in adict.items():
+                o.write(f'>{key}\n{value}\n')
+    except TypeError:
         for key, value in adict.items():
-            o.write(f'>{key}\n{value}\n')
-    return filename
+            filepath_or_fileobject.write(f'>{key}\n{value}\n')
+    return filepath_or_fileobject
 
 
 def read_csv(csvfile):
@@ -82,8 +108,28 @@ def split_cigar(row):
     return cigar
 
 
+class MyContextManager(object):
+    def __init__(self, file_name, method):
+        self.file_obj = open(file_name, method)
+
+    def __enter__(self):
+        return self.file_obj
+
+    def __exit__(self, type, value, traceback):
+        self.file_obj.close()
+
+
+def handle_file_or_fileobject(file_or_fileobject, method):
+    try:
+        file_or_fileobject.read()
+        file_or_fileobject.seek(0)
+        return file_or_fileobject
+    except AttributeError:
+        return MyContextManager(file_or_fileobject, method)
+
+
 def read_fasta(fasta_file):
-    with open(fasta_file) as fasta:
+    with handle_file_or_fileobject(fasta_file, 'r') as fasta:
         name, seq = None, []
         for line in fasta:
             line = line.rstrip()
@@ -147,10 +193,7 @@ def modify_annot(annot):
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:
             newannot[gene] = [start, stop]
-
-
-#     newannot = dict(annot)
-# Offset by second round fwd primer trim (666 trimmed from start)
+    # Offset by second round fwd primer trim (666 trimmed from start)
     offset = -666
     for gene, (start, stop) in newannot.items():
         start += offset
@@ -333,7 +376,7 @@ def align(target_seq,
     query_fasta_path = write_fasta({'query': query_seq},
                                    outdir / 'query.fasta')
     # Write the target fasta
-    target_fasta_path = write_fasta({'MOD_HXB2': target_seq},
+    target_fasta_path = write_fasta({'target': target_seq},
                                     outdir / 'target.fasta')
     cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
     alignment_path = outdir / 'alignment.sam'
@@ -344,6 +387,46 @@ def align(target_seq,
         return False
     else:
         return alignment_path
+
+
+def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
+                               genes_file, table_precursorfile):
+    try:
+        seqinr = pd.read_csv(hivseqinr_resultsfile)
+    except FileNotFoundError:
+        logger.error('hivseqinr could not produce results!')
+        # Create an empty results file
+        table_precursorfile.touch()
+        return False
+    # Assign new columns based on split
+    # Make sure this matches the join in primer_finder run()
+    seqinr[['reference', 'seqtype']] = seqinr['SEQID'].str.split('::',
+                                                                 expand=True)
+
+    # Load filtered sequences
+    filtered = pd.read_csv(filtered_file)
+
+    # Merge
+    merged = seqinr.merge(filtered,
+                          left_index=True,
+                          right_index=True,
+                          how='outer')
+    for gene in genes_of_interest:
+        merged[gene] = None
+
+    genes_fasta = read_fasta(genes_file)
+    genes = dict([x for x in genes_fasta])
+    for gene in genes_of_interest:
+        try:
+            seq = genes[f'>{gene}']
+        except KeyError:
+            seq = None
+        merged[gene] = seq
+
+    # Output csv
+    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+        table_precursorfile, index=False)
+    return table_precursorfile
 
 
 def generate_table_precursor(outpath, table_precursor_path):

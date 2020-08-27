@@ -42,9 +42,6 @@ class Hivseqinr:
         self.job = self.run()
         self.finalize()
 
-    def to_rpath(self, path):
-        return path.replace('\\', '\\\\')
-
     def copy_fasta(self):
         raw_fastas_path = self.outpath / 'RAW_FASTA'
         try:
@@ -113,8 +110,8 @@ class Hivseqinr:
             [i if ord(i) < 128 else '\n' for i in output.decode('utf')])
 
     def finalize(self):
-        path = os.path.join(self.outpath, 'HIVSEQINR_COMPLETE')
-        Path(path).touch()
+        path = self.outpath / 'HIVSEQINR_COMPLETE'
+        path.touch()
 
 
 # Note these are 1-based indicies
@@ -531,15 +528,16 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
         raise NotImplementedError(
             'No contigs and no conseqs passed QC, exiting')
     joined.to_csv(outpath / 'filtered.csv', index=False)
-    fasta_outpath = outpath / 'synthetic_primers.fasta'
-    fasta_outpath2 = outpath / 'no_primers.fasta'
+    synthetic_primers_added_fasta_path = outpath / 'synthetic_primers.fasta'
+    no_primers_fasta_path = outpath / 'no_primers.fasta'
     if joined['sequence'].isnull().all():
         if not disable_hivseqinr:
-            hivseqinr = Hivseqinr(outpath / 'hivseqinr', fasta_outpath)
-        files.append(fasta_outpath2)
+            hivseqinr = Hivseqinr(outpath / 'hivseqinr',
+                                  synthetic_primers_added_fasta_path)
+        files.append(no_primers_fasta_path)
         return files
-    o = open(fasta_outpath, 'w')
-    o2 = open(fasta_outpath2, 'w')
+    o = open(synthetic_primers_added_fasta_path, 'w')
+    o2 = open(no_primers_fasta_path, 'w')
     for row in joined.itertuples():
         # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
         # I've commented it out for now
@@ -553,8 +551,9 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
     o.close()
     o2.close()
     if not disable_hivseqinr:
-        hivseqinr = Hivseqinr(outpath / 'hivseqinr', fasta_outpath)
-    files.append(fasta_outpath2)
+        hivseqinr = Hivseqinr(outpath / 'hivseqinr',
+                              synthetic_primers_added_fasta_path)
+    files.append(no_primers_fasta_path)
     return files
 
 

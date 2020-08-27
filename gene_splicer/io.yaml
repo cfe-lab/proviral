@@ -1,0 +1,8 @@
+INPUTS:
+  - contigs
+  - conseqs
+OUTPUTS:
+  - table_precursor_csv
+  - passed_qc_csv
+  - passed_qc_no_primers_fasta
+  -
