@@ -40,7 +40,7 @@ class Hivseqinr:
         self.make_blast_dir()
         self.fix_wds()
         self.copy_fasta()
-        self.run()
+        self.job = self.run()
         self.finalize()
 
     def to_rpath(self, path):
@@ -543,7 +543,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
             stop = start + nrows_per_file
             if stop >= nrows:
                 stop = nrows - 1
-            for row in joined.loc[start:stop].itertuples():
+            for row in joined.iloc[start:stop].itertuples():
                 # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
                 # I've commented it out for now
                 # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
