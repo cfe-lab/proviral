@@ -14,6 +14,7 @@ import shutil
 from pathlib import Path
 import sys
 import logging
+import math
 
 import Levenshtein
 from gotoh import align_it
@@ -532,14 +533,17 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
         joined.to_csv(outpath / f'{name}_filtered.csv', index=False)
         nrows = len(joined)
         # How many rows per file
-        nrows_per_file = nrows / split
+        nrows_per_file = math.ceil(nrows / split)
         for i in range(split):
             synthetic_primers_fasta = outpath / f'{name}_synthetic_primers_{i}.fasta'
             no_primers_fasta = outpath / f'{name}_no_primers_{i}.fasta'
             o = open(synthetic_primers_fasta, 'w')
             o2 = open(no_primers_fasta, 'w')
-            for row in joined.loc[i * nrows_per_file:(i * nrows_per_file) +
-                                  nrows_per_file].itertuples():
+            start = i * nrows_per_file
+            stop = start + nrows_per_file
+            if stop >= nrows:
+                stop = nrows - 1
+            for row in joined.loc[start:stop].itertuples():
                 # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
                 # I've commented it out for now
                 # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
