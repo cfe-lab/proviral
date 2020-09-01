@@ -343,10 +343,13 @@ def align(target_seq,
 
 def generate_table_precursor(name, outpath):
     # Load hivseqinr data
-    seqinr_paths = glob.glob(outpath / 'hivseqinr*' / 'Results_Final' /
-                             'Output_MyBigSummary_DF_FINAL.csv')
+    seqinr_paths = glob.glob(
+        str(outpath / 'hivseqinr*' / 'Results_Final' /
+            'Output_MyBigSummary_DF_FINAL.csv'))
     parts = []
     for path in seqinr_paths:
+        if not os.path.isfile(path):
+            continue
         part = pd.read_csv(path)
         parts.append(part)
     # seqinr = pd.read_csv(seqinr_path)
