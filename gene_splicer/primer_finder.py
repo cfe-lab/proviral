@@ -525,8 +525,8 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
         joined['reference_contig'])
     joined = joined[['reference', 'seqtype', 'sequence', 'seqlen']]
     if joined['sequence'].isnull().all():
-        raise NotImplementedError(
-            'No contigs and no conseqs passed QC, exiting')
+        logger.warning('No contigs and no conseqs passed QC, exiting')
+        return files
     joined.to_csv(outpath / 'filtered.csv', index=False)
     synthetic_primers_added_fasta_path = outpath / 'synthetic_primers.fasta'
     no_primers_fasta_path = outpath / 'no_primers.fasta'
