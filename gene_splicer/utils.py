@@ -8,8 +8,25 @@ import pandas as pd
 import sys
 from pathlib import Path
 from csv import DictWriter, DictReader
-from logger import logger
 import io
+import string
+import secrets
+
+from logger import logger
+
+
+class Random:
+
+    alphabet = string.ascii_letters
+
+    def __init__(self, size: int = 10) -> None:
+        self.size = size
+        return
+
+    @staticmethod
+    def upper(self, size=10):
+        return ''.join(secrets.choice(self.alphabet)
+                       for i in range(size)).upper()
 
 
 class OutputFile:
@@ -20,7 +37,7 @@ class OutputFile:
     def get_file(self, path: Path, inmem: bool = False):
         file_object = None
         if inmem:
-            file_object = io.StringIO(mode='w')
+            file_object = io.StringIO()
         else:
             try:
                 path = path.resolve()
