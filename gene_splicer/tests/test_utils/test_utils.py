@@ -30,3 +30,4 @@ def test_get_softclip_start():
     # softclip_start = utils.get_softclip_start(utils.mod_hxb2, query_sequence,
     #                                           example_aln, outpath)
     softclip_start = utils.align(utils.mod_hxb2, query_sequence, outpath)
+    print('change')
