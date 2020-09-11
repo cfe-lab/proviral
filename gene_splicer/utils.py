@@ -211,13 +211,6 @@ def modify_annot(annot):
     return newannot
 
 
-def get_softclip_start(target, query, samfile, outpath):
-    size, op = samfile.iloc[0]['cigar'][0]
-    size = int(size)
-    # Align softclipped region to minimap using custom parameters
-    aln = Alignment(target, query, outpath)
-
-
 def splice_genes(query, target, samfile, annotation):
     results = {}
     for i, row in samfile.iterrows():
@@ -479,6 +472,27 @@ def generate_table_precursor(outpath, table_precursor_path):
     merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
         table_precursor_path, index=False)
     return table_precursor_path
+
+
+def get_softclipped_region(query, alignment, annotation):
+    result = {}
+    size, op = alignment.iloc[0]['cigar'][0]
+    if op != 'S':
+        logger.warning('Alignment does not start with softclip')
+        return
+    size = int(size)
+    target_pos = 0
+    query_pos = 0
+    for i in range(size):
+        genes = get_genes(annotation, target_pos)
+        for gene in genes:
+            if gene not in result:
+                result[gene] = [query_pos, query_pos]
+            elif query_pos > result[gene][1]:
+                result[gene][1] = query_pos
+        query_pos += 1
+        target_pos += 1
+    return result
 
 
 ## Define some variables
