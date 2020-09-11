@@ -14,6 +14,7 @@ import string
 import secrets
 
 from logger import logger
+from alignment import Alignment
 
 
 class Random:
@@ -210,10 +211,11 @@ def modify_annot(annot):
     return newannot
 
 
-def get_softclip_start(query, samfile):
+def get_softclip_start(target, query, samfile, outpath):
     size, op = samfile.iloc[0]['cigar'][0]
-    print(size)
-    print(op)
+    size = int(size)
+    # Align softclipped region to minimap using custom parameters
+    aln = Alignment(target, query, outpath)
 
 
 def splice_genes(query, target, samfile, annotation):

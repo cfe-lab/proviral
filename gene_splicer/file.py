@@ -6,12 +6,13 @@ from pathlib import Path
 
 
 class File:
-    def __init__(self, path: Path = None, mode='r'):
+    def __init__(self, path: Path = None, mode='r', clean: bool = False):
         try:
             self.path = Path(path)
         except TypeError:
-            self.path = path
+            self.path = None
         self.mode = mode
+        self.clean = clean
         self.file = self.get_file()
 
     def get_file(self):
@@ -29,11 +30,12 @@ class File:
             file_object = open(self.path, self.mode)
         return file_object
 
-    def clean(self):
-        if self.parent_created:
-            shutil.rmtree(self.path.parent)
-        else:
-            os.remove(self.path)
+    def cleanup(self):
+        if self.path:
+            if self.parent_created:
+                shutil.rmtree(self.path.parent)
+            else:
+                os.remove(self.path)
 
     @contextmanager
     def open(self):
@@ -43,6 +45,8 @@ class File:
         finally:
             if self.path is not None:
                 self.file.close()
+                if self.clean:
+                    self.cleanup()
             else:
                 self.file.seek(0)
 
