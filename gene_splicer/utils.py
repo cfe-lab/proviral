@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import re
 from typing import ContextManager
@@ -27,26 +28,6 @@ class Random:
     def upper(self, size=10):
         return ''.join(secrets.choice(self.alphabet)
                        for i in range(size)).upper()
-
-
-class OutputFile:
-    def __init__(self, path: Path, inmem: bool = False):
-        self.path = path
-        self.file = self.get_file(path)
-
-    def get_file(self, path: Path, inmem: bool = False):
-        file_object = None
-        if inmem:
-            file_object = io.StringIO()
-        else:
-            try:
-                path = path.resolve()
-            except FileNotFoundError:
-                # If the parent folder does not exist
-                if not os.path.isdir(path.parent):
-                    os.makedirs(path.parent)
-                file_object = open(path, 'w')
-        return file_object
 
 
 def load_yaml(afile):
@@ -227,6 +208,12 @@ def modify_annot(annot):
         newannot[gene] = [start - 1, stop - 1]
 
     return newannot
+
+
+def get_softclip_start(query, samfile):
+    size, op = samfile.iloc[0]['cigar'][0]
+    print(size)
+    print(op)
 
 
 def splice_genes(query, target, samfile, annotation):

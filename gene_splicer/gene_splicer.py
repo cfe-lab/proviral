@@ -30,6 +30,7 @@ def run(query_fasta, args):
         if samfile_path is False:
             continue
         samfile = utils.load_samfile(samfile_path)
+        # Check for softclipped start
         results = utils.splice_genes(query_seq, target, samfile,
                                      utils.mod_annot)
         genes = utils.coords_to_genes(results, query_seq)

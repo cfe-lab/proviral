@@ -1,0 +1,3 @@
+@SQ	SN:mod_hxb2	LN:8936
+@PG	ID:minimap2	PN:minimap2	VN:2.17-r941	CL:minimap2 -a target.fa testq.fa
+query	0	mod_hxb2	8886	11	29S51M	*	0	0	GGAAACCAGAGGAGCTCTCTCGACGCAGGAGACCAGATCTGAGCCTGGGAGCTCTCTGGCTAACTAGGGAACCCACTGCT	*	NM:i:0	ms:i:102	AS:i:102	nn:i:0	tp:A:P	cm:i:9	s1:i:47	s2:i:0	de:f:0	rl:i:0

@@ -51,15 +51,15 @@ class Alignment:
             shutil.rmtree(outpath)
         os.makedirs(outpath)
         # Write the query fasta
-        query_fasta_path = utils.write_fasta({'query': self.query},
-                                             outpath / 'query.fasta')
+        self.query_fasta_path = utils.write_fasta({'query': self.query},
+                                                  outpath / 'query.fasta')
         # Write the target fasta
-        target_fasta_path = utils.write_fasta({'target': self.target},
-                                              outpath / 'target.fasta')
+        self.target_fasta_path = utils.write_fasta({'target': self.target},
+                                                   outpath / 'target.fasta')
         aligner_params = [str(k) + str(v) for k, v in aligner_params.items()]
         cmd = [
-            self.aligner_path, *aligner_params, target_fasta_path,
-            query_fasta_path
+            self.aligner_path, *aligner_params, self.target_fasta_path,
+            self.query_fasta_path
         ]
         alignment_path = outpath / 'alignment.sam'
         with open(alignment_path, 'w') as alignment:
@@ -67,5 +67,6 @@ class Alignment:
         if self.process.returncode != 0:
             logger.error('Alignment failed! Error: %s' % self.process.stderr)
         if clean:
-
+            os.remove(self.query_fasta_path)
+            os.remove(self.target_fasta_path)
         return alignment_path
