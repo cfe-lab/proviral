@@ -1,0 +1,1 @@
+This is an example with a softclipped 5' end, the minimum length is 34bp, anything less will not be captured by minimap2

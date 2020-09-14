@@ -13,7 +13,8 @@ class Alignment:
                  query: str,
                  outpath: Path,
                  aligner_params: dict = {'-a': ''},
-                 aligner_path: str = 'minimap2') -> None:
+                 aligner_path: str = 'minimap2',
+                 clean: bool = True) -> None:
         self.target = target
         self.query = query
         if not outpath:
@@ -22,8 +23,9 @@ class Alignment:
             self.outpath = outpath
         self.aligner_path = aligner_path
         self.aligner_params = aligner_params
+        self.clean = clean
         if self.aligner_available():
-            self.align(self.aligner_params)
+            self.alignment = self.align()
 
     def aligner_available(self):
         cmd = [self.aligner_path]
@@ -35,7 +37,7 @@ class Alignment:
             f'Aligner "{self.aligner_path}" not in PATH! Unable to align!')
         return False
 
-    def align(self, aligner_params: dict, clean: bool = True):
+    def align(self):
         """Align a query sequence to a target sequence
 
         Args:
@@ -56,7 +58,9 @@ class Alignment:
         # Write the target fasta
         self.target_fasta_path = utils.write_fasta({'target': self.target},
                                                    outpath / 'target.fasta')
-        aligner_params = [str(k) + str(v) for k, v in aligner_params.items()]
+        aligner_params = [
+            str(k) + str(v) for k, v in self.aligner_params.items()
+        ]
         cmd = [
             self.aligner_path, *aligner_params, self.target_fasta_path,
             self.query_fasta_path
@@ -66,7 +70,7 @@ class Alignment:
             self.process = subprocess.run(cmd, stdout=alignment, errors=True)
         if self.process.returncode != 0:
             logger.error('Alignment failed! Error: %s' % self.process.stderr)
-        if clean:
+        if self.clean:
             os.remove(self.query_fasta_path)
             os.remove(self.target_fasta_path)
         return alignment_path
