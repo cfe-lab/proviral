@@ -29,8 +29,10 @@ class Alignment:
             self.alignment = self.align()
 
     def aligner_available(self):
-        cmd = [self.aligner_path]
-        process = subprocess.run(cmd)
+        cmd = [self.aligner_path, '-h']
+        process = subprocess.run(cmd,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
         if process.returncode == 0:
             return True
         # If process is not successful
