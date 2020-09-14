@@ -2,6 +2,8 @@ import os
 import sys
 from pathlib import Path
 
+from pandas.core.arrays.period import validate_dtype_freq
+
 cwd = Path(os.path.realpath(__file__)).parent
 data = cwd.parent / 'data'
 sys.path.append(str(cwd.parent.parent))
@@ -22,6 +24,6 @@ def test_alignment():
     query = None
     for header, seq in Fasta(example / 'query.fasta'):
         query = seq
-    test_aln = Alignment(target, query, cwd / 'tmp')
-    import pdb
-    pdb.set_trace()
+    test_aln = utils.load_samfile(Alignment(target, query, cwd / 'tmp'))
+    valid_aln = utils.load_samfile(cwd / 'valid' / 'alignment_class_test.sam')
+    assert test_aln == valid_aln
