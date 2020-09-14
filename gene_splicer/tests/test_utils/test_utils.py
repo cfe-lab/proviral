@@ -1,4 +1,3 @@
-from gene_splicer.alignment import Alignment
 import os
 import io
 import sys
@@ -61,5 +60,5 @@ def test_pipeline_with_softclip_retreival():
     # Align softclip to hxb2 with special params
     aln = Alignment(target, query, cwd / 'deleteme')
     # Get the coordinates
-    coords = utils.splice_genes(target, query, aln, utils.mod_annot)
+    coords = utils.splice_genes(target, query, aln.path, utils.mod_annot)
     print(coords)

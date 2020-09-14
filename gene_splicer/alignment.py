@@ -26,7 +26,7 @@ class Alignment:
         self.aligner_params = aligner_params
         self.clean = clean
         if self.aligner_available():
-            self.alignment = self.align()
+            self.path = self.align()
 
     def aligner_available(self):
         cmd = [self.aligner_path, '-h']

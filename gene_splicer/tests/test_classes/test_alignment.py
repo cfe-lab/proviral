@@ -24,6 +24,6 @@ def test_alignment():
     query = None
     for header, seq in Fasta(example / 'query.fasta'):
         query = seq
-    test_aln = utils.load_samfile(Alignment(target, query, cwd / 'tmp'))
+    test_aln = utils.load_samfile(Alignment(target, query, cwd / 'tmp').path)
     valid_aln = utils.load_samfile(cwd / 'valid' / 'alignment_class_test.sam')
     assert test_aln == valid_aln
