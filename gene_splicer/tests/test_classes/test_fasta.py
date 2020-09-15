@@ -6,7 +6,7 @@ cwd = Path(os.path.realpath(__file__)).parent
 sys.path.append(str(cwd.parent.parent))
 
 from fasta import Fasta
-import utils
+import gene_splicer.utils as utils
 
 
 def test_fasta():

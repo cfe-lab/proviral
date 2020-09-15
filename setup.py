@@ -6,17 +6,16 @@ setup(
     packages=find_packages(),
     install_requires=[
         'gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment',
-        'iva @ git+https://github.com/cfe-lab/iva.git@v1.1.1',
         'numpy==1.18.4',
         'python-Levenshtein==0.12.0',
         'pandas==1.0.5',
         'matplotlib==3.2.1',
         'requests==2.24.0',
-        'pyyaml'
+        'pyyaml',
+        'pytest'
     ],
     entry_points={
         'console_scripts': [
-            'gene_splicer_run = gene_splicer.master:main',
+            'gene_splicer_run = gene_splicer.pipeline:main',
         ]
-    }
-)
+    })

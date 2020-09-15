@@ -1,8 +1,8 @@
-import utils
 import argparse
 import os
 from pathlib import Path
-import logger
+from gene_splicer.logger import logger
+import gene_splicer.utils as utils
 
 
 def parse_args():
@@ -26,15 +26,21 @@ def run(query_fasta, args):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
-        samfile_path = utils.align(target, query_seq, outdir=args.outpath)
-        if samfile_path is False:
+        alignment_path = utils.align(target, query_seq, outdir=args.outpath)
+        if alignment_path is False:
             continue
-        samfile = utils.load_samfile(samfile_path)
+        samfile = utils.load_samfile(alignment_path)
         # Check for softclipped start
-        results = utils.splice_genes(query_seq, target, samfile,
-                                     utils.mod_annot)
-        genes = utils.coords_to_genes(results, query_seq)
-        genes_path = samfile_path.parent / 'genes.fasta'
+        coords = utils.splice_genes(query_seq, target, samfile,
+                                    utils.mod_annot)
+        # Try to get softclipped region if there is one
+        softclipped_coords = utils.sequence_to_coords(query_seq, target,
+                                                      alignment_path,
+                                                      utils.mod_annot)
+        if softclipped_coords:
+            coords = utils.merge_coords(softclipped_coords, coords)
+        genes = utils.coords_to_genes(coords, query_seq)
+        genes_path = alignment_path.parent / 'genes.fasta'
         utils.write_fasta(genes, genes_path)
         # with open(genes_path, 'w') as o:
         #     for gene, seq in genes.items():

@@ -13,6 +13,7 @@ class File:
             self.path = None
         self.mode = mode
         self.clean = clean
+        self.parent_created = False
         self.file = self.get_file()
 
     def get_file(self):
@@ -23,7 +24,7 @@ class File:
             try:
                 self.path = self.path.resolve()
             except FileNotFoundError:
-                # If the parent folder does not exist
+                # If the parent folder does not exist, create it
                 if not os.path.isdir(self.path.parent):
                     self.parent_created = True
                     os.makedirs(self.path.parent)

@@ -1,19 +1,15 @@
 import os
 import re
-from typing import ContextManager
 import yaml
 import shutil
 import subprocess as sp
 import pandas as pd
-import sys
 from pathlib import Path
 from csv import DictWriter, DictReader
-import io
 import string
 import secrets
 
-from logger import logger
-from alignment import Alignment
+from gene_splicer.logger import logger
 
 
 class Random:
@@ -25,7 +21,7 @@ class Random:
         return
 
     @staticmethod
-    def upper(self, size=10):
+    def upper(size=10):
         return ''.join(secrets.choice(self.alphabet)
                        for i in range(size)).upper()
 
@@ -264,10 +260,10 @@ def splice_genes(query, target, samfile, annotation):
     return results
 
 
-def coords_to_genes(results, query):
+def coords_to_genes(coords, query):
     genes = {
         gene: query[coords[0]:coords[1] + 1]
-        for gene, coords in results.items()
+        for gene, coords in coords.items()
     }
     return genes
 
@@ -480,6 +476,42 @@ def get_softclipped_region(query, alignment):
         return
     size = int(size)
     return query[:size]
+
+
+def sequence_to_coords(query, target, alignment_path, annot):
+    aln = load_samfile(alignment_path)
+    softclip = get_softclipped_region(query, aln)
+    if softclip is None:
+        return
+    import gene_splicer.probe_finder as probe_finder
+    finder = probe_finder.ProbeFinder(softclip, target)
+    # query_match = target[finder.start:len(finder.contig_match)]
+    target_match = finder.contig_match
+    matchlen = len(target_match)
+    coords = {}
+    for pos in range(finder.start, matchlen - 1):
+        genes = get_genes(annot, pos)
+        for gene in genes:
+            coords.setdefault(gene, [pos, pos])[1] += 1
+    return coords
+
+
+def merge_coords(coords1, coords2):
+    """Return new coordinates based on merging coords1 and coords2
+
+    Args:
+        coords1 (dict): A dictionary of coords with key=gene_name, value=[start, end]
+        coords2 (dict): Same as coords1
+    """
+    new_coords = {}
+    for gene in coords2:
+        if gene not in coords1:
+            coords1[gene] = coords2[gene][:]
+        new_coords[gene] = [
+            min(coords2[gene][0], coords1[gene][0]),
+            max(coords1[gene][1], coords2[gene][1])
+        ]
+    return new_coords
 
 
 ## Define some variables

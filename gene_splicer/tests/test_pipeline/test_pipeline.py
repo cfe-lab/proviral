@@ -7,9 +7,8 @@ import io
 cwd = Path(os.path.realpath(__file__)).parent
 inputs = cwd / 'inputs'
 outputs = cwd / 'outputs'
-sys.path.append(str(cwd.parent.parent))
 
-import utils
+import gene_splicer.utils as utils
 
 utils.write_fasta({'MOD_HXB2': utils.mod_hxb2}, inputs / 'mod_hxb2.fasta')
 

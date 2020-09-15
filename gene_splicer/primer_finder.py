@@ -17,15 +17,12 @@ import logging
 
 import Levenshtein
 from gotoh import align_it
-import logger
+from gene_splicer.logger import logger
+from gene_splicer.probe_finder import ProbeFinder
+import gene_splicer.utils as utils
 
-import utils
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
-
-# from micall.core.project_config import ProjectConfig
-# from micall.utils.translation import mixture_dict, reverse_and_complement
-from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
 
@@ -219,13 +216,6 @@ def find_primers(csv_filepath, outpath, seqtype):
         contig_name = f'{contig_num}_{seed_name}'
         uname = f'{contig_name}_{contig_num}'
 
-        # interesting_sample = 'HIV3428G2-P19-HIV_S56'
-        # pause = False
-        # if ((sample_name == interesting_sample)
-        #  and (seed_name == '1-HIV1-B-FR-K03455-seed')
-        #  and (run_name.endswith('conseqs'))):
-        #     pause = True
-
         new_row = dict(reference=contig_name, seqtype=seqtype)
         contig_seq: str = row.get('contig') or row['sequence']
         contig_seq = contig_seq.upper()
@@ -237,12 +227,6 @@ def find_primers(csv_filepath, outpath, seqtype):
             new_row['error'] = skipped[uname]
             writer.writerow(new_row)
             continue
-
-        # interest = 'HIV3428F1-L22-HIV_S6'
-        # if (sample_name == interest
-        #     and contig_name == '1_1-HIV1-B-FR-K03455-seed'
-        # ):
-        #     import pdb; pdb.set_trace()
 
         # Determine if sequence has internal Xs
         x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
@@ -536,20 +520,18 @@ def run(contigs_csv, conseqs_csv, outpath, disable_hivseqinr, nodups):
                                   synthetic_primers_added_fasta_path)
         files.append(no_primers_fasta_path)
         return files
-    o = open(synthetic_primers_added_fasta_path, 'w')
-    o2 = open(no_primers_fasta_path, 'w')
-    for row in joined.itertuples():
-        # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
-        # I've commented it out for now
-        # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
-        # The header delimiter, this must match the split in gene_splicer
-        header = '>' + '::'.join((row.reference, row.seqtype))
-        o.write(
-            f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n'
-        )
-        o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
-    o.close()
-    o2.close()
+    with open(synthetic_primers_added_fasta_path,
+              'w') as o, open(no_primers_fasta_path, 'w') as o2:
+        for row in joined.itertuples():
+            # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
+            # I've commented it out for now
+            # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
+            # The header delimiter, this must match the split in gene_splicer
+            header = '>' + '::'.join((row.reference, row.seqtype))
+            o.write(
+                f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n'
+            )
+            o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
     if not disable_hivseqinr:
         hivseqinr = Hivseqinr(outpath / 'hivseqinr',
                               synthetic_primers_added_fasta_path)

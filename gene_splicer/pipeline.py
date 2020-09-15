@@ -1,5 +1,6 @@
-import gene_splicer
-import primer_finder
+from gene_splicer import primer_finder
+import gene_splicer.gene_splicer as gene_splicer
+import gene_splicer.primer_finder as primer_finder
 
 
 def main():

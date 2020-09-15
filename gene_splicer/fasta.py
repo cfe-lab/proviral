@@ -1,4 +1,4 @@
-from file import File
+from gene_splicer.file import File
 
 
 class Fasta(File):

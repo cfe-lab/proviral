@@ -6,9 +6,9 @@ cwd = Path(os.path.realpath(__file__)).parent
 data = cwd.parent / 'data'
 sys.path.append(str(cwd.parent.parent))
 
-import utils
+import gene_splicer.utils as utils
 from fasta import Fasta
-from alignment import Alignment
+from gene_splicer.alignment import Alignment
 
 
 def test_alignment():

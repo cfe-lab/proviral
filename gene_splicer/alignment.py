@@ -3,8 +3,8 @@ import os
 import subprocess
 from pathlib import Path
 
-import utils
-from logger import logger
+import gene_splicer.utils as utils
+from gene_splicer.logger import logger
 
 
 # Adding comment to fix filename bug
@@ -27,12 +27,19 @@ class Alignment:
         self.clean = clean
         if self.aligner_available():
             self.path = self.align()
+        else:
+            self.path = False
 
     def aligner_available(self):
         cmd = [self.aligner_path, '-h']
-        process = subprocess.run(cmd,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+        try:
+            process = subprocess.run(cmd,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+        except FileNotFoundError:
+            logger.error(
+                f'Aligner "{self.aligner_path}" not in PATH! Unable to align!')
+            return False
         if process.returncode == 0:
             return True
         # If process is not successful

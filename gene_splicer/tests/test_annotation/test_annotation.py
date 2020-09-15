@@ -15,7 +15,7 @@ cwd = Path(os.path.realpath(__file__)).parent
 # integration on the singularity image
 sys.path.append(str(cwd.parent.parent))
 
-import utils
+import gene_splicer.utils as utils
 
 
 def test_annotation():

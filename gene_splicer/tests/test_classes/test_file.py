@@ -32,6 +32,7 @@ def test_file_real():
     afile = File('./tempfile', 'w')
     with afile.open() as f:
         f.write('wow')
-    afile = File('./tempfile')
-    lines = afile.readlines()
-    assert lines == ['wow']
+    ## reading the file works
+    with File(afile.path, clean=True).open() as f:
+        for line in f:
+            assert line == 'wow'
