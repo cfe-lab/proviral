@@ -56,7 +56,15 @@ def test_pipeline_with_softclip_retreival():
         target = seq
     softclipped = utils.get_softclipped_region(query, aln)
     # Align softclip to hxb2 with special params
-    aln = Alignment(target, query, cwd / 'deleteme')
+    aln = Alignment(target,
+                    query,
+                    cwd / 'deleteme',
+                    aligner_params={
+                        '-a': '',
+                        '-s': 40,
+                        '-m': 20
+                    })
+    aln = utils.load_samfile(aln.path)
     # Get the coordinates
-    coords = utils.splice_genes(target, query, aln.path, utils.mod_annot)
+    coords = utils.splice_genes(target, query, aln, utils.mod_annot)
     print(coords)
