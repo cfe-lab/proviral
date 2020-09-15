@@ -2,8 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-from pandas.core.arrays.period import validate_dtype_freq
-
 cwd = Path(os.path.realpath(__file__)).parent
 data = cwd.parent / 'data'
 sys.path.append(str(cwd.parent.parent))
@@ -27,4 +25,4 @@ def test_alignment():
     aln = Alignment(target, query, cwd / 'tmp')
     test_aln = utils.load_samfile(aln.path)
     valid_aln = utils.load_samfile(example / 'alignment.sam')
-    assert test_aln == valid_aln
+    assert test_aln.equals(valid_aln)

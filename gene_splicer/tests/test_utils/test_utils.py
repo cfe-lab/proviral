@@ -4,8 +4,6 @@ import sys
 import pandas as pd
 from pathlib import Path
 
-from pandas.core.arrays.period import validate_dtype_freq
-
 cwd = Path(os.path.realpath(__file__)).parent
 sys.path.append(str(cwd.parent.parent))
 
