@@ -67,4 +67,5 @@ def test_pipeline_with_softclip_retreival():
     aln = utils.load_samfile(aln.path)
     # Get the coordinates
     coords = utils.splice_genes(target, query, aln, utils.mod_annot)
-    print(coords)
+    assert 'X1' in coords
+    assert coords['X1'] == [0, 33]
