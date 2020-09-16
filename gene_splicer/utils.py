@@ -392,7 +392,7 @@ def sequence_to_coords(query, target, alignment_path, annot):
     softclip = get_softclipped_region(query, aln)
     if softclip is None:
         return
-    import gene_splicer.probe_finder as probe_finder
+    import probe_finder
     finder = probe_finder.ProbeFinder(softclip, target)
     # query_match = target[finder.start:len(finder.contig_match)]
     target_match = finder.contig_match
@@ -415,10 +415,19 @@ def merge_coords(coords1, coords2):
     new_coords = {}
     for gene in coords2:
         if gene not in coords1:
-            coords1[gene] = coords2[gene][:]
+            new_coords[gene] = coords2[gene][:]
+            continue
         new_coords[gene] = [
             min(coords2[gene][0], coords1[gene][0]),
             max(coords1[gene][1], coords2[gene][1])
+        ]
+    for gene in coords1:
+        if gene not in coords2:
+            new_coords[gene] = coords1[gene][:]
+            continue
+        new_coords[gene] = [
+            min(coords1[gene][0], coords2[gene][0]),
+            max(coords2[gene][1], coords1[gene][1])
         ]
     return new_coords
 
