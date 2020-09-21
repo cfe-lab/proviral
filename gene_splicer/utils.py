@@ -388,6 +388,60 @@ def generate_table_precursor(name, outpath):
     return outfile
 
 
+def get_softclipped_region(query, alignment):
+    size, op = alignment.iloc[0]['cigar'][0]
+    if op != 'S':
+        logger.warning('Alignment does not start with softclip')
+        return
+    size = int(size)
+    return query[:size]
+
+
+def sequence_to_coords(query, target, alignment_path, annot):
+    aln = load_samfile(alignment_path)
+    softclip = get_softclipped_region(query, aln)
+    if softclip is None:
+        return
+    import probe_finder
+    finder = probe_finder.ProbeFinder(softclip, target)
+    # query_match = target[finder.start:len(finder.contig_match)]
+    target_match = finder.contig_match
+    matchlen = len(target_match)
+    coords = {}
+    for pos in range(finder.start, matchlen - 1):
+        genes = get_genes(annot, pos)
+        for gene in genes:
+            coords.setdefault(gene, [pos, pos])[1] += 1
+    return coords
+
+
+def merge_coords(coords1, coords2):
+    """Return new coordinates based on merging coords1 and coords2
+
+    Args:
+        coords1 (dict): A dictionary of coords with key=gene_name, value=[start, end]
+        coords2 (dict): Same as coords1
+    """
+    new_coords = {}
+    for gene in coords2:
+        if gene not in coords1:
+            new_coords[gene] = coords2[gene][:]
+            continue
+        new_coords[gene] = [
+            min(coords2[gene][0], coords1[gene][0]),
+            max(coords1[gene][1], coords2[gene][1])
+        ]
+    for gene in coords1:
+        if gene not in coords2:
+            new_coords[gene] = coords1[gene][:]
+            continue
+        new_coords[gene] = [
+            min(coords1[gene][0], coords2[gene][0]),
+            max(coords2[gene][1], coords1[gene][1])
+        ]
+    return new_coords
+
+
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
 

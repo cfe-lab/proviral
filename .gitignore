@@ -114,3 +114,4 @@ venv.bak/
 # PyCharm
 .idea/
 .vscode/settings.json
+*ignore*
