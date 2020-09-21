@@ -1,5 +1,6 @@
 import gene_splicer
 import primer_finder
+import utils
 
 
 def main():
@@ -9,7 +10,7 @@ def main():
                          name=data['args'].name,
                          outdir=data['args'].outpath)
     utils.generate_table_precursor(name=data['args'].name,
-                                   outdir=data['args'].outpath)
+                                   outpath=data['args'].outpath)
 
 
 if __name__ == '__main__':
