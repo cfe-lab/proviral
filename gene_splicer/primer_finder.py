@@ -541,7 +541,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
             o2 = open(no_primers_fasta, 'w')
             start = i * nrows_per_file
             stop = start + nrows_per_file
-            if stop >= nrows:
+            if stop > nrows:
                 stop = nrows - 1
             for row in joined.iloc[start:stop].itertuples():
                 # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
