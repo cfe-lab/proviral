@@ -48,7 +48,6 @@ def run(query_fasta, name, outdir):
 
 def main():
     args = parse_args()
-    logger.debug(args)
     run(query_fasta=args.query_fasta, name=args.name, outdir=args.outdir)
 
 
