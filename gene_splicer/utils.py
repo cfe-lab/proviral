@@ -389,7 +389,11 @@ def generate_table_precursor(name, outpath):
 
 
 def get_softclipped_region(query, alignment):
-    size, op = alignment.iloc[0]['cigar'][0]
+    try:
+        size, op = alignment.iloc[0]['cigar'][0]
+    except IndexError:
+        logger.warning('No alignment!')
+        return
     if op != 'S':
         logger.warning('Alignment does not start with softclip')
         return
@@ -491,4 +495,6 @@ annot = {
     x['gene']: [int(x['start']), int(x['stop'])]
     for x in read_csv(cwd / 'annot.csv')
 }
+
 mod_annot = modify_annot(annot)
+
