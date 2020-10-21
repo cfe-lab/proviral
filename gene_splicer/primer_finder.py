@@ -169,6 +169,7 @@ def make_path(path):
 
 
 def find_primers(csv_filepath, outpath, run_name):
+    v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
     columns = [
@@ -237,6 +238,19 @@ def find_primers(csv_filepath, outpath, run_name):
                 new_row['error'] = skipped[uname]
                 writer.writerow(new_row)
                 continue
+
+            #TODO
+            # As above, write and skip the row if the reference
+            # is v3_reference
+            try:
+                # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
+                if row['region'] == v3_reference:
+                    skipped[uname] = 'is V3 sequence'
+                    new_row['error'] = skipped[uname]
+                    writer.writerow(new_row)
+                    continue
+            except KeyError:
+                pass
 
             # interest = 'HIV3428F1-L22-HIV_S6'
             # if (sample_name == interest
