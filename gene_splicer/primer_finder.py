@@ -527,6 +527,8 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
     for name in dfs:
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
+        # Generate the failure summary
+        utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)
         filtered_conseqs = filter_df(conseqs_df, nodups)
         joined = filtered_contigs.merge(filtered_conseqs,

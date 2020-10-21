@@ -7,7 +7,7 @@ import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
-from logger import logger
+from gene_splicer.logger import logger
 
 
 def load_yaml(afile):
@@ -446,6 +446,35 @@ def merge_coords(coords1, coords2):
     return new_coords
 
 
+def filter_valid(df):
+    # Remove any row that has no errors
+    filtered = df[(~df['error'].isna())
+                  | (~df['fwd_error'].isna())
+                  | (~df['rev_error'].isna())]
+    # Set error field for duplicates
+    filtered.loc[filtered.duplicated(subset='sample', keep=False),
+                 'error'] = 'duplicate'
+    filtered.loc[(~filtered['reference'].str.contains('reverse'))
+                 & (~filtered['reference'].str.contains('unknown')),
+                 'error'] = 'ref contains reverse or unknown'
+    return filtered
+
+
+def genFailureSummary(contigs_df, conseqs_df, outpath):
+    filtered_contigs = filter_valid(contigs_df)
+    filtered_conseqs = filter_valid(conseqs_df)
+    contigs_simple = filtered_contigs[[
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+    ]]
+    conseqs_simple = filtered_conseqs[[
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+    ]]
+    concat = pd.concat(contigs_simple, conseqs_simple)
+    outfile = outpath / 'failure_summary.csv'
+    concat.to_csv(outfile, index=False)
+    return outfile
+
+
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
 
@@ -497,4 +526,3 @@ annot = {
 }
 
 mod_annot = modify_annot(annot)
-
