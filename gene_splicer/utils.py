@@ -455,13 +455,17 @@ def merge_coords(coords1, coords2):
 
 
 def filter_valid(df):
+#    import pdb; pdb.set_trace()
     # Remove any row that has no errors
     filtered = df[(~df['error'].isna())
                   | (~df['fwd_error'].isna())
                   | (~df['rev_error'].isna())].copy()
+    # Remove contig not max errors and V3 errors
+    filtered = filtered[(filtered['error'] != 'contig not MAX')
+                        & (filtered['error'] != 'is V3 sequence')]
     # Set error field for duplicates
-    filtered.loc[filtered.duplicated(subset='sample', keep=False),
-                 'error'] = 'duplicate'
+    #filtered.loc[filtered.duplicated(subset='sample', keep=False),
+    #             'error'] = 'duplicate'
     filtered = filtered[(~filtered['reference'].str.contains('reverse'))
                         & (~filtered['reference'].str.contains('unknown'))]
     return filtered
