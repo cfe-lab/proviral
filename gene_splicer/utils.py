@@ -360,7 +360,7 @@ def generate_table_precursor(name, outpath):
         seqinr = pd.concat(parts)
         # Assign new columns based on split
         seqinr[['name', 'sample', 'reference',
-            'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+                'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
         # Merge
         merged = seqinr.merge(filtered, on='sample')
     except ValueError:
@@ -389,10 +389,10 @@ def generate_table_precursor(name, outpath):
     outfile = outpath / 'table_precursor.csv'
     if parts:
         merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
-        outfile, index=False)
+            outfile, index=False)
     else:
-        merged[['sample', 'sequence'] + genes_of_interest].to_csv(
-        outfile, index=False)
+        merged[['sample', 'sequence'] + genes_of_interest].to_csv(outfile,
+                                                                  index=False)
     return outfile
 
 
@@ -462,9 +462,8 @@ def filter_valid(df):
     # Set error field for duplicates
     filtered.loc[filtered.duplicated(subset='sample', keep=False),
                  'error'] = 'duplicate'
-    filtered.loc[(~filtered['reference'].str.contains('reverse'))
-                 & (~filtered['reference'].str.contains('unknown')),
-                 'error'] = 'ref contains reverse or unknown'
+    filtered = filtered[(~filtered['reference'].str.contains('reverse'))
+                        & (~filtered['reference'].str.contains('unknown'))]
     return filtered
 
 
