@@ -168,7 +168,7 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath, outpath, run_name):
+def find_primers(csv_filepath, outpath, run_name, probelen=150):
     print(run_name)
     make_path(outpath)
     columns = [
@@ -246,7 +246,6 @@ def find_primers(csv_filepath, outpath, run_name):
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            probelen = 30
             if any([(probelen < i < len(contig_seq) - (probelen))
                     for i in x_locations]):
                 skipped[uname] = 'contig sequence contained internal X'
