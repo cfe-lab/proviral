@@ -202,7 +202,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
     reader = DictReader(csv_filepath)
     # projects = ProjectConfig.loadDefault()
     # hxb2 = projects.getReference('HIV1-B-FR-K03455-seed')
-    hxb2 = utils.hxb2
+    hxb2 = utils.mod_hxb2
     skipped = {}
     total = 0
     viable = 0
@@ -289,11 +289,11 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 if end == 5:
                     name = 'fwd'
                     hxb2_target_start = primers[name]['hxb2_start']
-                    hxb2_target_end = primers[name]['hxb2_end'] + 100
+                    hxb2_target_end = primers[name]['hxb2_end'] + probelen
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 else:
                     name = 'rev'
-                    hxb2_target_start = primers[name]['hxb2_start'] - 100
+                    hxb2_target_start = primers[name]['hxb2_start'] - probelen
                     hxb2_target_end = primers[name]['hxb2_end']
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 primer = None
@@ -393,7 +393,7 @@ def handle_x(sequence):
     return sequence
 
 
-def validate_primer(finder, finder_seq, target, hxb2_target, tolerance=1):
+def validate_primer(finder, finder_seq, target, tolerance=1):
     if finder.is_reversed:
         finder_seq = reverse_and_complement(finder_seq)
     error = None

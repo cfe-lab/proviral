@@ -7,7 +7,7 @@ import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
-from logger import logger
+from gene_splicer.logger import logger
 
 
 def load_yaml(afile):
@@ -455,7 +455,7 @@ def merge_coords(coords1, coords2):
 
 
 def filter_valid(df):
-#    import pdb; pdb.set_trace()
+    #    import pdb; pdb.set_trace()
     # Remove any row that has no errors
     filtered = df[(~df['error'].isna())
                   | (~df['fwd_error'].isna())
