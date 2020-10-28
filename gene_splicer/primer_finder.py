@@ -320,8 +320,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 if primers[name][
                         'hxb2_start'] - probelen <= finder.start <= primers[
                             name]['hxb2_end']:
-                    primer = validate_primer(finder, seq, primers[name],
-                                             hxb2_target_seq)
+                    primer = validate_primer(finder, seq, primers[name])
                     if primer['error']:
                         skipped[uname] = primer['error']
                         new_row[prefix + 'error'] = skipped[uname]
@@ -336,8 +335,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                         skipped[
                             uname] = f'{end} contig probe starts after hxb2 primer end'
                     new_row[prefix + 'error'] = skipped[uname]
-                    primer = validate_primer(finder, seq, primers[name],
-                                             hxb2_target_seq)
+                    primer = validate_primer(finder, seq, primers[name])
                     if primer['error']:
                         skipped[uname] = primer['error']
                         new_row[prefix +
