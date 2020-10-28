@@ -534,6 +534,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
                                         on='sample',
                                         suffixes=('_contig', '_conseq'),
                                         how='outer')
+        joined.to_csv(outpath / 'joined.csv', index=False)
         joined['sequence'] = joined['sequence_conseq'].fillna(
             joined['sequence_contig'])
         joined['seqtype'] = joined['seqtype_conseq'].fillna(
