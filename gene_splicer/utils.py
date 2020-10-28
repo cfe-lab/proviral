@@ -7,7 +7,7 @@ import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
-from gene_splicer.logger import logger
+from logger import logger
 
 
 def load_yaml(afile):
