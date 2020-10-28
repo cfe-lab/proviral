@@ -238,6 +238,19 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 writer.writerow(new_row)
                 continue
 
+            #TODO
+            # As above, write and skip the row if the reference
+            # is v3_reference
+            try:
+                # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
+                if row['region'] == v3_reference:
+                    skipped[uname] = 'is V3 sequence'
+                    new_row['error'] = skipped[uname]
+                    writer.writerow(new_row)
+                    continue
+            except KeyError:
+                pass
+
             # interest = 'HIV3428F1-L22-HIV_S6'
             # if (sample_name == interest
             #     and contig_name == '1_1-HIV1-B-FR-K03455-seed'
@@ -512,6 +525,8 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
     for name in dfs:
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
+        # Generate the failure summary
+        utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)
         filtered_conseqs = filter_df(conseqs_df, nodups)
         joined = filtered_contigs.merge(filtered_conseqs,
@@ -540,7 +555,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
             o2 = open(no_primers_fasta, 'w')
             start = i * nrows_per_file
             stop = start + nrows_per_file
-            if stop >= nrows:
+            if stop > nrows:
                 stop = nrows - 1
             for row in joined.iloc[start:stop].itertuples():
                 # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names

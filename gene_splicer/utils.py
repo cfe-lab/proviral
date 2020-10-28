@@ -342,6 +342,9 @@ def align(target_seq,
 
 
 def generate_table_precursor(name, outpath):
+    # Load filtered sequences
+    filtered_path = outpath / f'{name}_filtered.csv'
+    filtered = pd.read_csv(filtered_path)
     # Load hivseqinr data
     seqinr_paths = glob.glob(
         str(outpath / 'hivseqinr*' / 'Results_Final' /
@@ -353,17 +356,18 @@ def generate_table_precursor(name, outpath):
         part = pd.read_csv(path)
         parts.append(part)
     # seqinr = pd.read_csv(seqinr_path)
-    seqinr = pd.concat(parts)
-    # Assign new columns based on split
-    seqinr[['name', 'sample', 'reference',
-            'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+    try:
+        seqinr = pd.concat(parts)
+        # Assign new columns based on split
+        seqinr[['name', 'sample', 'reference',
+                'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+        # Merge
+        merged = seqinr.merge(filtered, on='sample')
+    except ValueError:
+        print('No hivseqinr runs found')
+        seqinr = None
+        merged = filtered
 
-    # Load filtered sequences
-    filtered_path = outpath / f'{name}_filtered.csv'
-    filtered = pd.read_csv(filtered_path)
-
-    # Merge
-    merged = seqinr.merge(filtered, on='sample')
     for gene in genes_of_interest:
         merged[gene] = None
 
@@ -383,13 +387,21 @@ def generate_table_precursor(name, outpath):
 
     # Output csv
     outfile = outpath / 'table_precursor.csv'
-    merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
-        outfile, index=False)
+    if parts:
+        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+            outfile, index=False)
+    else:
+        merged[['sample', 'sequence'] + genes_of_interest].to_csv(outfile,
+                                                                  index=False)
     return outfile
 
 
 def get_softclipped_region(query, alignment):
-    size, op = alignment.iloc[0]['cigar'][0]
+    try:
+        size, op = alignment.iloc[0]['cigar'][0]
+    except IndexError:
+        logger.warning('No alignment!')
+        return
     if op != 'S':
         logger.warning('Alignment does not start with softclip')
         return
@@ -442,6 +454,38 @@ def merge_coords(coords1, coords2):
     return new_coords
 
 
+def filter_valid(df):
+#    import pdb; pdb.set_trace()
+    # Remove any row that has no errors
+    filtered = df[(~df['error'].isna())
+                  | (~df['fwd_error'].isna())
+                  | (~df['rev_error'].isna())].copy()
+    # Remove contig not max errors and V3 errors
+    filtered = filtered[(filtered['error'] != 'contig not MAX')
+                        & (filtered['error'] != 'is V3 sequence')]
+    # Set error field for duplicates
+    #filtered.loc[filtered.duplicated(subset='sample', keep=False),
+    #             'error'] = 'duplicate'
+    filtered = filtered[(~filtered['reference'].str.contains('reverse'))
+                        & (~filtered['reference'].str.contains('unknown'))]
+    return filtered
+
+
+def genFailureSummary(contigs_df, conseqs_df, outpath):
+    filtered_contigs = filter_valid(contigs_df)
+    filtered_conseqs = filter_valid(conseqs_df)
+    contigs_simple = filtered_contigs[[
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+    ]]
+    conseqs_simple = filtered_conseqs[[
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+    ]]
+    concat = pd.concat([contigs_simple, conseqs_simple])
+    outfile = outpath / 'failure_summary.csv'
+    concat.to_csv(outfile, index=False)
+    return outfile
+
+
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
 
@@ -491,4 +535,5 @@ annot = {
     x['gene']: [int(x['start']), int(x['stop'])]
     for x in read_csv(cwd / 'annot.csv')
 }
+
 mod_annot = modify_annot(annot)
