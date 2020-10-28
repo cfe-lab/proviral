@@ -169,6 +169,7 @@ def make_path(path):
 
 
 def find_primers(csv_filepath, outpath, run_name, probelen=150):
+    v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
     columns = [
