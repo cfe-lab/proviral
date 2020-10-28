@@ -202,7 +202,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
     reader = DictReader(csv_filepath)
     # projects = ProjectConfig.loadDefault()
     # hxb2 = projects.getReference('HIV1-B-FR-K03455-seed')
-    hxb2 = utils.mod_hxb2
+    hxb2 = utils.hxb2
     skipped = {}
     total = 0
     viable = 0
@@ -423,7 +423,7 @@ def validate_primer(finder, finder_seq, target, tolerance=1):
         'finder_seq': finder_seq,
         'target_seq': primer_in_finder,
         'contig_hxb2_start': finder.start,
-        'contig_hxb2_end': matched_finder_size,
+        'contig_hxb2_end': finder.start + matched_finder_size,
         'seq_start': primer_in_finder_start_coord,
         'seq_end': primer_in_finder_end_coord,
         'hxb2_start': primer_in_finder_hxb2_start_coord,
