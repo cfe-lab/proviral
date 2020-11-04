@@ -311,6 +311,11 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 #     import pdb; pdb.set_trace()
 
                 finder = ProbeFinder(hxb2_target_seq, seq)
+                # This can happen if there are too many combinations of the sequence to unpack (too many mixtures or dashes etc)
+                if not finder:
+                    skipped[uname] = 'Too many sequences to unpack'
+                    new_row[prefix + 'error'] = skipped[uname]
+                    continue
                 finder.start += hxb2_target_start
                 prefix = name + '_'
                 new_row[prefix + 'probe_hxb2_start'] = finder.start

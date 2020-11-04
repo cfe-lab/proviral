@@ -71,7 +71,8 @@ def find_probes(contigs_csv, probes_csv):
             new_row = dict(sample=sample_name, contig=contig_name)
             for target_name, target_seq in TARGET_SEQUENCES.items():
                 finder = ProbeFinder(contig_seq, target_seq)
-
+                if not finder:
+                    return None
                 size = len(finder.contig_match)
                 start_pos = finder.start + 1
                 end_pos = finder.start + size
@@ -130,7 +131,7 @@ def unpack_mixtures_and_reverse(seq: str,
         n = len(mixture_dict.get(nuc, nuc))
         combos *= n
     if combos > threshold:
-        return []
+        return set()
     old_mixtures = {''}
     for mixture in seq:
         new_mixtures = set()
@@ -163,6 +164,8 @@ class ProbeFinder:
                 best_target = target_nucs
                 best_score = score
                 best_reversed = is_reversed
+        if not best_acontig:
+            return None
         aligned_contig = best_acontig
         aligned_target = best_atarget
         target_nucs = best_target
