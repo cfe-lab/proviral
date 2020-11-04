@@ -145,6 +145,7 @@ def unpack_mixtures_and_reverse(seq: str,
 
 
 class ProbeFinder:
+    # contig_seq is the query, target_seq is the target
     def __init__(self, contig_seq: str, target_seq: str):
         gap_open_penalty = 15
         gap_extend_penalty = 3
@@ -190,6 +191,10 @@ class ProbeFinder:
                 stripped_target = target_nucs[:-overhang]
                 self.end_dist = Levenshtein.distance(stripped_target,
                                                      self.contig_match)
+
+    def __str__(self) -> str:
+        return ' '.join(
+            (str(self.start), str(self.contig_match), str(self.dist)))
 
 
 def main():

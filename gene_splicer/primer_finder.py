@@ -168,7 +168,7 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath, outpath, run_name):
+def find_primers(csv_filepath, outpath, run_name, probelen=150):
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
@@ -260,7 +260,6 @@ def find_primers(csv_filepath, outpath, run_name):
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            probelen = 30
             if any([(probelen < i < len(contig_seq) - (probelen))
                     for i in x_locations]):
                 skipped[uname] = 'contig sequence contained internal X'
@@ -290,11 +289,11 @@ def find_primers(csv_filepath, outpath, run_name):
                 if end == 5:
                     name = 'fwd'
                     hxb2_target_start = primers[name]['hxb2_start']
-                    hxb2_target_end = primers[name]['hxb2_end'] + 100
+                    hxb2_target_end = primers[name]['hxb2_end'] + probelen
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 else:
                     name = 'rev'
-                    hxb2_target_start = primers[name]['hxb2_start'] - 100
+                    hxb2_target_start = primers[name]['hxb2_start'] - probelen
                     hxb2_target_end = primers[name]['hxb2_end']
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 primer = None
@@ -321,8 +320,7 @@ def find_primers(csv_filepath, outpath, run_name):
                 if primers[name][
                         'hxb2_start'] - probelen <= finder.start <= primers[
                             name]['hxb2_end']:
-                    primer = validate_primer(finder, seq, primers[name],
-                                             hxb2_target_seq)
+                    primer = validate_primer(finder, seq, primers[name])
                     if primer['error']:
                         skipped[uname] = primer['error']
                         new_row[prefix + 'error'] = skipped[uname]
@@ -337,8 +335,7 @@ def find_primers(csv_filepath, outpath, run_name):
                         skipped[
                             uname] = f'{end} contig probe starts after hxb2 primer end'
                     new_row[prefix + 'error'] = skipped[uname]
-                    primer = validate_primer(finder, seq, primers[name],
-                                             hxb2_target_seq)
+                    primer = validate_primer(finder, seq, primers[name])
                     if primer['error']:
                         skipped[uname] = primer['error']
                         new_row[prefix +
@@ -394,7 +391,7 @@ def handle_x(sequence):
     return sequence
 
 
-def validate_primer(finder, finder_seq, target, hxb2_target, tolerance=1):
+def validate_primer(finder, finder_seq, target, tolerance=1):
     if finder.is_reversed:
         finder_seq = reverse_and_complement(finder_seq)
     error = None
@@ -426,7 +423,7 @@ def validate_primer(finder, finder_seq, target, hxb2_target, tolerance=1):
         'finder_seq': finder_seq,
         'target_seq': primer_in_finder,
         'contig_hxb2_start': finder.start,
-        'contig_hxb2_end': matched_finder_size,
+        'contig_hxb2_end': finder.start + matched_finder_size,
         'seq_start': primer_in_finder_start_coord,
         'seq_end': primer_in_finder_end_coord,
         'hxb2_start': primer_in_finder_hxb2_start_coord,
@@ -535,6 +532,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
                                         on='sample',
                                         suffixes=('_contig', '_conseq'),
                                         how='outer')
+        joined.to_csv(outpath / 'joined.csv', index=False)
         joined['sequence'] = joined['sequence_conseq'].fillna(
             joined['sequence_contig'])
         joined['seqtype'] = joined['seqtype_conseq'].fillna(
