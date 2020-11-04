@@ -71,7 +71,7 @@ def find_probes(contigs_csv, probes_csv):
             new_row = dict(sample=sample_name, contig=contig_name)
             for target_name, target_seq in TARGET_SEQUENCES.items():
                 finder = ProbeFinder(contig_seq, target_seq)
-                if not finder:
+                if not finder.valid:
                     return None
                 size = len(finder.contig_match)
                 start_pos = finder.start + 1
@@ -148,6 +148,7 @@ def unpack_mixtures_and_reverse(seq: str,
 class ProbeFinder:
     # contig_seq is the query, target_seq is the target
     def __init__(self, contig_seq: str, target_seq: str):
+        self.valid = True
         gap_open_penalty = 15
         gap_extend_penalty = 3
         use_terminal_gap_penalty = 1
@@ -165,6 +166,7 @@ class ProbeFinder:
                 best_score = score
                 best_reversed = is_reversed
         if not best_acontig:
+            self.valid = False
             return None
         aligned_contig = best_acontig
         aligned_target = best_atarget

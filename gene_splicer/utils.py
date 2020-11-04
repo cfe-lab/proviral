@@ -416,7 +416,7 @@ def sequence_to_coords(query, target, alignment_path, annot):
         return
     import probe_finder
     finder = probe_finder.ProbeFinder(softclip, target)
-    if not finder:
+    if not finder.valid:
         return None
     # query_match = target[finder.start:len(finder.contig_match)]
     target_match = finder.contig_match
