@@ -459,6 +459,9 @@ def filter_valid(df):
     filtered = df[(~df['error'].isna())
                   | (~df['fwd_error'].isna())
                   | (~df['rev_error'].isna())].copy()
+    conseq_cutoff = 'consensus-percent-cutoff' in filtered.columns
+    if conseq_cutoff:
+        filtered = filtered[filtered['consensus-percent-cutoff'] != 'MAX']
     # Set error field for duplicates
     filtered.loc[filtered.duplicated(subset='sample', keep=False),
                  'error'] = 'duplicate'
