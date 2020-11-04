@@ -139,6 +139,13 @@ def parse_args():
                         help='CSV file with conseq sequences',
                         type=FileType())
     parser.add_argument('name', help='A name for the analysis')
+    parser.add_argument(
+        '-p',
+        '--probelen',
+        type=int,
+        help=
+        'Length of sequence (probe) from each end of sample to search for primer',
+        default=150)
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',
@@ -520,9 +527,11 @@ def filter_df(df, nodups=True):
 
 
 def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
-        split):
-    contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs')
-    conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs')
+        split, probelen):
+    contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs',
+                               probelen)
+    conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs',
+                               probelen)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -590,7 +599,8 @@ def main():
                       outpath=args.outpath.resolve(),
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
-                      split=args.split)
+                      split=args.split,
+                      probelen=args.probelen)
     return {'fasta_files': fasta_files, 'args': args}
 
 
