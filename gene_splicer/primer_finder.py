@@ -145,7 +145,7 @@ def parse_args():
         type=int,
         help=
         'Length of sequence (probe) from each end of sample to search for primer',
-        default=150)
+        default=100)
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',
@@ -175,7 +175,11 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath, outpath, run_name, probelen=150):
+def find_primers(csv_filepath,
+                 outpath,
+                 run_name,
+                 probelen=100,
+                 primerbuffer=20):
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
@@ -296,11 +300,12 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 if end == 5:
                     name = 'fwd'
                     hxb2_target_start = primers[name]['hxb2_start']
-                    hxb2_target_end = primers[name]['hxb2_end'] + probelen
+                    hxb2_target_end = primers[name]['hxb2_end'] + primerbuffer
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 else:
                     name = 'rev'
-                    hxb2_target_start = primers[name]['hxb2_start'] - probelen
+                    hxb2_target_start = primers[name][
+                        'hxb2_start'] - primerbuffer
                     hxb2_target_end = primers[name]['hxb2_end']
                     hxb2_target_seq = hxb2[hxb2_target_start:hxb2_target_end]
                 primer = None
@@ -330,7 +335,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
 
                 # If the segment overlaps the primer
                 if primers[name][
-                        'hxb2_start'] - probelen <= finder.start <= primers[
+                        'hxb2_start'] - primerbuffer <= finder.start <= primers[
                             name]['hxb2_end']:
                     primer = validate_primer(finder, seq, primers[name])
                     if primer['error']:
@@ -339,7 +344,8 @@ def find_primers(csv_filepath, outpath, run_name, probelen=150):
                 # Otherwise
                 else:
                     # If contig ends before hxb2 primer start
-                    if primers[name]['hxb2_start'] - probelen > finder.start:
+                    if primers[name][
+                            'hxb2_start'] - primerbuffer > finder.start:
                         skipped[
                             uname] = f'{end} contig probe ends before hxb2 primer start'
                     # If contig starts after hxb2 primer start
