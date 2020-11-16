@@ -145,6 +145,65 @@ def unpack_mixtures_and_reverse(seq: str,
     return forward_results | reversed_results
 
 
+class PrimerFinder:
+    # contig_seq is the query, target_seq is the target
+    def __init__(self, contig_seq: str, target_seq: str):
+        self.valid = True
+        gap_open_penalty = 15
+        gap_extend_penalty = 3
+        use_terminal_gap_penalty = 1
+        best_acontig = best_atarget = best_target = best_score = None
+        best_reversed = None
+        for target_nucs, is_reversed in unpack_mixtures_and_reverse(
+                target_seq):
+            aligned_contig, aligned_target, score = align_it(
+                contig_seq, target_nucs, gap_open_penalty, gap_extend_penalty,
+                use_terminal_gap_penalty)
+            if best_score is None or score > best_score:
+                best_acontig = aligned_contig
+                best_atarget = aligned_target
+                best_target = target_nucs
+                best_score = score
+                best_reversed = is_reversed
+        if not best_acontig:
+            self.valid = False
+            return None
+        aligned_contig = best_acontig
+        aligned_target = best_atarget
+        target_nucs = best_target
+        self.score = best_score
+        self.is_reversed = best_reversed
+        if self.is_reversed:
+            aligned_contig = reverse_and_complement(aligned_contig)
+            aligned_target = reverse_and_complement(aligned_target)
+        match = re.match('-*([^-](.*[^-])?)', aligned_target)
+        self.aligned_contig = aligned_contig
+        self.aligned_target = aligned_target
+        self.start = match.start(1)
+        end = match.end(1)
+        self.contig_match = aligned_contig[self.start:end].replace('-', '')
+        self.dist = Levenshtein.distance(target_nucs, self.contig_match)
+        stripped_contig = aligned_contig.lstrip('-')
+        overhang = len(aligned_contig) - len(stripped_contig)
+        if overhang > 0:
+            stripped_target = target_nucs[overhang:]
+            self.end_dist = Levenshtein.distance(stripped_target,
+                                                 self.contig_match)
+        else:
+            stripped_contig = aligned_contig.rstrip('-')
+            overhang = len(aligned_contig) - len(stripped_contig)
+            if overhang == 0:
+                self.end_dist = self.dist
+            else:
+                stripped_target = target_nucs[:-overhang]
+                self.end_dist = Levenshtein.distance(stripped_target,
+                                                     self.contig_match)
+
+    def __str__(self) -> str:
+        return ' '.join(
+            (str(self.start), str(self.contig_match), str(self.dist)))
+
+
 class ProbeFinder:
     # contig_seq is the query, target_seq is the target
     def __init__(self, contig_seq: str, target_seq: str):
@@ -177,9 +236,12 @@ class ProbeFinder:
             aligned_contig = reverse_and_complement(aligned_contig)
             aligned_target = reverse_and_complement(aligned_target)
         match = re.match('-*([^-](.*[^-])?)', aligned_target)
+        self.aligned_contig = aligned_contig
+        self.aligned_target = aligned_target
         self.start = match.start(1)
-        end = match.end(1)
-        self.contig_match = aligned_contig[self.start:end].replace('-', '')
+        self.end = match.end(1)
+        self.contig_match = aligned_contig[self.start:self.end].replace(
+            '-', '')
         self.dist = Levenshtein.distance(target_nucs, self.contig_match)
         stripped_contig = aligned_contig.lstrip('-')
         overhang = len(aligned_contig) - len(stripped_contig)
