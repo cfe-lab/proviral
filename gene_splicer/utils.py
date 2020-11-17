@@ -7,7 +7,7 @@ import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
-from gene_splicer.logger import logger
+from logger import logger
 
 
 def load_yaml(afile):
@@ -295,12 +295,14 @@ def load_samfile(samfile_path):
     return result
 
 
-def minimap2_available(aligner_path='minimap2'):
+def aligner_available(aligner_path='minimap2'):
     cmd = [aligner_path]
-    process = sp.run(cmd)
-    if process.returncode == 0:
-        return True
-    return False
+    try:
+        process = sp.run(cmd)
+        if process.returncode == 0:
+            return True
+    except Exception:
+        return False
 
 
 # Removes all files in a directory
@@ -321,6 +323,8 @@ def align(target_seq,
           query_name,
           outdir=Path(os.getcwd()).resolve(),
           aligner_path='minimap2'):
+    if not aligner_available(aligner_path):
+        return None
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
@@ -374,7 +378,11 @@ def generate_table_precursor(name, outpath):
     data = {}
     for index, row in merged.iterrows():
         folder = outpath / row['sample']
-        genes_fasta = read_fasta(folder / 'genes.fasta')
+        genes_fasta_path = folder / 'genes.fasta'
+        if not os.path.isfile(genes_fasta_path):
+            print(f'No genes for {row["sample"]}')
+            continue
+        genes_fasta = read_fasta(genes_fasta_path)
         genes = dict([x for x in genes_fasta])
         for gene in genes_of_interest:
             try:

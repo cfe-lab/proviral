@@ -30,6 +30,9 @@ def run(query_fasta, name, outdir):
                                      query_seq,
                                      query_name[1:].split('::')[1],
                                      outdir=outdir)
+        if not alignment_path:
+            print(f'Could not align {query_name}, aligner not available')
+            continue
         samfile = utils.load_samfile(alignment_path)
         coords = utils.splice_genes(query_seq, target, samfile,
                                     utils.mod_annot)
