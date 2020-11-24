@@ -144,11 +144,11 @@ def parse_args():
     parser.add_argument('name', help='A name for the analysis')
     parser.add_argument(
         '-p',
-        '--probelen',
+        '--probe_length',
         type=int,
         help=
         'Length of sequence (probe) from each end of sample to search for primer',
-        default=100)
+        default=50)
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',
@@ -178,7 +178,11 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath, outpath, run_name, probelen=50):
+def find_primers(csv_filepath,
+                 outpath,
+                 run_name,
+                 probe_length=50,
+                 extended_length=200):
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
@@ -254,7 +258,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=50):
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            if any([(probelen < i < len(contig_seq) - (probelen))
+            if any([(probe_length < i < len(contig_seq) - (probe_length))
                     for i in x_locations]):
                 skipped[uname] = 'contig sequence contained internal X'
                 new_row['error'] = skipped[uname]
@@ -268,8 +272,10 @@ def find_primers(csv_filepath, outpath, run_name, probelen=50):
                 new_row['nmixtures'] = mixtures
                 writer.writerow(new_row)
                 continue
-            prime5_seq = contig_seq[:probelen]
-            prime3_seq = contig_seq[-probelen:]
+            prime5_seq = contig_seq[:probe_length]
+            extended_prime5_seq = contig_seq[:extended_length]
+            prime3_seq = contig_seq[-probe_length:]
+            extended_prime3_seq = contig_seq[-extended_length:]
             for key in columns:
                 if key not in [
                         'sample', 'contig', 'seqlen', 'error', 'sequence',
@@ -283,7 +289,10 @@ def find_primers(csv_filepath, outpath, run_name, probelen=50):
             #     import pdb
             #     pdb.set_trace()
 
-            for end, seq in [(5, prime5_seq), (3, prime3_seq)]:
+            for end, seq, extended_seq in [
+                (5, prime5_seq, extended_prime5_seq),
+                (3, prime3_seq, extended_prime3_seq)
+            ]:
                 if end == 5:
                     direction = 'fwd'
                     hxb2_target_start = primers[direction]['hxb2_start']
@@ -292,6 +301,7 @@ def find_primers(csv_filepath, outpath, run_name, probelen=50):
                     direction = 'rev'
                     hxb2_target_start = primers[direction]['hxb2_start']
                     hxb2_target_end = primers[direction]['hxb2_end']
+
                 prefix = direction + '_'
 
                 if 'X' in seq:
@@ -302,9 +312,30 @@ def find_primers(csv_filepath, outpath, run_name, probelen=50):
                         new_row[prefix + 'error'] = skipped[uname]
                         continue
 
-                finder = PrimerFinder(primers[direction]['seq'], seq,
-                                      direction, hxb2_target_start,
-                                      hxb2_target_end)
+                # interest = 'T0288D90-M7-HIV_S95'
+                # if (sample_name == interest
+                #         and contig_name == '8_2-unknown-partial'):
+                #     import pdb
+                #     pdb.set_trace()
+
+                finder = PrimerFinder(
+                    seq,
+                    primers[direction]['seq'],
+                    direction,
+                    hxb2_target_start,
+                    hxb2_target_end,
+                )
+
+                if not finder.is_full_length:
+                    finder2 = PrimerFinder(
+                        extended_seq,
+                        primers[direction]['seq'],
+                        direction,
+                        hxb2_target_start,
+                        hxb2_target_end,
+                    )
+                    if finder2.is_full_length:
+                        finder = finder2
 
                 # This can happen if there are too many combinations of the sequence to unpack (too many mixtures or dashes etc)
                 if not finder.is_valid:
@@ -397,11 +428,11 @@ def filter_df(df, nodups=True):
 
 
 def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
-        split, probelen):
+        split, probe_length):
     contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs',
-                               probelen)
+                               probe_length)
     conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs',
-                               probelen)
+                               probe_length)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -470,7 +501,7 @@ def main():
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      probelen=args.probelen)
+                      probe_length=args.probe_length)
     return {'fasta_files': fasta_files, 'args': args}
 
 

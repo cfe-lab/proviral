@@ -547,3 +547,23 @@ annot = {
 }
 
 mod_annot = modify_annot(annot)
+
+# Note these are 1-based indicies
+primers = {
+    'fwd': {
+        'seq': 'GCGCCCGAACAGGGACYTGAAARCGAAAG',
+        'nomix': 'GCGCCCGAACAGGGACCTGAAAGCGAAAG',
+        # convert to 0-base index
+        'hxb2_start': 638 - 1,
+        'hxb2_end': 666,
+        'direction': 'fwd'
+    },
+    'rev': {
+        'seq': 'TAAGCCTCAATAAAGCTTGCCTTGAGTGC',
+        'nomix': 'TAAGCCTCAATAAAGCTTGCCTTGAGTGC',
+        # convert to 0-base index
+        'hxb2_start': 9604 - 1,
+        'hxb2_end': 9632,
+        'direction': 'rev'
+    }
+}
