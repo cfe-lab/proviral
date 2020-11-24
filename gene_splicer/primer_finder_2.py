@@ -98,13 +98,18 @@ class PrimerFinder:
 
     def validate_alignment(self):
         if self.direction == 'fwd':
-            sample_start_gaps = len(self.aln['aligned_target'].lstrip('-'))
-            hxb2_start_gaps = len(self.aln['aligned_query'].lstrip('-'))
+            # Take the total length and subtract the length not including leading dashes, result will be how many leading dashes
+            sample_start_gaps = len(self.aln['aligned_target']) - len(
+                self.aln['aligned_target'].lstrip('-'))
+            hxb2_start_gaps = len(self.aln['aligned_query']) - len(
+                self.aln['aligned_query'].lstrip('-'))
             if (sample_start_gaps == 0) and (hxb2_start_gaps == 0):
                 self.aln['is_valid'] = True
         else:
-            sample_end_gaps = len(self.aln['aligned_target'].rstrip('-'))
-            hxb2_end_gaps = len(self.aln['aligned_query'].rstrip('-'))
+            sample_end_gaps = len(self.aln['aligned_target']) - len(
+                self.aln['aligned_target'].rstrip('-'))
+            hxb2_end_gaps = len(self.aln['aligned_query']) - len(
+                self.aln['aligned_query'].rstrip('-'))
             if (sample_end_gaps == 0) and (hxb2_end_gaps == 0):
                 self.aln['is_valid'] = True
 
