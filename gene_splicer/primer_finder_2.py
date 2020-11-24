@@ -41,15 +41,22 @@ class PrimerFinder:
         return old_mixtures
 
     def find_longest_primer(self):
-        hxb2_start_offset = -1
+        if self.direction == 'fwd':
+            hxb2_start_offset = -1
+        else:
+            hxb2_start_offset = 0
         hxb2_end_offset = 0
         # Minus min_primer_length because the smallest primer we want to try looking for is min_primer_length nucleotides
         for i in range(len(self.primer) - self.min_primer_length):
             # print('i', i)
             primer_substring = None
+
+            # If fwd
             if self.direction == 'fwd':
                 primer_substring = self.primer[i:]
                 hxb2_start_offset += 1
+
+            # If rev
             elif self.direction == 'rev':
                 if i == 0:
                     primer_substring = self.primer[:]
@@ -81,29 +88,44 @@ class PrimerFinder:
                 self.is_full_length = True
             return
         else:
-            sample_slice = self.get_sample_slice()
-            hxb2_slice = utils.hxb2[self.hxb2_start:self.hxb2_end +
-                                    self.validation_size]
+            sample_slice, hxb2_slice = self.get_slices()
             self.aln = self.align(hxb2_slice, sample_slice)
-            if self.aln['start'] == 0:
+            self.validate_alignment()
+            if self.aln['is_valid']:
                 self.is_valid = True
                 return
-        self.is_valid = False
         return
 
-    def get_sample_slice(self):
+    def validate_alignment(self):
+        if self.direction == 'fwd':
+            sample_start_gaps = len(self.aln['aligned_target'].lstrip('-'))
+            hxb2_start_gaps = len(self.aln['aligned_query'].lstrip('-'))
+            if (sample_start_gaps == 0) and (hxb2_start_gaps == 0):
+                self.aln['is_valid'] = True
+        else:
+            sample_end_gaps = len(self.aln['aligned_target'].rstrip('-'))
+            hxb2_end_gaps = len(self.aln['aligned_query'].rstrip('-'))
+            if (sample_end_gaps == 0) and (hxb2_end_gaps == 0):
+                self.aln['is_valid'] = True
+
+    def get_slices(self):
         sample_slice = ''
+        hxb2_slice = ''
         # The slice should include the primer
         if self.direction == 'fwd':
             sample_slice = self.sample[self.start:self.end +
                                        self.validation_size]
+            hxb2_slice = utils.hxb2[self.hxb2_start:self.hxb2_end +
+                                    self.validation_size]
         elif self.direction == 'rev':
             # Sometimes this will fall below 0, the max is to prevent Python from accessing negative indicies from the array
             sample_slice = self.sample[max(0, self.start -
                                            self.validation_size):self.end]
+            hxb2_slice = utils.hxb2[self.hxb2_start -
+                                    self.validation_size:self.hxb2_end]
         if len(sample_slice) == 0:
-            return None
-        return sample_slice
+            return None, None
+        return sample_slice, hxb2_slice
 
     @staticmethod
     def align(query_seq: str, target_seq: str):
@@ -112,7 +134,7 @@ class PrimerFinder:
             'aligned_query': None,
             'aligned_target': None,
             'start': None,
-            'is_valid': None,
+            'is_valid': False,
             'dist': None,
             'end_dist': None,
         }
@@ -163,9 +185,9 @@ class PrimerFinder:
         return result
 
     def __str__(self):
-        return '\t'.join(
-            (str(x) for x in (self.start, self.direction, self.sample_primer)))
+        return '\t'.join((str(x) for x in (self.start, self.direction,
+                                           self.sample_primer, self.is_valid)))
 
     def __repr__(self):
-        return '\t'.join(
-            (str(x) for x in (self.start, self.direction, self.sample_primer)))
+        return '\t'.join((str(x) for x in (self.start, self.direction,
+                                           self.sample_primer, self.is_valid)))

@@ -22,6 +22,7 @@ def data():
 
 def test_case():
     case = {'sequence': 'AAA'}
+
     probe_length = 50
     extended_length = 200
     fwd_sample_probe = case['sequence'][:probe_length]
@@ -66,6 +67,10 @@ def test_case():
         )
         if rev_primer2.is_full_length:
             rev_primer = rev_primer2
+
+    print()
+    print(fwd_primer)
+    print(rev_primer)
 
 
 def generate_test_cases():
