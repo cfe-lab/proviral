@@ -23,48 +23,43 @@ def data():
 def test_case():
     case = {'sequence': 'AAA'}
 
-    probe_length = 50
+    sample_size = 50
     extended_length = 200
-    fwd_sample_probe = case['sequence'][:probe_length]
-    rev_sample_probe = case['sequence'][-probe_length:]
 
-    fwd_primer = PrimerFinder(
-        fwd_sample_probe,
-        primers['fwd']['seq'],
-        'fwd',
-        primers['fwd']['hxb2_start'],
-        primers['fwd']['hxb2_end'],
-    )
+    import pdb
+    pdb.set_trace()
+
+    fwd_primer = PrimerFinder(case['sequence'],
+                              primers['fwd']['seq'],
+                              'fwd',
+                              primers['fwd']['hxb2_start'],
+                              primers['fwd']['hxb2_end'],
+                              sample_size=sample_size)
 
     if not fwd_primer.is_full_length:
-        fwd_sample_extended = case['sequence'][:extended_length]
-        fwd_primer2 = PrimerFinder(
-            fwd_sample_extended,
-            primers['fwd']['seq'],
-            'fwd',
-            primers['fwd']['hxb2_start'],
-            primers['fwd']['hxb2_end'],
-        )
+        fwd_primer2 = PrimerFinder(case['sequence'],
+                                   primers['fwd']['seq'],
+                                   'fwd',
+                                   primers['fwd']['hxb2_start'],
+                                   primers['fwd']['hxb2_end'],
+                                   sample_size=extended_length)
         if fwd_primer2.is_full_length:
             fwd_primer = fwd_primer2
 
-    rev_primer = PrimerFinder(
-        rev_sample_probe,
-        primers['rev']['seq'],
-        'rev',
-        primers['rev']['hxb2_start'],
-        primers['rev']['hxb2_end'],
-    )
+    rev_primer = PrimerFinder(case['sequence'],
+                              primers['rev']['seq'],
+                              'rev',
+                              primers['rev']['hxb2_start'],
+                              primers['rev']['hxb2_end'],
+                              sample_size=sample_size)
 
     if not rev_primer.is_full_length:
-        rev_sample_extended = case['sequence'][-extended_length:]
-        rev_primer2 = PrimerFinder(
-            rev_sample_extended,
-            primers['rev']['seq'],
-            'rev',
-            primers['rev']['hxb2_start'],
-            primers['rev']['hxb2_end'],
-        )
+        rev_primer2 = PrimerFinder(case['sequence'],
+                                   primers['rev']['seq'],
+                                   'rev',
+                                   primers['rev']['hxb2_start'],
+                                   primers['rev']['hxb2_end'],
+                                   sample_size=extended_length)
         if rev_primer2.is_full_length:
             rev_primer = rev_primer2
 

@@ -2,21 +2,25 @@ import re
 import utils
 import Levenshtein
 from gotoh import align_it
+from logger import logger
 
 
 class PrimerFinder:
     def __init__(self,
-                 sample,
+                 full_sample,
                  primer,
                  direction,
                  hxb2_start,
                  hxb2_end,
                  validation_size=25,
+                 sample_size=50,
                  min_primer_length=2) -> None:
         self.primer = primer
         self.primer_length = len(self.primer)
-        self.sample = sample
+        self.full_sample = full_sample
+        self.sample_size = sample_size
         self.direction = direction
+        self.get_sample()
         self.hxb2_start = hxb2_start
         self.hxb2_end = hxb2_end
         self.start = None
@@ -28,6 +32,12 @@ class PrimerFinder:
         self.is_full_length = False
         self.find_longest_primer()
         self.validate()
+
+    def get_sample(self):
+        if self.direction == 'fwd':
+            self.sample = self.full_sample[:self.sample_size]
+        else:
+            self.sample = self.full_sample[-self.sample_size:]
 
     @staticmethod
     def expand_mixtures(seq):
@@ -90,6 +100,8 @@ class PrimerFinder:
         else:
             sample_slice, hxb2_slice = self.get_slices()
             self.aln = self.align(hxb2_slice, sample_slice)
+            logger.debug('\n' + self.aln['aligned_target'] + '\n' +
+                         self.aln['aligned_query'])
             self.validate_alignment()
             if self.aln['is_valid']:
                 self.is_valid = True
@@ -118,14 +130,17 @@ class PrimerFinder:
         hxb2_slice = ''
         # The slice should include the primer
         if self.direction == 'fwd':
-            sample_slice = self.sample[self.start:self.end +
-                                       self.validation_size]
+            sample_slice = self.full_sample[self.start:self.end +
+                                            self.validation_size]
             hxb2_slice = utils.hxb2[self.hxb2_start:self.hxb2_end +
                                     self.validation_size]
         elif self.direction == 'rev':
             # Sometimes this will fall below 0, the max is to prevent Python from accessing negative indicies from the array
-            sample_slice = self.sample[max(0, self.start -
-                                           self.validation_size):self.end]
+            sample_slice = self.full_sample[max(
+                0,
+                len(self.full_sample) - self.sample_size + self.start -
+                self.validation_size):len(self.full_sample) -
+                                            self.sample_size + self.end]
             hxb2_slice = utils.hxb2[self.hxb2_start -
                                     self.validation_size:self.hxb2_end]
         if len(sample_slice) == 0:

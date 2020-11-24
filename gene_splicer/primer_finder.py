@@ -144,7 +144,7 @@ def parse_args():
     parser.add_argument('name', help='A name for the analysis')
     parser.add_argument(
         '-p',
-        '--probe_length',
+        '--sample_size',
         type=int,
         help=
         'Length of sequence (probe) from each end of sample to search for primer',
@@ -181,7 +181,7 @@ def make_path(path):
 def find_primers(csv_filepath,
                  outpath,
                  run_name,
-                 probe_length=50,
+                 sample_size=50,
                  extended_length=200):
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
@@ -258,7 +258,7 @@ def find_primers(csv_filepath,
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            if any([(probe_length < i < len(contig_seq) - (probe_length))
+            if any([(sample_size < i < len(contig_seq) - (sample_size))
                     for i in x_locations]):
                 skipped[uname] = 'contig sequence contained internal X'
                 new_row['error'] = skipped[uname]
@@ -272,9 +272,9 @@ def find_primers(csv_filepath,
                 new_row['nmixtures'] = mixtures
                 writer.writerow(new_row)
                 continue
-            prime5_seq = contig_seq[:probe_length]
+            prime5_seq = contig_seq[:sample_size]
             extended_prime5_seq = contig_seq[:extended_length]
-            prime3_seq = contig_seq[-probe_length:]
+            prime3_seq = contig_seq[-sample_size:]
             extended_prime3_seq = contig_seq[-extended_length:]
             for key in columns:
                 if key not in [
@@ -318,22 +318,20 @@ def find_primers(csv_filepath,
                 #     import pdb
                 #     pdb.set_trace()
 
-                finder = PrimerFinder(
-                    seq,
-                    primers[direction]['seq'],
-                    direction,
-                    hxb2_target_start,
-                    hxb2_target_end,
-                )
+                finder = PrimerFinder(contig_seq,
+                                      primers[direction]['seq'],
+                                      direction,
+                                      hxb2_target_start,
+                                      hxb2_target_end,
+                                      sample_size=sample_size)
 
                 if not finder.is_full_length:
-                    finder2 = PrimerFinder(
-                        extended_seq,
-                        primers[direction]['seq'],
-                        direction,
-                        hxb2_target_start,
-                        hxb2_target_end,
-                    )
+                    finder2 = PrimerFinder(contig_seq,
+                                           primers[direction]['seq'],
+                                           direction,
+                                           hxb2_target_start,
+                                           hxb2_target_end,
+                                           sample_size=extended_length)
                     if finder2.is_full_length:
                         finder = finder2
 
@@ -428,11 +426,11 @@ def filter_df(df, nodups=True):
 
 
 def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
-        split, probe_length):
+        split, sample_size):
     contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs',
-                               probe_length)
+                               sample_size)
     conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs',
-                               probe_length)
+                               sample_size)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -501,7 +499,7 @@ def main():
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      probe_length=args.probe_length)
+                      sample_size=args.sample_size)
     return {'fasta_files': fasta_files, 'args': args}
 
 
