@@ -99,6 +99,8 @@ class PrimerFinder:
             return
         else:
             sample_slice, hxb2_slice = self.get_slices()
+            if not sample_slice:
+                return
             self.aln = self.align(hxb2_slice, sample_slice)
             logger.debug('\n' + self.aln['aligned_target'] + '\n' +
                          self.aln['aligned_query'])
