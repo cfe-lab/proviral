@@ -144,6 +144,14 @@ class PrimerFinder:
             hxb2_slice = utils.hxb2[self.hxb2_start -
                                     self.validation_size:self.hxb2_end]
         if len(sample_slice) == 0:
+            logger.debug(\
+                'Sample slice size is 0! \n'
+                f'start: {self.start} \n'
+                f'end: {self.end} \n'
+                f'hxb2_start: {self.hxb2_start} \n'
+                f'hxb2_end: {self.hxb2_end} \n'
+                f'full_sample: {self.full_sample} \n'
+            )
             return None, None
         return sample_slice, hxb2_slice
 
