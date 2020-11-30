@@ -32,16 +32,19 @@ From: centos:7
     # annot.csv /opt/primer_finder/
     # genes_of_interest.yaml /opt/primer_finder/
     # setup.py /opt/primer_finder/
-    ../../dev /opt/primer_finder
+    ../* /opt/primer_finder
 
     ## Gotoh
-    alignment /opt/primer_finder/alignment
-    requirements.txt /opt/primer_finder/
+    # alignment /opt/primer_finder/alignment
+    # requirements.txt /opt/primer_finder/
 
     # R
-    configure_r.sh /opt/primer_finder/
+    # configure_r.sh /opt/primer_finder/
 
 %post
+    # Remove singularity image from self
+    rm /opt/primer_finder/gene_splicer/*simg
+
     echo ===== Installing Prerequisites ===== >/dev/null
     yum update -q -y
 
@@ -102,7 +105,9 @@ From: centos:7
     python3 get-pip.py
     rm get-pip.py
     cd /opt
-    pip install --quiet -r /opt/primer_finder/requirements.txt
+    pip install --quiet -r /opt/primer_finder/gene_splicer/requirements.txt
+    cd /opt/primer_finder
+    pip install .
     ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
     python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
 

@@ -9,6 +9,9 @@ setup(
         'numpy==1.18.4', 'python-Levenshtein==0.12.0', 'pandas==1.0.5',
         'matplotlib==3.3.3', 'requests==2.24.0', 'pyyaml', 'pytest'
     ],
+    package_data={
+        'phagei': ['genes_of_interest.yaml', 'annot.csv', 'hxb2.fasta']
+    },
     entry_points={
         'console_scripts': [
             'gene_splicer_run = gene_splicer.pipeline:main',
