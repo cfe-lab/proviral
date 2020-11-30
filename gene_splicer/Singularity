@@ -21,15 +21,18 @@ From: centos:7
 
 %files
     ## Primer Finder
-    primer_finder.py /opt/primer_finder/
-    utils.py /opt/primer_finder/
-    probe_finder.py /opt/primer_finder/
-    hxb2.fasta /opt/primer_finder/
-    gene_splicer.py /opt/primer_finder/
-    logger.py /opt/primer_finder/
-    pipeline.py /opt/primer_finder/
-    annot.csv /opt/primer_finder/
-    genes_of_interest.yaml /opt/primer_finder/
+    # primer_finder.py /opt/primer_finder/
+    # primer_finder_class.py /opt/primer_finder/
+    # utils.py /opt/primer_finder/
+    # probe_finder.py /opt/primer_finder/
+    # hxb2.fasta /opt/primer_finder/
+    # gene_splicer.py /opt/primer_finder/
+    # logger.py /opt/primer_finder/
+    # pipeline.py /opt/primer_finder/
+    # annot.csv /opt/primer_finder/
+    # genes_of_interest.yaml /opt/primer_finder/
+    # setup.py /opt/primer_finder/
+    ../../dev /opt/primer_finder
 
     ## Gotoh
     alignment /opt/primer_finder/alignment
