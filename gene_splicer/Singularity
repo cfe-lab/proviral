@@ -21,25 +21,7 @@ From: centos:7
 
 %files
     ## Primer Finder
-    # primer_finder.py /opt/primer_finder/
-    # primer_finder_class.py /opt/primer_finder/
-    # utils.py /opt/primer_finder/
-    # probe_finder.py /opt/primer_finder/
-    # hxb2.fasta /opt/primer_finder/
-    # gene_splicer.py /opt/primer_finder/
-    # logger.py /opt/primer_finder/
-    # pipeline.py /opt/primer_finder/
-    # annot.csv /opt/primer_finder/
-    # genes_of_interest.yaml /opt/primer_finder/
-    # setup.py /opt/primer_finder/
     ../* /opt/primer_finder
-
-    ## Gotoh
-    # alignment /opt/primer_finder/alignment
-    # requirements.txt /opt/primer_finder/
-
-    # R
-    # configure_r.sh /opt/primer_finder/
 
 %post
     # Remove singularity image from self
@@ -139,6 +121,9 @@ From: centos:7
     # sudo alternatives --set python /usr/bin/python2
     alternatives --install /usr/bin/python python /usr/bin/python2 50
     alternatives --install /usr/bin/python python /usr/local/bin/python3 60
+
+    # Clean up singularity images
+    rm -rf /opt/primer_finder/gene_splicer/simages/* && echo "Leftover singularity images cleaned!"
 
 %environment
     export LANG=en_US.UTF-8
