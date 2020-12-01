@@ -10,7 +10,7 @@ setup(
         'matplotlib==3.3.3', 'requests==2.24.0', 'pyyaml', 'pytest'
     ],
     package_data={
-        'phagei': ['genes_of_interest.yaml', 'annot.csv', 'hxb2.fasta']
+        '': ['genes_of_interest.yaml', 'annot.csv', 'hxb2.fasta']
     },
     entry_points={
         'console_scripts': [

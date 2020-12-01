@@ -43,7 +43,6 @@ From: centos:7
 
 %post
     # Remove singularity image from self
-    rm /opt/primer_finder/gene_splicer/*simg
 
     echo ===== Installing Prerequisites ===== >/dev/null
     yum update -q -y
@@ -119,7 +118,7 @@ From: centos:7
     # Shouldn't need this since it was installed earlier
     # yum install epel-release -y
     yum install R -y
-    Rscript /opt/primer_finder/configure_r.sh 2> /dev/null
+    Rscript /opt/primer_finder/gene_splicer/configure_r.sh 2> /dev/null
 
     echo ===== Installing minimap2 ===== >/dev/null
     cd /opt
