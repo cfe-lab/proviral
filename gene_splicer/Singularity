@@ -144,4 +144,4 @@ From: centos:7
     export LANG=en_US.UTF-8
 
 %runscript
-    python3 /opt/primer_finder/pipeline.py "$@"
+    gene_splicer_run "$@"
