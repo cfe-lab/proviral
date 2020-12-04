@@ -162,6 +162,12 @@ def parse_args():
         'CSV file containing gene regions and hivseqinr verdict for sample',
         type=Path)
 
+    parser.add_argument(
+        'aligned_table_precursor_csv',
+        help=
+        'CSV file containing aligned gene regions to hxb2 and hivseqinr verdict for sample',
+        type=Path)
+
     parser.add_argument('-o',
                         '--outpath',
                         help='The path to save the output',

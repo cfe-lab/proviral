@@ -53,7 +53,7 @@ def run(query_fasta, args):
         args.outpath, args.table_precursor_csv,
         args.outpath / 'minimap2_aln' / 'genes.fasta')
     utils.generate_table_precursor(
-        args.outpath, args.table_precursor_csv,
+        args.outpath, args.aligned_table_precursor_csv,
         args.outpath / 'minimap2_aln' / 'aligned_genes.fasta')
 
 
