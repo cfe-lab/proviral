@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--name',
                         help='A name for your analysis',
                         default='default_name')
-    parser.add_argument('--outdir',
+    parser.add_argument('--outpath',
                         type=Path,
                         default=Path(os.getcwd()).resolve(),
                         help='Path to output files')
@@ -31,8 +31,10 @@ def run(query_fasta, args):
             continue
         samfile = utils.load_samfile(alignment_path)
         # Check for softclipped start
-        coords = utils.splice_genes(query_seq, target, samfile,
-                                    utils.mod_annot)
+        coords, aligned_seqs = utils.splice_aligned_genes(
+            query_seq, target, samfile, utils.mod_annot)
+        for k, v in aligned_seqs.items():
+            aligned_seqs[k] = ''.join(v)
         # Try to get softclipped region if there is one
         softclipped_coords = utils.sequence_to_coords(query_seq, target,
                                                       alignment_path,
@@ -41,11 +43,18 @@ def run(query_fasta, args):
             coords = utils.merge_coords(softclipped_coords, coords)
         genes = utils.coords_to_genes(coords, query_seq)
         genes_path = alignment_path.parent / 'genes.fasta'
+        aligned_genes_path = alignment_path.parent / 'aligned_genes.fasta'
         utils.write_fasta(genes, genes_path)
+        utils.write_fasta(aligned_seqs, aligned_genes_path)
         # with open(genes_path, 'w') as o:
         #     for gene, seq in genes.items():
         #         o.write(f'>{gene}\n{seq}\n')
-    utils.generate_table_precursor(args.outpath, args.table_precursor_csv)
+    utils.generate_table_precursor(
+        args.outpath, args.table_precursor_csv,
+        args.outpath / 'minimap2_aln' / 'genes.fasta')
+    utils.generate_table_precursor(
+        args.outpath, args.table_precursor_csv,
+        args.outpath / 'minimap2_aln' / 'aligned_genes.fasta')
 
 
 def main():

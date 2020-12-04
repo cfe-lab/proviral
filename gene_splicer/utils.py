@@ -57,6 +57,15 @@ def write_annot(adict, filepath):
 
 
 def write_fasta(adict, filepath_or_fileobject):
+    """Writes a fasta file from a dictionary
+
+    Args:
+        adict (dict): A dictionary where the keys are header/sequence names and the values are the sequences
+        filepath_or_fileobject (Path/File): A path or file-like object
+
+    Returns:
+        Path/File: Path or file-like object
+    """
     try:
         with open(filepath_or_fileobject, 'w') as o:
             for key, value in adict.items():
@@ -269,43 +278,42 @@ def coords_to_genes(coords, query):
 
 
 # This function has not been tested yet
-def get_sequences(query, target, samfile, annotation):
+def splice_aligned_genes(query, target, samfile, annotation):
     results = {}
     sequences = {}
     for i, row in samfile.iterrows():
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
-        genes = get_genes(annotation, target_pos)
         query_pos = None
         for size, op in row['cigar']:
-            print(f'size: {size}, op: {op}')
-            print(f'target_pos: {target_pos}, query_pos: {query_pos}')
+            # print(f'size: {size}, op: {op}')
+            # print(f'target_pos: {target_pos}, query_pos: {query_pos}')
             size = int(size)
             # If the first section is hard-clipped the query should start at
             # the first non-hard-clipped-based. The target should also be offset
             # by the size of the hard-clip
             if op == 'H' and query_pos is None:
                 query_pos = size
-                print('=' * 50)
+                # print('=' * 50)
                 continue
             elif query_pos is None:
                 query_pos = 0
             if op == 'S':
                 query_pos += size
-                print('=' * 50)
+                # print('=' * 50)
                 continue
             elif op in ('M', '=', 'X'):
                 for i in range(size):
                     try:
                         target_nuc = target[target_pos]
                     except IndexError:
-                        print(f'{target_pos} not in range of target')
+                        logger.warning(f'{target_pos} not in range of target')
                         break
                     query_nuc = query[query_pos]
                     match = (target_nuc == query_nuc)
                     genes = get_genes(annotation, target_pos)
-                    print(target_pos, query_pos, target_nuc, query_nuc, match,
-                          genes)
+                    # print(target_pos, query_pos, target_nuc, query_nuc, match,
+                    #   genes)
                     for gene in genes:
                         if gene not in results:
                             results[gene] = [query_pos, query_pos]
@@ -314,20 +322,19 @@ def get_sequences(query, target, samfile, annotation):
                             results[gene][1] = query_pos
                             sequences[gene].append(query_nuc)
                     query_pos += 1
-                    if op != 'I':
-                        target_pos += 1
+                    target_pos += 1
             elif op == 'D':
                 target_pos += size
                 for i in range(size):
                     sequences[gene].append('-')
-                print('=' * 50)
+                # print('=' * 50)
                 continue
             elif op == 'I':
                 query_pos += size
-                print('=' * 50)
+                # print('=' * 50)
                 continue
-            print('=' * 50)
-        print('new alignment row'.center(50, '~'))
+            # print('=' * 50)
+        # print('new alignment row'.center(50, '~'))
     return results, sequences
 
 
@@ -423,7 +430,7 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def generate_table_precursor(outpath, table_precursor_path):
+def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
     try:
@@ -450,15 +457,13 @@ def generate_table_precursor(outpath, table_precursor_path):
         merged[gene] = None
 
     data = {}
-    for index, row in merged.iterrows():
-        folder = outpath / 'minimap2_aln'
-        genes_fasta = read_fasta(folder / 'genes.fasta')
-        genes = dict([x for x in genes_fasta])
-        for gene in genes_of_interest:
-            try:
-                seq = genes[f'>{gene}']
-            except KeyError:
-                seq = None
+    genes_fasta = read_fasta(genes_fasta_path)
+    genes = dict([x for x in genes_fasta])
+    for gene in genes_of_interest:
+        try:
+            seq = genes[f'>{gene}']
+        except KeyError:
+            seq = None
             data.setdefault(gene, []).append(seq)
     for gene, seqs in data.items():
         merged[gene] = seqs

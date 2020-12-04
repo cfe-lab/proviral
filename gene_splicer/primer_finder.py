@@ -474,8 +474,8 @@ def filter_df(df, nodups=True):
 def run(contigs_csv,
         conseqs_csv,
         outpath,
-        disable_hivseqinr,
-        nodups,
+        disable_hivseqinr=False,
+        nodups=True,
         sample_size=50,
         extended_size=200):
     contigs_out = find_primers(contigs_csv,

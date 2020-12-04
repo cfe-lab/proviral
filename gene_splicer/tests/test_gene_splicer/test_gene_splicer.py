@@ -36,8 +36,11 @@ def test_large_deletion1():
     # For now I will manually align the query to the target
     alignment = utils.load_samfile(cwd / f'{name}.sam')
     # Get the genes
-    results = utils.splice_genes(query, utils.mod_hxb2, alignment,
-                                 utils.mod_annot)
+    # results = utils.splice_genes(query, utils.mod_hxb2, alignment,
+    #                              utils.mod_annot)
+    results, sequences = utils.splice_aligned_genes(query, utils.mod_hxb2,
+                                                    alignment, utils.mod_annot)
+    # import pdb; pdb.set_trace()
     genes = utils.coords_to_genes(results, query)
     for gene in valid_genes:
         try:

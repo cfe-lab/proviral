@@ -9,8 +9,16 @@ inputs = cwd / 'inputs'
 outputs = cwd / 'outputs'
 
 import gene_splicer.utils as utils
+import gene_splicer.primer_finder as primer_finder
+import gene_splicer.gene_splicer as gene_splicer
 
 utils.write_fasta({'MOD_HXB2': utils.mod_hxb2}, inputs / 'mod_hxb2.fasta')
+
+
+class Args:
+    def __init__(self, **kwargs) -> None:
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 def test_intact():
@@ -42,3 +50,15 @@ def test_intact():
     table_precursor_file = io.StringIO()
     utils.generate_table_precursor_2(hivseqinr_resultsfile, filtered_csvfile,
                                      genes_file, table_precursor_file)
+
+
+def test_pipeline_sample1():
+    conseq_path = cwd / 'inputs' / 'sample1' / 'conseq.csv'
+    contigs_path = cwd / 'inputs' / 'sample1' / 'contigs.csv'
+    outpath = cwd / 'outputs' / 'sample1'
+    fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
+                                    contigs_csv=open(contigs_path),
+                                    outpath=(outpath))
+    for fasta in fasta_paths:
+        args = Args(query_fasta=fasta, name='sample1', outpath=outpath)
+        gene_splicer.run(fasta, args)
