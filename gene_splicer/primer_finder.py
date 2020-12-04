@@ -182,6 +182,12 @@ def parse_args():
         help=
         'Set this flag to disable the removal of duplicate samples that pass QC'
     )
+    parser.add_argument(
+        '--skip_align',
+        action='store_true',
+        help=
+        'For testing only. Enable to disable alignment calls (minimap does not run on windows)'
+    )
     return parser.parse_args()
 
 

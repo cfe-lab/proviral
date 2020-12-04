@@ -368,8 +368,12 @@ def clean_dir(directory):
 def align(target_seq,
           query_seq,
           outdir=Path(os.getcwd()).resolve(),
-          aligner_path='minimap2'):
+          aligner_path='minimap2',
+          skip=False):
     outdir = outdir / 'minimap2_aln'
+    alignment_path = outdir / 'alignment.sam'
+    if skip:
+        return alignment_path
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
@@ -380,7 +384,6 @@ def align(target_seq,
     target_fasta_path = write_fasta({'target': target_seq},
                                     outdir / 'target.fasta')
     cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
-    alignment_path = outdir / 'alignment.sam'
     with open(alignment_path, 'w') as alignment:
         process = sp.run(cmd, stdout=alignment, errors=True)
     if process.returncode != 0:

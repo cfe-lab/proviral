@@ -26,7 +26,10 @@ def run(query_fasta, args):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
-        alignment_path = utils.align(target, query_seq, outdir=args.outpath)
+        alignment_path = utils.align(target,
+                                     query_seq,
+                                     outdir=args.outpath,
+                                     skip=args.skip_align)
         if alignment_path is False:
             continue
         samfile = utils.load_samfile(alignment_path)

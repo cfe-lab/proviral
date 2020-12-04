@@ -67,5 +67,6 @@ def test_pipeline_sample1():
             outpath=outpath,
             table_precursor_csv=(outpath / 'table_precursor.csv'),
             aligned_table_precursor_csv=(outpath /
-                                         'aligned_table_precursor.csv'))
+                                         'aligned_table_precursor.csv'),
+            skip_align=True)
         gene_splicer.run(fasta, args)
