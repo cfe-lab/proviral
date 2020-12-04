@@ -56,13 +56,16 @@ def test_pipeline_sample1():
     conseq_path = cwd / 'inputs' / 'sample1' / 'conseq.csv'
     contigs_path = cwd / 'inputs' / 'sample1' / 'contigs.csv'
     outpath = cwd / 'outputs' / 'sample1'
-    fasta_paths = primer_finder.run(
-        conseqs_csv=open(conseq_path),
-        contigs_csv=open(contigs_path),
-        outpath=(outpath),
-        extended_size=1000,
-        table_precursor_csv=(outpath / 'table_precursor.csv'),
-        aligned_table_precursor_csv=(outpath / 'aligned_table_precursor.csv'))
+    fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
+                                    contigs_csv=open(contigs_path),
+                                    outpath=(outpath),
+                                    extended_size=1000)
     for fasta in fasta_paths:
-        args = Args(query_fasta=fasta, name='sample1', outpath=outpath)
+        args = Args(
+            query_fasta=fasta,
+            name='sample1',
+            outpath=outpath,
+            table_precursor_csv=(outpath / 'table_precursor.csv'),
+            aligned_table_precursor_csv=(outpath /
+                                         'aligned_table_precursor.csv'))
         gene_splicer.run(fasta, args)
