@@ -2,6 +2,7 @@
 .vscode
 venv
 *egg-info
+**outputs
 
 # OSX system files
 .DS_Store

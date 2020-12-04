@@ -58,7 +58,8 @@ def test_pipeline_sample1():
     outpath = cwd / 'outputs' / 'sample1'
     fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
                                     contigs_csv=open(contigs_path),
-                                    outpath=(outpath))
+                                    outpath=(outpath),
+                                    extended_size=1000)
     for fasta in fasta_paths:
         args = Args(query_fasta=fasta, name='sample1', outpath=outpath)
         gene_splicer.run(fasta, args)

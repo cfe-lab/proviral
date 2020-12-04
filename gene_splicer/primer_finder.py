@@ -292,7 +292,6 @@ def find_primers(csv_filepath,
 
             # if 'X' in seq:
             #     import pdb; pdb.set_trace()
-
             finder = PrimerFinder(contig_seq,
                                   primers[direction]['seq'],
                                   direction,
