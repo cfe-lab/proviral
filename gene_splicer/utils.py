@@ -467,7 +467,7 @@ def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
             seq = genes[f'>{gene}']
         except KeyError:
             seq = None
-            data.setdefault(gene, []).append(seq)
+        data.setdefault(gene, []).append(seq)
     for gene, seqs in data.items():
         merged[gene] = seqs
 
