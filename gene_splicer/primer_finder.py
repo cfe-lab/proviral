@@ -322,20 +322,20 @@ def find_primers(csv_filepath,
                     finder = finder2
 
             # This can happen if there are too many combinations of the sequence to unpack (too many mixtures or dashes etc)
-                if not finder.is_valid:
-                    skipped[uname] = 'primer was not found'
-                    new_row[prefix + 'error'] = skipped[uname]
-                    continue
-                new_row[prefix +
-                        'canonical_primer_seq'] = primers[direction]['seq']
-                new_row[prefix + 'sample_primer_seq'] = finder.sample_primer
-                new_row[prefix + 'sample_primer_start'] = finder.start
-                new_row[prefix + 'sample_primer_end'] = finder.end
-                new_row[prefix + 'sample_primer_size'] = len(
-                    finder.sample_primer)
-                new_row[prefix +
-                        'hxb2_sample_primer_start'] = finder.hxb2_start
-                new_row[prefix + 'hxb2_sample_primer_end'] = finder.hxb2_end
+            if not finder.is_valid:
+                skipped[uname] = 'primer was not found'
+                new_row[prefix + 'error'] = skipped[uname]
+                continue
+            new_row[prefix +
+                    'canonical_primer_seq'] = primers[direction]['seq']
+            new_row[prefix + 'sample_primer_seq'] = finder.sample_primer
+            new_row[prefix + 'sample_primer_start'] = finder.start
+            new_row[prefix + 'sample_primer_end'] = finder.end
+            new_row[prefix + 'sample_primer_size'] = len(
+                finder.sample_primer)
+            new_row[prefix +
+                    'hxb2_sample_primer_start'] = finder.hxb2_start
+            new_row[prefix + 'hxb2_sample_primer_end'] = finder.hxb2_end
         writer.writerow(new_row)
         viable += 1
     outfile.close()
@@ -533,6 +533,9 @@ def run(contigs_csv,
         return files
     with open(synthetic_primers_added_fasta_path,
               'w') as o, open(no_primers_fasta_path, 'w') as o2:
+        # Write hxb2 as positive control
+        o.write(f'>hxb2\n{utils.hxb2}\n')
+        o2.write(f'>hxb2\n{utils.hxb2}\n')
         for row in joined.itertuples():
             # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
             # I've commented it out for now
