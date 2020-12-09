@@ -467,9 +467,10 @@ def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
             seq = genes[f'>{gene}']
         except KeyError:
             seq = None
-        data.setdefault(gene, []).append(seq)
-    for gene, seqs in data.items():
-        merged.at[0, gene] = seqs
+        # data.setdefault(gene, []).append(seq)
+        data[gene] = seq
+    for gene, seq in data.items():
+        merged.at[0, gene] = seq
 
     # Output csv
     merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
