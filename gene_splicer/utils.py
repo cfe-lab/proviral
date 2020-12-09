@@ -469,7 +469,7 @@ def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
             seq = None
         data.setdefault(gene, []).append(seq)
     for gene, seqs in data.items():
-        merged[gene] = seqs
+        merged.at[0, gene] = seqs
 
     # Output csv
     merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
