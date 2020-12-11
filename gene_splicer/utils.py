@@ -444,6 +444,7 @@ def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
         return False
     # Delete the hxb2 row
     seqinr = seqinr[seqinr['SEQID'] != 'hxb2']
+    seqinr.rename(columns={'MyVerdict': 'hivseqinr_verdict'}, inplace=True)
     # Assign new columns based on split
     # Make sure this matches the join in primer_finder run()
     seqinr[['reference', 'seqtype']] = seqinr['SEQID'].str.split('::',
