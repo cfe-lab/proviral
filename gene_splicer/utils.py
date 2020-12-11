@@ -433,7 +433,10 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
+def generate_table_precursor(outpath,
+                             table_precursor_path,
+                             genes_fasta_path,
+                             add_columns=None):
     # Load hivseqinr data
     seqinr_path = outpath / 'hivseqinr' / 'Results_Final' / 'Output_MyBigSummary_DF_FINAL.csv'
     try:
@@ -475,9 +478,14 @@ def generate_table_precursor(outpath, table_precursor_path, genes_fasta_path):
     for gene, seq in data.items():
         merged.at[0, gene] = seq
 
+    if add_columns:
+        for key, val in add_columns.items():
+            merged[key] = val
+    else:
+        add_columns = {}
     # Output csv
-    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
-        table_precursor_path, index=False)
+    merged[['sequence', 'hivseqinr_verdict'] + list(add_columns.keys()) +
+           genes_of_interest].to_csv(table_precursor_path, index=False)
     return table_precursor_path
 
 
