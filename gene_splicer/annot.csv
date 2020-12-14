@@ -1,7 +1,7 @@
 gene,start,stop
-5ltr_u3,1,455
-5ltr_repeat,456,551
-5ltr_unique,552,634
+ltr5_u3,1,455
+ltr5_repeat,456,551
+ltr5_unique,552,634
 5primer,638,666
 x1,667,789
 psi_sl1,697,731
@@ -35,8 +35,8 @@ rev_exon2,8379,8653
 gp41,7758,8795
 x3,8796,8796
 nef,8797,9417
-3ltr_u3_start,9086,9540
-3ltr,9086,9603
-3ltr_repeat,9541,9636
+ltr3_u3_start,9086,9540
+ltr3,9086,9603
+ltr3_repeat,9541,9636
 3primer,9604,9632
-3ltr_u5,9637,9719
+ltr3_u5,9637,9719
