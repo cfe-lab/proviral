@@ -25,9 +25,9 @@ def test_large_deletion1():
     name = 'large_deletion1'
     # This should just be GAG now
     query = utils.mod_hxb2[123:1626]
-    utils.write_fasta({'GAG': query}, cwd / f'{name}.fasta')
+    utils.write_fasta({'gag': query}, cwd / f'{name}.fasta')
     # I also verified this sequence by using LANL sequence locator
-    gag = valid_genes['GAG']
+    gag = valid_genes['gag']
     # Just sanity check that my query sequence is GAG
     assert gag == query
     # Align the query to the target

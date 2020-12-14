@@ -30,5 +30,5 @@ def test_real_example1(currentdir):
     aln_path = example / 'alignment.sam'
     coords = utils.sequence_to_coords(query, target, aln_path, utils.mod_annot)
     genes = utils.coords_to_genes(coords, query)
-    assert 'X1' in genes
-    assert genes['X1'] == 'AGAAACCAGAGGAGCTCTCTCGACGCAGGACTCG'
+    assert 'x1' in genes
+    assert genes['x1'] == 'AGAAACCAGAGGAGCTCTCTCGACGCAGGACTCG'
