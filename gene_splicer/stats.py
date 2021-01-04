@@ -242,7 +242,7 @@ def write_per_participant(data, outpath):
     with output.open() as o:
         for pid, mystats in data.items():
             o.writerow({
-                'run': run,
+                'pid': pid,
                 'failed': mystats['failed'],
                 'passed': mystats['passed'],
                 'total': mystats['total'],
