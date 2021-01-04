@@ -165,12 +165,12 @@ def compute_per_participant(data, mapping_filepath):
             if qc:
                 passed += 1
         failed = total - passed
-        failure_rate = compute_failure_rate(total, passed)
+        percent_failure = compute_failure_rate(total, passed)
         result[pid] = {
             'total': total,
             'passed': passed,
             'failed': failed,
-            'failure_rate': failure_rate
+            'percent_failure': percent_failure
         }
     return result
 
