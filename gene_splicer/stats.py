@@ -58,6 +58,10 @@ class CsvFile(OutputFile):
         if self.fieldnames:
             self.writer.writeheader()
 
+    def init_read(self):
+        self.csvfile = open(self.path, newline='')
+        self.reader = csv.DictReader(self.csvfile)
+
     def write_rows(self, data):
         with open(self, 'w') as o:
             for item in data:
@@ -71,6 +75,13 @@ class CsvFile(OutputFile):
         self.init_write()
         try:
             yield self.writer
+        finally:
+            self.csvfile.close()
+
+    def read(self):
+        self.init_read()
+        try:
+            yield self.reader
         finally:
             self.csvfile.close()
 
@@ -145,7 +156,11 @@ def compute_failure_rate(total, passed):
     return round(100 * ((total - passed) / total))
 
 
-def compute_per_participant(data, mapping):
+def compute_per_participant(data, mapping_filepath):
+    mapping = {}
+    mapping_csv = CsvFile(mapping_filepath, 'aname')
+    for row in mapping_csv.read():
+        mapping[row['sample']] = row['participant_id']
     result = {}
     for sample, runs in data.items():
         pid = mapping[sample]
