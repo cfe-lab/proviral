@@ -22,8 +22,8 @@ def parse_args():
                         help='A csv file produced by the proviral pipeline')
     parser.add_argument(
         '--sample_mapping',
+        type=Path,
         required=True,
-        nargs='+',
         help='A csv file with 2 columns: sample and participant_id')
     parser.add_argument('--outpath',
                         type=Path,
