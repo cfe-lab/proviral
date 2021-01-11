@@ -96,6 +96,7 @@ class PrimerFinder:
             self.is_valid = True
             if len(self.sample_primer) == self.primer_length:
                 self.is_full_length = True
+            # TODO: I should probably check that if the primer is not full length, that the start index is 0 for fwd and is len-1 for rev
             return
         else:
             sample_slice, hxb2_slice = self.get_slices()
