@@ -497,6 +497,11 @@ def genFailureSummary(contigs_df, conseqs_df, outpath):
     return outfile
 
 
+# Checks if a value is nan, handles strings
+def isNan(num):
+    return num != num
+
+
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # filtered_contigs = filter_valid(contigs_df)
     # filtered_conseqs = filter_valid(conseqs_df)
@@ -517,8 +522,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     for index, row in filtered_conseqs.iterrows():
 
         sample = row['sample']
-        passed = math.isnan(row['error']) and math.isnan(
-            row['fwd_error']) and math.isnan(row['rev_error'])
+        passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
+            row['rev_error'])
         # If sample not in data yet
         if row['sample'] not in data:
             data[sample] = {
@@ -560,8 +565,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # Go through all the contigs
     for index, row in filtered_contigs.iterrows():
         sample = row['sample']
-        passed = math.isnan(row['error']) and math.isnan(
-            row['fwd_error']) and math.isnan(row['rev_error'])
+        passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
+            row['rev_error'])
         # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
         if row['sample'] not in data:
             logger.warning(
