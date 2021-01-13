@@ -533,7 +533,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 'sample': sample,
                 'run': row['run_name'],
                 'conseq_passed': passed,
-                'contig_passed': None,
+                'contig_passed': False,
                 'reference': row['reference'],
                 'seqlen': row['seqlen'],
                 'failed': [],
