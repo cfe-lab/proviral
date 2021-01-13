@@ -511,7 +511,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
 
     filtered_conseqs = conseqs_df[
         (~conseqs_df['reference'].str.contains('reverse'))
-        & (~conseqs_df['reference'].str.contains('unknown'))]
+        & (~conseqs_df['reference'].str.contains('unknown')
+           & (conseqs_df['consensus-percent-cutoff'].str.equals('MAX')))]
     filtered_contigs = contigs_df[
         (~contigs_df['reference'].str.contains('reverse'))
         & (~contigs_df['reference'].str.contains('unknown'))]
@@ -551,7 +552,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     max_failed = nfailed
                 data[sample]['failed'].append({
                     'seqtype':
-                    row['seqtype'],
+                    'conseq',
                     f'ref_fail_{nfailed}':
                     row['reference'],
                     f'error_fail_{nfailed}':
@@ -589,7 +590,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     max_failed = nfailed
                 data[sample]['failed'].append({
                     'seqtype':
-                    row['seqtype'],
+                    'contig',
                     f'ref_fail_{nfailed}':
                     row['reference'],
                     f'error_fail_{nfailed}':
