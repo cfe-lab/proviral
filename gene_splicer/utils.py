@@ -512,7 +512,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     filtered_conseqs = conseqs_df[
         (~conseqs_df['reference'].str.contains('reverse'))
         & (~conseqs_df['reference'].str.contains('unknown')
-           & (conseqs_df['consensus-percent-cutoff'].str.equals('MAX')))]
+           & (~conseqs_df['error'].str.equals('contig not MAX')))]
     filtered_contigs = contigs_df[
         (~contigs_df['reference'].str.contains('reverse'))
         & (~contigs_df['reference'].str.contains('unknown'))]
