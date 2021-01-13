@@ -496,6 +496,138 @@ def genFailureSummary(contigs_df, conseqs_df, outpath):
     return outfile
 
 
+def genOutcomeSummary(contigs_df, conseqs_df, joined_df, outpath):
+    # filtered_contigs = filter_valid(contigs_df)
+    # filtered_conseqs = filter_valid(conseqs_df)
+    # Some useful columns
+    # 'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+    data = {}
+
+    filtered_conseqs = conseqs_df[
+        (~conseqs_df['reference'].str.contains('reverse'))
+        & (~conseqs_df['reference'].str.contains('unknown'))]
+    filtered_contigs = contigs_df[
+        (~contigs_df['reference'].str.contains('reverse'))
+        & (~contigs_df['reference'].str.contains('unknown'))]
+
+    max_failed = 0
+
+    # Go through all the conseqs
+    for index, row in filtered_conseqs.iterrows():
+
+        sample = row['sample']
+        passed = row['error'].isna() and row['fwd_error'].isna(
+        ) and row['rev_error'].isna()
+        # If sample not in data yet
+        if row['sample'] not in data:
+            data[sample] = {
+                'sample': sample,
+                'run': row['run_name'],
+                'conseq_passed': passed,
+                'contig_passed': None,
+                'reference': row['reference'],
+                'seqlen': row['seqlen'],
+                'failed': [],
+                'absolute_fail': False
+            }
+        # Else if sample is already in data
+        else:
+            # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
+            if passed and data[sample]['conseq_passed']:
+                logger.critical('Sample "%s" already has a passed sequence!' %
+                                sample)
+                data[sample]['conseq_passed'] = False
+                data[sample]['contig_passed'] = False
+                data[sample]['absolute_fail'] = True
+            else:
+                nfailed = len(data[sample]['failed'])
+                if nfailed > max_failed:
+                    max_failed = nfailed
+                data[sample]['failed'].append({
+                    'seqtype':
+                    row['seqtype'],
+                    f'ref_fail_{nfailed}':
+                    row['reference'],
+                    f'error_fail_{nfailed}':
+                    row['error'],
+                    f'fwd_err_fail_{nfailed}':
+                    row['fwd_error'],
+                    f'rev_err_fail_{nfailed}':
+                    row['rev_error'],
+                })
+
+    # Go through all the contigs
+    for index, row in filtered_contigs.iterrows():
+        sample = row['sample']
+        passed = row['error'].isna() and row['fwd_error'].isna(
+        ) and row['rev_error'].isna()
+        # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
+        if row['sample'] not in data:
+            logger.warning(
+                'Sample "%s" not found in conseqs but was in contigs?!' %
+                sample)
+        # Else if sample is already in data
+        else:
+            # If the contig passes
+            if passed:
+                data[sample]['contig_passed'] = True
+            elif passed and data[sample]['contig_passed']:
+                logger.critical('Sample "%s" already has a passed sequence!' %
+                                sample)
+                data[sample]['contig_passed'] = False
+                data[sample]['conseq_passed'] = False
+                data[sample]['absolute_fail'] = True
+            else:
+                nfailed = len(data[sample]['failed'])
+                if nfailed > max_failed:
+                    max_failed = nfailed
+                data[sample]['failed'].append({
+                    'seqtype':
+                    row['seqtype'],
+                    f'ref_fail_{nfailed}':
+                    row['reference'],
+                    f'error_fail_{nfailed}':
+                    row['error'],
+                    f'fwd_err_fail_{nfailed}':
+                    row['fwd_error'],
+                    f'rev_err_fail_{nfailed}':
+                    row['rev_error'],
+                })
+    outfile = outpath / 'outcome_summary.csv'
+
+    fieldnames = ['sample', 'run', 'passed', 'reference', 'seqlen']
+    for i in range(max_failed):
+        fieldnames += [
+            f'seqtype_{i}',
+            f'ref_fail_{i}',
+            f'error_fail_{i}',
+            f'fwd_err_fail_{i}',
+            f'rev_err_fail_{i}',
+        ]
+
+    # Write the rows
+    with open(outfile, 'w', newline='') as csvfile:
+        writer = DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for sample in data:
+            data[sample]['passed'] = data[sample]['conseq_passed'] or data[
+                sample]['contig_passed']
+            for fail in data[sample]['failed']:
+                for k, v in fail.items():
+                    data[sample][k] = v
+            writer.writerow(data[sample])
+    return outfile
+
+
+# Given a sample name, return whether or not the sample is proviral-related
+def is_proviral(sample_name):
+    if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
+        ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
+            'HLA' in sample_name) or ('HCV' in sample_name):
+        return False
+    return True
+
+
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
 

@@ -19,7 +19,7 @@ import math
 import Levenshtein
 from gotoh import align_it
 import logger
-from primer_finder_2 import PrimerFinder
+from primer_finder_class import PrimerFinder
 
 import utils
 mixture_dict = utils.mixture_dict
@@ -209,6 +209,11 @@ def find_primers(csv_filepath,
     viable = 0
     unique_samples = 0
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
+        # Do not analyze non-proviral samples
+        if not utils.is_proviral(sample_name):
+            logger.debug('Skipping sample "%s" because it is non-proviral' %
+                         sample_name)
+            continue
         contig_num = 0
         unique_samples += 1
         for row in sample_rows:
