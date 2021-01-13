@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import yaml
@@ -496,7 +497,7 @@ def genFailureSummary(contigs_df, conseqs_df, outpath):
     return outfile
 
 
-def genOutcomeSummary(contigs_df, conseqs_df, joined_df, outpath):
+def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # filtered_contigs = filter_valid(contigs_df)
     # filtered_conseqs = filter_valid(conseqs_df)
     # Some useful columns
@@ -516,8 +517,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, joined_df, outpath):
     for index, row in filtered_conseqs.iterrows():
 
         sample = row['sample']
-        passed = row['error'].isna() and row['fwd_error'].isna(
-        ) and row['rev_error'].isna()
+        passed = math.isnan(row['error']) and math.isnan(
+            row['fwd_error']) and math.isnan(row['rev_error'])
         # If sample not in data yet
         if row['sample'] not in data:
             data[sample] = {
@@ -559,8 +560,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, joined_df, outpath):
     # Go through all the contigs
     for index, row in filtered_contigs.iterrows():
         sample = row['sample']
-        passed = row['error'].isna() and row['fwd_error'].isna(
-        ) and row['rev_error'].isna()
+        passed = math.isnan(row['error']) and math.isnan(
+            row['fwd_error']) and math.isnan(row['rev_error'])
         # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
         if row['sample'] not in data:
             logger.warning(
