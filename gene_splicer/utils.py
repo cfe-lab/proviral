@@ -621,9 +621,10 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             for fail in data[sample]['failed']:
                 for k, v in fail.items():
                     data[sample][k] = v
-            for field in data:
-                if field not in fieldnames:
-                    del data[field]
+            data[sample] = {
+                k: v
+                for k, v in data[sample].items() if k in fieldnames
+            }
             writer.writerow(data[sample])
     return outfile
 
