@@ -512,10 +512,12 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     filtered_conseqs = conseqs_df[
         (~conseqs_df['reference'].str.contains('reverse'))
         & (~conseqs_df['reference'].str.contains('unknown')
-           & (~conseqs_df['error'].str.equals('contig not MAX')))]
+           & (conseqs_df['error'] != 'contig not MAX')
+           & (conseqs_df['error'] != 'is V3 sequence'))]
     filtered_contigs = contigs_df[
         (~contigs_df['reference'].str.contains('reverse'))
-        & (~contigs_df['reference'].str.contains('unknown'))]
+        & (~contigs_df['reference'].str.contains('unknown')
+           & (conseqs_df['error'] != 'is V3 sequence'))]
 
     max_failed = 0
 
