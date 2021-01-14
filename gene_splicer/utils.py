@@ -532,7 +532,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             data[sample] = {
                 'sample': sample,
                 'run': row['run_name'],
-                'conseq_passed': passed,
+                'conseq_passed': False,
                 'contig_passed': False,
                 'reference': row['reference'],
                 'seqlen': row['seqlen'],
@@ -541,8 +541,11 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             }
         # Else if sample is already in data
         else:
+            # If the conseq passed, set it to true
+            if passed:
+                data[sample]['conseq_passed'] = True
             # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
-            if passed and data[sample]['conseq_passed']:
+            elif passed and data[sample]['conseq_passed']:
                 logger.critical('Sample "%s" already has a passed sequence!' %
                                 sample)
                 data[sample]['conseq_passed'] = False
