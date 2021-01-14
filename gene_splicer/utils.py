@@ -534,30 +534,37 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 'run': row['run_name'],
                 'conseq_passed': False,
                 'contig_passed': False,
-                'reference': row['reference'],
-                'seqlen': row['seqlen'],
+                'reference': None,
+                'seqlen': None,
                 'failed': [],
                 'absolute_fail': False
             }
+            if passed:
+                data[sample]['reference'] = row['reference']
+                data[sample]['seqlen'] = row['seqlen']
+                data[sample]['conseq_passed'] = True
         # Else if sample is already in data
         else:
-            # If the conseq passed, set it to true
-            if passed:
-                data[sample]['conseq_passed'] = True
             # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
-            elif passed and data[sample]['conseq_passed']:
+            if passed and data[sample]['conseq_passed']:
                 logger.critical('Sample "%s" already has a passed sequence!' %
                                 sample)
                 data[sample]['conseq_passed'] = False
                 data[sample]['contig_passed'] = False
                 data[sample]['absolute_fail'] = True
+            elif passed:
+                data[sample]['reference'] = row['reference']
+                data[sample]['seqlen'] = row['seqlen']
+                data[sample]['conseq_passed'] = True
             else:
                 nfailed = len(data[sample]['failed'])
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    'seqtype':
-                    'conseq',
+                    f'seqtype_{nfailed}':
+                    'contig',
+                    f'seqlen_{nfailed}':
+                    row['seqlen'],
                     f'ref_fail_{nfailed}':
                     row['reference'],
                     f'error_fail_{nfailed}':
@@ -583,6 +590,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             # If the contig passes
             if passed:
                 data[sample]['contig_passed'] = True
+                data[sample]['reference'] = row['reference']
+                data[sample]['seqlen'] = row['seqlen']
             elif passed and data[sample]['contig_passed']:
                 logger.critical('Sample "%s" already has a passed sequence!' %
                                 sample)
@@ -594,8 +603,11 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    'seqtype':
+                    f'seqtype_{nfailed}':
                     'contig',
+                    f'seqlen_{nfailed}':
+
+                    row['seqlen'],
                     f'ref_fail_{nfailed}':
                     row['reference'],
                     f'error_fail_{nfailed}':
@@ -611,6 +623,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     for i in range(max_failed):
         fieldnames += [
             f'seqtype_{i}',
+            f'seqlen_{i}',
             f'ref_fail_{i}',
             f'error_fail_{i}',
             f'fwd_err_fail_{i}',
