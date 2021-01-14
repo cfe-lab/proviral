@@ -561,17 +561,17 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    f'seqtype_{nfailed}':
+                    f'fail_seqtype_{nfailed}':
                     'contig',
-                    f'seqlen_{nfailed}':
+                    f'fail_seqlen_{nfailed}':
                     row['seqlen'],
-                    f'ref_fail_{nfailed}':
+                    f'fail_ref_{nfailed}':
                     row['reference'],
-                    f'error_fail_{nfailed}':
+                    f'fail_error_{nfailed}':
                     row['error'],
-                    f'fwd_err_fail_{nfailed}':
+                    f'fail_fwd_err_{nfailed}':
                     row['fwd_error'],
-                    f'rev_err_fail_{nfailed}':
+                    f'fail_rev_err_{nfailed}':
                     row['rev_error'],
                 })
 
@@ -603,18 +603,17 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    f'seqtype_{nfailed}':
+                    f'fail_seqtype_{nfailed}':
                     'contig',
-                    f'seqlen_{nfailed}':
-
+                    f'fail_seqlen_{nfailed}':
                     row['seqlen'],
-                    f'ref_fail_{nfailed}':
+                    f'fail_ref_{nfailed}':
                     row['reference'],
-                    f'error_fail_{nfailed}':
+                    f'fail_error_{nfailed}':
                     row['error'],
-                    f'fwd_err_fail_{nfailed}':
+                    f'fail_fwd_err_{nfailed}':
                     row['fwd_error'],
-                    f'rev_err_fail_{nfailed}':
+                    f'fail_rev_err_{nfailed}':
                     row['rev_error'],
                 })
     outfile = outpath / 'outcome_summary.csv'
@@ -622,12 +621,12 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     fieldnames = ['sample', 'run', 'passed', 'reference', 'seqlen']
     for i in range(max_failed):
         fieldnames += [
-            f'seqtype_{i}',
-            f'seqlen_{i}',
-            f'ref_fail_{i}',
-            f'error_fail_{i}',
-            f'fwd_err_fail_{i}',
-            f'rev_err_fail_{i}',
+            f'fail_seqtype_{i}',
+            f'fail_seqlen_{i}',
+            f'fail_ref_{i}',
+            f'fail_error_{i}',
+            f'fail_fwd_err_{i}',
+            f'fail_rev_err_{i}',
         ]
 
     # Write the rows
