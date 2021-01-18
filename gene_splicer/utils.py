@@ -6,6 +6,7 @@ import shutil
 import subprocess as sp
 import pandas as pd
 import glob
+import numpy as np
 from pathlib import Path
 from csv import DictWriter, DictReader
 from logger import logger
@@ -514,8 +515,8 @@ def is_proviral(sample_name):
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     data = {}
 
-    contigs_df = contigs_df.fillna(value=None)
-    conseqs_df = conseqs_df.fillna(value=None)
+    contigs_df.fillna(np.nan).replace([np.nan], [None])
+    conseqs_df.fillna(np.nan).replace([np.nan], [None])
 
     max_failed = 0
 
