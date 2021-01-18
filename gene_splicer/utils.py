@@ -537,6 +537,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 'contig_passed': False,
                 'reference': None,
                 'seqlen': None,
+                'sequence': None,
                 'failed': [],
                 'absolute_fail': False
             }
@@ -544,6 +545,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
                 data[sample]['conseq_passed'] = True
+                data[sample]['sequence'] = row['sequence']
         # Else if sample is already in data
         else:
             # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
@@ -553,11 +555,13 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 data[sample]['conseq_passed'] = False
                 data[sample]['contig_passed'] = False
                 data[sample]['absolute_fail'] = True
+                data[sample]['sequence'] = None
             # If we have not seen a conseq that passed, set to pass
             elif passed:
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
                 data[sample]['conseq_passed'] = True
+                data[sample]['sequence'] = row['sequence']
             # If not passed
             else:
                 ## Determine type of error for certain cases
@@ -577,6 +581,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     'contig',
                     f'fail_seqlen_{nfailed}':
                     row['seqlen'],
+                    f'fail_sequence_{nfailed}':
+                    row['sequence'],
                     f'fail_ref_{nfailed}':
                     row['reference'],
                     f'fail_error_{nfailed}':
@@ -606,12 +612,14 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 data[sample]['contig_passed'] = True
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
+                data[sample]['sequence'] = row['sequence']
             elif passed and data[sample]['contig_passed']:
                 logger.critical('Sample "%s" already has a passed sequence!' %
                                 sample)
                 data[sample]['contig_passed'] = False
                 data[sample]['conseq_passed'] = False
                 data[sample]['absolute_fail'] = True
+                data[sample]['sequence'] = None
             else:
                 nfailed = len(data[sample]['failed'])
                 if nfailed > max_failed:
@@ -621,6 +629,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     'contig',
                     f'fail_seqlen_{nfailed}':
                     row['seqlen'],
+                    f'fail_sequence_{nfailed}':
+                    row['sequence'],
                     f'fail_ref_{nfailed}':
                     row['reference'],
                     f'fail_error_{nfailed}':
@@ -637,6 +647,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
         fieldnames += [
             f'fail_seqtype_{i}',
             f'fail_seqlen_{i}',
+            f'fial_sequence_{i}',
             f'fail_ref_{i}',
             f'fail_error_{i}',
             f'fail_fwd_err_{i}',

@@ -265,7 +265,7 @@ def find_primers(csv_filepath,
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
             if any([(sample_size < i < len(contig_seq) - (sample_size))
                     for i in x_locations]):
-                skipped[uname] = 'contig sequence contained internal X'
+                skipped[uname] = 'low internal read coverage'
                 new_row['error'] = skipped[uname]
                 writer.writerow(new_row)
                 continue
@@ -340,9 +340,14 @@ def find_primers(csv_filepath,
                     if finder2.is_full_length:
                         finder = finder2
 
-                # This can happen if there are too many combinations of the sequence to unpack (too many mixtures or dashes etc)
-                if not finder.is_valid:
+                # Natalie's request
+                # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
+                if len(finder.sample_primer) == 0:
                     skipped[uname] = 'primer was not found'
+                    new_row[prefix + 'error'] = skipped[uname]
+                    continue
+                elif not finder.is_valid:
+                    skipped[uname] = 'primer failed secondary validation'
                     new_row[prefix + 'error'] = skipped[uname]
                     continue
                 new_row[prefix +
