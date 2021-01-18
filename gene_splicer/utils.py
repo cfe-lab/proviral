@@ -502,6 +502,15 @@ def isNan(num):
     return num != num
 
 
+# Given a sample name, return whether or not the sample is proviral-related
+def is_proviral(sample_name):
+    if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
+        ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
+            'HLA' in sample_name) or ('HCV' in sample_name):
+        return False
+    return True
+
+
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # filtered_contigs = filter_valid(contigs_df)
     # filtered_conseqs = filter_valid(conseqs_df)
@@ -509,20 +518,20 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # 'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
     data = {}
 
-    filtered_conseqs = conseqs_df[
-        (~conseqs_df['reference'].str.contains('reverse'))
-        & (~conseqs_df['reference'].str.contains('unknown')
-           & (conseqs_df['error'] != 'contig not MAX')
-           & (conseqs_df['error'] != 'is V3 sequence'))]
-    filtered_contigs = contigs_df[
-        (~contigs_df['reference'].str.contains('reverse'))
-        & (~contigs_df['reference'].str.contains('unknown')
-           & (conseqs_df['error'] != 'is V3 sequence'))]
+    # filtered_conseqs = conseqs_df[
+    #     (~conseqs_df['reference'].str.contains('reverse'))
+    #     & (~conseqs_df['reference'].str.contains('unknown')
+    #        & (conseqs_df['error'] != 'contig not MAX')
+    #        & (conseqs_df['error'] != 'is V3 sequence'))]
+    # filtered_contigs = contigs_df[
+    #     (~contigs_df['reference'].str.contains('reverse'))
+    #     & (~contigs_df['reference'].str.contains('unknown')
+    #        & (conseqs_df['error'] != 'is V3 sequence'))]
 
     max_failed = 0
 
     # Go through all the conseqs
-    for index, row in filtered_conseqs.iterrows():
+    for index, row in conseqs_df.iterrows():
 
         sample = row['sample']
         passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
@@ -552,11 +561,22 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 data[sample]['conseq_passed'] = False
                 data[sample]['contig_passed'] = False
                 data[sample]['absolute_fail'] = True
+            # If we have not seen a conseq that passed, set to pass
             elif passed:
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
                 data[sample]['conseq_passed'] = True
+            # If not passed
             else:
+                ## Determine type of error for certain cases
+                # If conseq is not max, do not record it
+                if row['error'] == 'contig not MAX':
+                    continue
+                elif not is_proviral(sample):
+                    row['error'] = 'Sample is non-proviral'
+                elif any(
+                    [x in row['reference'] for x in ('reverse', 'unknown')]):
+                    row['error'] = 'Sample does not align to HIV'
                 nfailed = len(data[sample]['failed'])
                 if nfailed > max_failed:
                     max_failed = nfailed
@@ -576,7 +596,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 })
 
     # Go through all the contigs
-    for index, row in filtered_contigs.iterrows():
+    for index, row in contigs_df.iterrows():
         sample = row['sample']
         passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
             row['rev_error'])
@@ -645,15 +665,6 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             }
             writer.writerow(data[sample])
     return outfile
-
-
-# Given a sample name, return whether or not the sample is proviral-related
-def is_proviral(sample_name):
-    if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
-        ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
-            'HLA' in sample_name) or ('HCV' in sample_name):
-        return False
-    return True
 
 
 ## Define some variables
