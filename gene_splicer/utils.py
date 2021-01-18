@@ -512,21 +512,10 @@ def is_proviral(sample_name):
 
 
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
-    # filtered_contigs = filter_valid(contigs_df)
-    # filtered_conseqs = filter_valid(conseqs_df)
-    # Some useful columns
-    # 'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
     data = {}
 
-    # filtered_conseqs = conseqs_df[
-    #     (~conseqs_df['reference'].str.contains('reverse'))
-    #     & (~conseqs_df['reference'].str.contains('unknown')
-    #        & (conseqs_df['error'] != 'contig not MAX')
-    #        & (conseqs_df['error'] != 'is V3 sequence'))]
-    # filtered_contigs = contigs_df[
-    #     (~contigs_df['reference'].str.contains('reverse'))
-    #     & (~contigs_df['reference'].str.contains('unknown')
-    #        & (conseqs_df['error'] != 'is V3 sequence'))]
+    contigs_df = contigs_df.fillna(None)
+    conseqs_df = conseqs_df.fillna(None)
 
     max_failed = 0
 
@@ -534,8 +523,10 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     for index, row in conseqs_df.iterrows():
 
         sample = row['sample']
-        passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
-            row['rev_error'])
+        # passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
+        #     row['rev_error'])
+        passed = row['error'] is None and row['fwd_error'] is None and row[
+            'rev_error'] is None
         # If sample not in data yet
         if row['sample'] not in data:
             data[sample] = {
@@ -598,8 +589,10 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     # Go through all the contigs
     for index, row in contigs_df.iterrows():
         sample = row['sample']
-        passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
-            row['rev_error'])
+        # passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
+        #     row['rev_error'])
+        passed = row['error'] is None and row['fwd_error'] is None and row[
+            'rev_error'] is None
         # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
         if row['sample'] not in data:
             logger.warning(
