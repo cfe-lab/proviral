@@ -514,8 +514,8 @@ def is_proviral(sample_name):
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     data = {}
 
-    contigs_df = contigs_df.fillna(None)
-    conseqs_df = conseqs_df.fillna(None)
+    contigs_df = contigs_df.fillna(value=None)
+    conseqs_df = conseqs_df.fillna(value=None)
 
     max_failed = 0
 
