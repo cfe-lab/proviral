@@ -512,6 +512,12 @@ def is_proviral(sample_name):
     return True
 
 
+def convert_none(data, translation='none'):
+    if data is None:
+        return translation
+    return data
+
+
 def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     data = {}
 
@@ -665,7 +671,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 for k, v in fail.items():
                     data[sample][k] = v
             data[sample] = {
-                k: v
+                k: convert_none(v)
                 for k, v in data[sample].items() if k in fieldnames
             }
             writer.writerow(data[sample])
