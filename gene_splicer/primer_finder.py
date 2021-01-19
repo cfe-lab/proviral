@@ -141,6 +141,9 @@ def parse_args():
     parser.add_argument('conseqs_csv',
                         help='CSV file with conseq sequences',
                         type=FileType())
+    parser.add_argument('cascade_csv',
+                        help='CSV file from MiCall output',
+                        type=FileType())
     parser.add_argument('name', help='A name for the analysis')
     parser.add_argument(
         '-p',
@@ -181,6 +184,7 @@ def make_path(path):
 def find_primers(csv_filepath,
                  outpath,
                  run_name,
+                 all_samples,
                  sample_size=50,
                  extended_length=200):
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
@@ -216,6 +220,29 @@ def find_primers(csv_filepath,
             continue
         contig_num = 0
         unique_samples += 1
+
+        # all_samples is a dict whose keys are sample names and values are the remap column (constructed from cascade.csv file)
+        for sample in all_samples:
+            # If no reads remapped, contig/conseq does not exist, write it as an error
+            if all_samples[sample] == 0:
+                new_row = dict(run_name=run_name,
+                               sample=sample,
+                               reference='unknown',
+                               error='No contig/conseq constructed',
+                               sequence=None,
+                               seqlen=None,
+                               nmixtures=None)
+                for prefix in ('fwd_', 'rev_'):
+                    new_row[prefix + 'error'] = None
+                    new_row[prefix + 'canonical_primer_seq'] = None
+                    new_row[prefix + 'sample_primer_seq'] = None
+                    new_row[prefix + 'sample_primer_start'] = None
+                    new_row[prefix + 'sample_primer_end'] = None
+                    new_row[prefix + 'sample_primer_size'] = None
+                    new_row[prefix + 'hxb2_sample_primer_start'] = None
+                    new_row[prefix + 'hxb2_sample_primer_end'] = None
+                writer.writerow(new_row)
+
         for row in sample_rows:
             total += 1
             seed_name = row.get('genotype') or row.get('ref') or row['region']
@@ -436,11 +463,19 @@ def filter_df(df, nodups=True):
 
 
 def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
-        split, sample_size):
-    contigs_out = find_primers(contigs_csv, outpath, f'{name}_contigs',
-                               sample_size)
-    conseqs_out = find_primers(conseqs_csv, outpath, f'{name}_conseqs',
-                               sample_size)
+        split, sample_size, cascade_csv):
+    all_samples = utils.getSamplesFromCascade(cascade_csv)
+
+    contigs_out = find_primers(contigs_csv,
+                               outpath,
+                               f'{name}_contigs',
+                               sample_size=sample_size,
+                               all_samples=all_samples)
+    conseqs_out = find_primers(conseqs_csv,
+                               outpath,
+                               f'{name}_conseqs',
+                               sample_size=sample_size,
+                               all_samples=all_samples)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -511,7 +546,8 @@ def main():
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      sample_size=args.sample_size)
+                      sample_size=args.sample_size,
+                      cascade_csv=args.cascade_csv)
     return {'fasta_files': fasta_files, 'args': args}
 
 

@@ -1,6 +1,7 @@
 import math
 import os
 import re
+from typing import Dict
 import yaml
 import shutil
 import subprocess as sp
@@ -677,6 +678,13 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             writer.writerow(data[sample])
     return outfile
 
+
+def getSamplesFromCascade(cascade_csv):
+    all_samples = {}
+    reader = DictReader(cascade_csv)
+    for row in reader:
+        all_samples[row['sample']] = int(row['remap'])
+    return all_samples
 
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
