@@ -227,7 +227,7 @@ def find_primers(csv_filepath,
             if all_samples[sample] == 0:
                 new_row = dict(run_name=run_name,
                                sample=sample,
-                               reference='unknown',
+                               reference=None,
                                error='No contig/conseq constructed',
                                sequence=None,
                                seqlen=None,
