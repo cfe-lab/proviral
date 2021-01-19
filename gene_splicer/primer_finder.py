@@ -342,7 +342,7 @@ def find_primers(csv_filepath,
 
                 # Natalie's request
                 # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
-                if len(finder.sample_primer) == 0:
+                if not finder.sample_primer:
                     skipped[uname] = 'primer was not found'
                     new_row[prefix + 'error'] = skipped[uname]
                     continue
