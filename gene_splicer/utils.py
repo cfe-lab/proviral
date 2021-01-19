@@ -577,6 +577,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     continue
                 elif not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
+                elif row['reference'] is None:
+                    pass
                 elif any(
                     [x in row['reference'] for x in ('reverse', 'unknown')]):
                     row['error'] = 'Sample does not align to HIV'
