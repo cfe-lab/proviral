@@ -580,8 +580,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                     continue
                 elif not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
-                elif row['reference'] is None:
-                    row['error'] = 'No contig/conseq constructed'
+                elif row['error'] == 'No contig/conseq constructed':
                     continue
                 elif any(
                     [x in row['reference'] for x in ('reverse', 'unknown')]):
@@ -639,8 +638,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
             else:
                 if not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
-                elif row['reference'] is None:
-                    row['error'] = 'No contig/conseq constructed'
+                elif row['error'] == 'No contig/conseq constructed':
                     continue
                 elif any(
                     [x in row['reference'] for x in ('reverse', 'unknown')]):
