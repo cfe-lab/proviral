@@ -698,8 +698,9 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 else:
                     is_hiv_indicies.append(i)
             # If the number of failures is equal to the count of non-hiv failures then all failures are due to non-hiv
-            if count_non_hiv == len(
-                    data[sample]['failed']) and not data[sample]['passed']:
+            if count_non_hiv == len(data[sample]['failed']
+                                    ) and not data[sample]['passed'] and len(
+                                        data[sample]['failed']) > 0:
                 data[sample]['error'] = 'Sample does not align to HIV'
                 data[sample]['failed'] = []
             # Otherwise at least one sequence was not non-hiv so we should display only the error for that sequence
