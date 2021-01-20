@@ -529,7 +529,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
 
     # Go through all the conseqs
     for index, row in conseqs_df.iterrows():
-
+        seqtype = 'conseq'
         sample = row['sample']
         # passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
         #     row['rev_error'])
@@ -544,15 +544,17 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 'contig_passed': False,
                 'reference': None,
                 'seqlen': None,
+                'seqtype': None,
                 'sequence': None,
                 'failed': [],
-                'absolute_fail': False
+                'error': None
             }
             if passed:
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
                 data[sample]['conseq_passed'] = True
                 data[sample]['sequence'] = row['sequence']
+                data[sample]['seqtype'] = row['seqtype']
         # Else if sample is already in data
         else:
             # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
@@ -561,19 +563,22 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                                 sample)
                 data[sample]['conseq_passed'] = False
                 data[sample]['contig_passed'] = False
-                data[sample]['absolute_fail'] = True
+                data[sample]['error'] = 'Sample has multiple passed sequences'
                 data[sample]['sequence'] = None
+                data[sample]['seqtype'] = None
             # If we have not seen a conseq that passed, set to pass
             elif passed:
                 data[sample]['reference'] = row['reference']
                 data[sample]['seqlen'] = row['seqlen']
                 data[sample]['conseq_passed'] = True
                 data[sample]['sequence'] = row['sequence']
+                data[sample]['seqtype'] = row['seqtype']
             # If not passed
             else:
                 ## Determine type of error for certain cases
                 # If conseq is not max, do not record it
-                if row['error'] == 'contig not MAX':
+                if ((row['error'] == 'contig not MAX')
+                        or (row['error'] == 'is V3 sequence')):
                     continue
                 elif not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
@@ -586,24 +591,25 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    f'fail_seqtype_{nfailed}':
-                    'contig',
-                    f'fail_seqlen_{nfailed}':
-                    row['seqlen'],
-                    f'fail_sequence_{nfailed}':
-                    row['sequence'],
-                    f'fail_ref_{nfailed}':
-                    row['reference'],
                     f'fail_error_{nfailed}':
                     row['error'],
                     f'fail_fwd_err_{nfailed}':
                     row['fwd_error'],
                     f'fail_rev_err_{nfailed}':
                     row['rev_error'],
+                    f'fail_seqtype_{nfailed}':
+                    seqtype,
+                    f'fail_seqlen_{nfailed}':
+                    row['seqlen'],
+                    f'fail_sequence_{nfailed}':
+                    row['sequence'],
+                    f'fail_ref_{nfailed}':
+                    row['reference']
                 })
 
     # Go through all the contigs
     for index, row in contigs_df.iterrows():
+        seqtype = 'contig'
         sample = row['sample']
         # passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
         #     row['rev_error'])
@@ -616,51 +622,58 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 sample)
         # Else if sample is already in data
         else:
-            # If the contig passes
-            if passed:
-                data[sample]['contig_passed'] = True
-                data[sample]['reference'] = row['reference']
-                data[sample]['seqlen'] = row['seqlen']
-                data[sample]['sequence'] = row['sequence']
-            elif passed and data[sample]['contig_passed']:
+            if passed and data[sample]['contig_passed']:
                 logger.critical('Sample "%s" already has a passed sequence!' %
                                 sample)
                 data[sample]['contig_passed'] = False
                 data[sample]['conseq_passed'] = False
-                data[sample]['absolute_fail'] = True
+                data[sample]['error'] = 'Sample has multiple passed sequences'
                 data[sample]['sequence'] = None
+                data[sample]['seqtype'] = None
+            # If the contig passes
+            elif passed:
+                data[sample]['contig_passed'] = True
+                data[sample]['reference'] = row['reference']
+                data[sample]['seqlen'] = row['seqlen']
+                data[sample]['sequence'] = row['sequence']
+                data[sample]['seqtype'] = row['seqtype']
             else:
+                if not is_proviral(sample):
+                    row['error'] = 'Sample is non-proviral'
+                elif row['reference'] is None:
+                    pass
+                elif any(
+                    [x in row['reference'] for x in ('reverse', 'unknown')]):
+                    row['error'] = 'Sample does not align to HIV'
                 nfailed = len(data[sample]['failed'])
                 if nfailed > max_failed:
                     max_failed = nfailed
                 data[sample]['failed'].append({
-                    f'fail_seqtype_{nfailed}':
-                    'contig',
-                    f'fail_seqlen_{nfailed}':
-                    row['seqlen'],
-                    f'fail_sequence_{nfailed}':
-                    row['sequence'],
-                    f'fail_ref_{nfailed}':
-                    row['reference'],
                     f'fail_error_{nfailed}':
                     row['error'],
                     f'fail_fwd_err_{nfailed}':
                     row['fwd_error'],
                     f'fail_rev_err_{nfailed}':
                     row['rev_error'],
+                    f'fail_seqtype_{nfailed}':
+                    seqtype,
+                    f'fail_seqlen_{nfailed}':
+                    row['seqlen'],
+                    f'fail_sequence_{nfailed}':
+                    row['sequence'],
+                    f'fail_ref_{nfailed}':
+                    row['reference']
                 })
     outfile = outpath / 'outcome_summary.csv'
 
-    fieldnames = ['sample', 'run', 'passed', 'reference', 'seqlen', 'sequence']
+    fieldnames = [
+        'sample', 'run', 'passed', 'reference', 'seqtype', 'seqlen', 'sequence'
+    ]
     for i in range(max_failed):
         fieldnames += [
-            f'fail_seqtype_{i}',
-            f'fail_seqlen_{i}',
-            f'fail_sequence_{i}',
-            f'fail_ref_{i}',
-            f'fail_error_{i}',
-            f'fail_fwd_err_{i}',
-            f'fail_rev_err_{i}',
+            f'fail_error_{i}', f'fail_fwd_err_{i}', f'fail_rev_err_{i}',
+            f'fail_seqtype_{i}', f'fail_seqlen_{i}', f'fail_sequence_{i}',
+            f'fail_ref_{i}'
         ]
 
     # Write the rows
@@ -670,11 +683,35 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
         for sample in data:
             data[sample]['passed'] = data[sample]['conseq_passed'] or data[
                 sample]['contig_passed']
+
+            # Zabrina's request to remove all failed seqs if sample passed
+            if data[sample]['passed']:
+                data[sample]['failed'] = []
+
+            # Zabrina's request to simply display a single error if all failures are due to not aligning to HIV
+            count_non_hiv = 0
+            is_hiv_indicies = []
+            for i, fail in enumerate(data[sample]['failed']):
+                if fail[f'fail_error_{i}'] == 'Sample does not align to HIV':
+                    count_non_hiv += 1
+                else:
+                    is_hiv_indicies.append(i)
+            # If the number of failures is equal to the count of non-hiv failures then all failures are due to non-hiv
+            if len(count_non_hiv) == len(
+                    data[sample]['failed']) and not data[sample]['passed']:
+                data[sample]['error'] = 'Sample does not align to HIV'
+                data[sample]['failed'] = []
+            # Otherwise at least one sequence was not non-hiv so we should display only the error for that sequence
+            else:
+                new_failed = []
+                for i in is_hiv_indicies:
+                    new_failed.append(data[sample]['failed'][i])
+                data[sample]['failed'] = new_failed
             for fail in data[sample]['failed']:
                 for k, v in fail.items():
                     data[sample][k] = v
             data[sample] = {
-                k: convert_none(v)
+                k: v
                 for k, v in data[sample].items() if k in fieldnames
             }
             writer.writerow(data[sample])
@@ -687,6 +724,7 @@ def getSamplesFromCascade(cascade_csv):
     for row in reader:
         all_samples[row['sample']] = int(row['remap'])
     return all_samples
+
 
 ## Define some variables
 cwd = Path(os.path.realpath(__file__)).parent
