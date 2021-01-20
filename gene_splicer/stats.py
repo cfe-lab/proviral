@@ -106,7 +106,7 @@ def get_unique_samples(contigs_files):
     unique_samples_outfile.write_rows(unique_samples_data)
 
 
-def is_proviral(sample_name):
+def isProviral(sample_name):
     if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
         ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
             'HLA' in sample_name) or ('HCV' in sample_name):
@@ -120,7 +120,7 @@ def get_data(contigs_file, filtered_file, data=None):
     df = pandas.read_csv(contigs_file)
     run = None
     for index, row in df.iterrows():
-        if not is_proviral(row['sample']):
+        if not isProviral(row['sample']):
             continue
         sample = row['sample']
         run = row['run_name']
@@ -132,7 +132,7 @@ def get_data(contigs_file, filtered_file, data=None):
     df = pandas.read_csv(filtered_file)
     for index, row in df.iterrows():
         sample = row['sample']
-        if not is_proviral(sample):
+        if not isProviral(sample):
             continue
         # Check if sample has already passed, meaning two contigs passed
         if data[sample][run] is True:

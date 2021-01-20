@@ -20,6 +20,7 @@ import Levenshtein
 from gotoh import align_it
 import logger
 from primer_finder_class import PrimerFinder
+from outcome_summary import OutcomeSummary
 
 import utils
 mixture_dict = utils.mixture_dict
@@ -214,7 +215,7 @@ def find_primers(csv_filepath,
     unique_samples = 0
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
         # Do not analyze non-proviral samples
-        if not utils.is_proviral(sample_name):
+        if not utils.isProviral(sample_name):
             logger.debug('Skipping sample "%s" because it is non-proviral' %
                          sample_name)
             continue
@@ -483,7 +484,7 @@ def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        utils.genOutcomeSummary(contigs_df, conseqs_df, outpath)
+        OutcomeSummary(contigs_df, conseqs_df, outpath)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)
