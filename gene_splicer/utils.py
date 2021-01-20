@@ -545,7 +545,7 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 'seqtype': None,
                 'sequence': None,
                 'failed': [],
-                'error': None
+                'error': row['error']
             }
             if passed:
                 data[sample]['reference'] = row['reference']
