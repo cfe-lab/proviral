@@ -667,7 +667,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     outfile = outpath / 'outcome_summary.csv'
 
     fieldnames = [
-        'sample', 'run', 'passed', 'reference', 'seqtype', 'seqlen', 'sequence'
+        'sample', 'run', 'passed', 'error', 'reference', 'seqtype', 'seqlen',
+        'sequence'
     ]
     for i in range(max_failed):
         fieldnames += [
