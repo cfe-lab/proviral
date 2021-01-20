@@ -531,8 +531,6 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
     for index, row in conseqs_df.iterrows():
         seqtype = 'conseq'
         sample = row['sample']
-        # passed = isNan(row['error']) and isNan(row['fwd_error']) and isNan(
-        #     row['rev_error'])
         passed = row['error'] is None and row['fwd_error'] is None and row[
             'rev_error'] is None
         # If sample not in data yet
@@ -583,7 +581,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 elif not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
                 elif row['reference'] is None:
-                    pass
+                    row['error'] = 'No contig/conseq constructed'
+                    continue
                 elif any(
                     [x in row['reference'] for x in ('reverse', 'unknown')]):
                     row['error'] = 'Sample does not align to HIV'
@@ -641,7 +640,8 @@ def genOutcomeSummary(contigs_df, conseqs_df, outpath):
                 if not is_proviral(sample):
                     row['error'] = 'Sample is non-proviral'
                 elif row['reference'] is None:
-                    pass
+                    row['error'] = 'No contig/conseq constructed'
+                    continue
                 elif any(
                     [x in row['reference'] for x in ('reverse', 'unknown')]):
                     row['error'] = 'Sample does not align to HIV'
