@@ -156,7 +156,8 @@ class OutcomeSummary:
         with open(self.path, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for sample in self.data:
+            for sample in sorted(self.data,
+                                 key=lambda x: int(x.rsplit('_')[-1][1:])):
                 self.data[sample] = {
                     k: v
                     for k, v in self.data[sample].items() if k in fieldnames
