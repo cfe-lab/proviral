@@ -15,9 +15,9 @@
   6. If there are ANY non-TCGA characters in the sequence, tag that sequence with an error: `contig sequence contained non-TCGA/gap`, skip the sequence (do not try to find primers), and write it to the `*primer_analysis.csv` file
   7. For each end (5' (fwd), 3' (rev)) of the sequence:
      1. If there are `X` characters found, try to remove them (if they are clustered) and if not possible to remove tag the fwd/rev end with a fwd/rev primer error: `low read coverage in primer region`, skip the fwd/rev end (do not try to find primers)
-     2. If fwd/rev end has zero nucleotides found for primer, tag the fwd/rev end with a fwd/rev primer error: `primer was not found`, skip the fwd/rev end (do not try to find primers)
-     3. If the fwd/rev primer is deemed not valid, tag the fwd/rev end with a fwd/rev primer error: `primer failed secondary validation`, skip the fwd/rev end (do not try to find primers)
-  8. Write the sequence to the `*primer_analysis.csv` file regardless of tagged errors
+     2. If fwd/rev end has zero nucleotides found for primer, tag the fwd/rev end with a fwd/rev primer error: `primer was not found`, skip to the next end if any
+     3. If the fwd/rev primer is deemed not valid, tag the fwd/rev end with a fwd/rev primer error: `primer failed secondary validation`, skip to the next end if any
+  8. Write the sequence to the `*primer_analysis.csv` file regardless of tagged errors in any error column
   9. Load the `*primer_analysis.csv` files for both contigs and conseqs and for both of them apply the following filters in order:
      1. Remove all rows where either the `error`, `fwd_error`, or `rev_error` is tagged
      2. Remove the primers from the sequences (for hivseqinr)
