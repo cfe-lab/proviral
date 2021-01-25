@@ -226,17 +226,17 @@ class OutcomeSummary:
                 if 'primer' in self.data[sample]['failed'][0][
                         'fail_fwd_err_0'] or 'primer' in self.data[sample][
                             'failed'][0]['fail_rev_err_0']:
-                    self.data[sample]['error'] = 'primer error'
+                    self.data[sample]['error'] = 'Primer error'
                 # Case 2
                 elif 'coverage' in self.data[sample]['failed'][0][
                         'fail_fwd_err_0'] or 'coverage' in self.data[sample][
                             'failed'][0]['fail_rev_error_0']:
-                    self.data[sample]['error'] = 'low coverage'
+                    self.data[sample]['error'] = 'Low coverage'
             # Case 3, 4, and 5
             elif not self.data[sample]['passed'] and len(
                     self.data[sample]['failed']) > 1:
                 # I can just set the error to multiple contigs?
-                self.data[sample]['error'] = 'multiple contigs'
+                self.data[sample]['error'] = 'Multiple contigs'
                 # all_low_cov = True
                 # all_primer = True
                 # for i, failure in enumerate(self.data[sample]['failed']):
