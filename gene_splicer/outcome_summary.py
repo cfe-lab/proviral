@@ -23,12 +23,12 @@ class OutcomeSummary:
             'run': row['run_name'].rsplit('_', 1)[0],
             'conseq_passed': False,
             'contig_passed': False,
-            'reference': None,
-            'seqlen': None,
-            'seqtype': None,
-            'sequence': None,
+            'reference': '',
+            'seqlen': '',
+            'seqtype': '',
+            'sequence': '',
             'failed': [],
-            'error': None
+            'error': ''
         }
 
     def setPassed(self, row):
@@ -43,8 +43,8 @@ class OutcomeSummary:
                         row['sample'])
         self.data[row['sample']]['conseq_passed'] = False
         self.data[row['sample']]['contig_passed'] = False
-        self.data[row['sample']]['sequence'] = None
-        self.data[row['sample']]['seqtype'] = None
+        self.data[row['sample']]['sequence'] = ''
+        self.data[row['sample']]['seqtype'] = ''
         self.data[row['sample']]['error'] = error
 
     def addFailure(self, row, seqtype):
@@ -89,8 +89,8 @@ class OutcomeSummary:
         for index, row in conseqs_df.iterrows():
             seqtype = 'conseq'
             sample = row['sample']
-            passed = row['error'] is None and row['fwd_error'] is None and row[
-                'rev_error'] is None
+            passed = not row['error'] and not row['fwd_error'] and not row[
+                'rev_error']
             # If sample not in data yet
             if row['sample'] not in self.data:
                 self.addSample(row)
@@ -118,8 +118,8 @@ class OutcomeSummary:
         for index, row in contigs_df.iterrows():
             seqtype = 'contig'
             sample = row['sample']
-            passed = row['error'] is None and row['fwd_error'] is None and row[
-                'rev_error'] is None
+            passed = not row['error'] and not row['fwd_error'] and not row[
+                'rev_error']
             # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
             if row['sample'] not in self.data:
                 logger.warning(
@@ -198,19 +198,60 @@ class OutcomeSummary:
                 for i in is_hiv_indicies:
                     new_failed.append(self.data[sample]['failed'][i])
                 self.data[sample]['failed'] = new_failed
-            for fail in self.data[sample]['failed']:
+            for i, fail in enumerate(self.data[sample]['failed']):
+                newfail = {}
                 for k, v in fail.items():
+                    # Reset the number
+                    k = k.rsplit('_', 1)[0] + f'_{i}'
+                    newfail[k] = v
                     self.data[sample][k] = v
+                self.data[sample]['failed'][i] = newfail
 
             # Update the max number of failures
             nfailed = len(self.data[sample]['failed'])
             if nfailed > self.max_failed:
                 self.max_failed = nfailed
 
+            # Natalie's requests
+            # 1. If sample has only one contig and it had primer failure -> primer error
+            # 2. A sample that yielded only one contig, and it had low coverage -> LOW COVERAGE
+            # 3. A sample that yielded multiple contigs, all of which SOLELY suffered primer failure -> MULTIPLE CONTIGS
+            # 4. A sample that yielded multiple contigs, all of which SOLELY suffered low coverage ->  MULTIPLE CONTIGS
+            # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage ->  MULTIPLE CONTIGS
+
+            # Case 1 and 2
+            if len(self.data[sample]
+                   ['failed']) == 1 and not self.data[sample]['passed']:
+                # Case 1
+                if 'primer' in self.data[sample]['failed'][0][
+                        'fail_fwd_err_0'] or 'primer' in self.data[sample][
+                            'failed'][0]['fail_rev_err_0']:
+                    self.data[sample]['error'] = 'primer error'
+                # Case 2
+                elif 'coverage' in self.data[sample]['failed'][0][
+                        'fail_fwd_err_0'] or 'coverage' in self.data[sample][
+                            'failed'][0]['fail_rev_error_0']:
+                    self.data[sample]['error'] = 'low coverage'
+            # Case 3, 4, and 5
+            elif not self.data[sample]['passed'] and len(
+                    self.data[sample]['failed']) > 1:
+                # I can just set the error to multiple contigs?
+                self.data[sample]['error'] = 'multiple contigs'
+                # all_low_cov = True
+                # all_primer = True
+                # for i, failure in enumerate(self.data[sample]['failed']):
+                #     if 'coverage' not in failure[f'fail_fwd_error_{i}'] and 'coverage' not in failure[f'fail_rev_error_{i}']:
+                #         all_low_cov = False
+                #         break
+                # for i, failure in enumerate(self.data[sample]['failed']):
+                #     if 'primer' not in failure[f'fail_fwd_error_{i}'] and 'primer' not in failure[f'fail_rev_error_{i}']:
+                #         all_primer = False
+                #         break
+
     def create(self, conseqs_df, contigs_df):
         # Normalize nan to None
-        contigs_df = contigs_df.where(pd.notnull(contigs_df), None)
-        conseqs_df = conseqs_df.where(pd.notnull(conseqs_df), None)
+        contigs_df = contigs_df.where(pd.notnull(contigs_df), '')
+        conseqs_df = conseqs_df.where(pd.notnull(conseqs_df), '')
 
         self.processConseqs(conseqs_df)
         self.processContigs(contigs_df)

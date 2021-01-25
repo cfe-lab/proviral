@@ -213,6 +213,29 @@ def find_primers(csv_filepath,
     total = 0
     viable = 0
     unique_samples = 0
+
+    # all_samples is a dict whose keys are sample names and values are the remap column (constructed from cascade.csv file)
+    for sample in all_samples:
+        # If no reads remapped, contig/conseq does not exist, write it as an error
+        if all_samples[sample] == 0:
+            new_row = dict(run_name=run_name,
+                            sample=sample,
+                            reference=None,
+                            error='No contig/conseq constructed',
+                            sequence=None,
+                            seqlen=None,
+                            nmixtures=None)
+            for prefix in ('fwd_', 'rev_'):
+                new_row[prefix + 'error'] = None
+                new_row[prefix + 'canonical_primer_seq'] = None
+                new_row[prefix + 'sample_primer_seq'] = None
+                new_row[prefix + 'sample_primer_start'] = None
+                new_row[prefix + 'sample_primer_end'] = None
+                new_row[prefix + 'sample_primer_size'] = None
+                new_row[prefix + 'hxb2_sample_primer_start'] = None
+                new_row[prefix + 'hxb2_sample_primer_end'] = None
+            writer.writerow(new_row)
+
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
         # Do not analyze non-proviral samples
         if not utils.isProviral(sample_name):
@@ -221,28 +244,6 @@ def find_primers(csv_filepath,
             continue
         contig_num = 0
         unique_samples += 1
-
-        # all_samples is a dict whose keys are sample names and values are the remap column (constructed from cascade.csv file)
-        for sample in all_samples:
-            # If no reads remapped, contig/conseq does not exist, write it as an error
-            if all_samples[sample] == 0:
-                new_row = dict(run_name=run_name,
-                               sample=sample,
-                               reference=None,
-                               error='No contig/conseq constructed',
-                               sequence=None,
-                               seqlen=None,
-                               nmixtures=None)
-                for prefix in ('fwd_', 'rev_'):
-                    new_row[prefix + 'error'] = None
-                    new_row[prefix + 'canonical_primer_seq'] = None
-                    new_row[prefix + 'sample_primer_seq'] = None
-                    new_row[prefix + 'sample_primer_start'] = None
-                    new_row[prefix + 'sample_primer_end'] = None
-                    new_row[prefix + 'sample_primer_size'] = None
-                    new_row[prefix + 'hxb2_sample_primer_start'] = None
-                    new_row[prefix + 'hxb2_sample_primer_end'] = None
-                writer.writerow(new_row)
 
         for row in sample_rows:
             total += 1
@@ -273,6 +274,7 @@ def find_primers(csv_filepath,
                 writer.writerow(new_row)
                 continue
 
+            # I don't think we need this try block if I am already removing non-proviral stuff up on line 218
             try:
                 # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
                 if row['region'] == v3_reference:
@@ -341,8 +343,8 @@ def find_primers(csv_filepath,
                     seqlen = len(seq)
                     seq = handle_x(seq)
                     if not seq or len(seq) < seqlen / 6:
-                        skipped[uname] = 'too many X in sequence'
-                        new_row[prefix + 'error'] = skipped[uname]
+                        new_row[prefix +
+                                'error'] = 'low read coverage in primer region'
                         continue
 
                 # interest = 'T0288D90-M7-HIV_S95'
@@ -371,12 +373,11 @@ def find_primers(csv_filepath,
                 # Natalie's request
                 # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
                 if not finder.sample_primer:
-                    skipped[uname] = 'primer was not found'
-                    new_row[prefix + 'error'] = skipped[uname]
+                    new_row[prefix + 'error'] = 'primer was not found'
                     continue
                 elif not finder.is_valid:
-                    skipped[uname] = 'primer failed secondary validation'
-                    new_row[prefix + 'error'] = skipped[uname]
+                    new_row[prefix +
+                            'error'] = 'primer failed secondary validation'
                     continue
                 new_row[prefix +
                         'canonical_primer_seq'] = primers[direction]['seq']
