@@ -231,7 +231,7 @@ class OutcomeSummary:
                 elif 'coverage' in self.data[sample]['failed'][0][
                         'fail_fwd_err_0'] or 'coverage' in self.data[sample][
                             'failed'][0]['fail_rev_error_0']:
-                    self.data[sample]['error'] = 'Low coverage'
+                    self.data[sample]['error'] = 'Low end read coverage'
             # Case 3, 4, and 5
             elif not self.data[sample]['passed'] and len(
                     self.data[sample]['failed']) > 1:
