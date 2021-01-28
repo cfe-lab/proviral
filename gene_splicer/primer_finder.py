@@ -448,8 +448,8 @@ def run(contigs_csv,
     dfs = load_csv(contigs_out, 'contigs')
     dfs = load_csv(conseqs_out, 'conseqs', dfs)
     files = []
-    contigs_df = dfs['contigs']
-    conseqs_df = dfs['conseqs']
+    contigs_df = dfs['contigs'].fillna('')
+    conseqs_df = dfs['conseqs'].fillna('')
     # Generate outcome summary
     OutcomeSummary(contigs_df, conseqs_df, outpath)
     filtered_contigs = filter_df(contigs_df, nodups)
