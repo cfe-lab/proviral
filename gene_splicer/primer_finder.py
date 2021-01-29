@@ -452,7 +452,7 @@ def run(contigs_csv,
     contigs_df = dfs['contigs'].fillna('')
     conseqs_df = dfs['conseqs'].fillna('')
     # Generate outcome summary
-    OutcomeSummary(contigs_df, conseqs_df, outpath / 'outcome_summary.csv')
+    OutcomeSummary(contigs_df, conseqs_df, outcome_summary_path)
     filtered_contigs = filter_df(contigs_df, nodups)
     filtered_conseqs = filter_df(conseqs_df, nodups)
     joined = filtered_contigs.merge(filtered_conseqs,
