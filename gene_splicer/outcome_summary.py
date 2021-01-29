@@ -114,8 +114,7 @@ class OutcomeSummary:
 
     def write(self):
         fieldnames = [
-            'sample', 'run', 'passed', 'error', 'reference', 'seqtype',
-            'seqlen', 'sequence'
+            'passed', 'error', 'reference', 'seqtype', 'seqlen', 'sequence'
         ]
         for i in range(self.max_failed):
             fieldnames += [

@@ -6,8 +6,8 @@ import pandas as pd
 import io
 
 cwd = Path(os.path.realpath(__file__)).parent
-inputs = cwd / 'inputs'
-outputs = cwd / 'outputs'
+inputs = cwd.parent / 'data' / 'example3' / 'inputs'
+outputs = cwd.parent / 'data' / 'example3' / 'outputs'
 
 import gene_splicer.primer_finder as primer_finder
 
@@ -47,6 +47,7 @@ def test_filter_df():
     dfs = primer_finder.load_csv(contigs_out, 'contigs')
     dfs = primer_finder.load_csv(conseqs_out, 'conseqs', dfs)
     files = []
+    # If you remove the below 2 lines, the NaN (which are actually floats) will break the filter_df function since it uses a pandas .str filter internally
     contigs_df = dfs['contigs'].fillna('')
     conseqs_df = dfs['conseqs'].fillna('')
     filtered_contigs = primer_finder.filter_df(contigs_df, nodups=True)

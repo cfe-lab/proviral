@@ -5,6 +5,7 @@ from pathlib import Path
 import io
 
 cwd = Path(os.path.realpath(__file__)).parent
+data = cwd.parent / 'data'
 inputs = cwd / 'inputs'
 outputs = cwd / 'outputs'
 
@@ -64,6 +65,26 @@ def test_pipeline_sample1():
         args = Args(
             query_fasta=fasta,
             name='sample1',
+            outpath=outpath,
+            table_precursor_csv=(outpath / 'table_precursor.csv'),
+            aligned_table_precursor_csv=(outpath /
+                                         'aligned_table_precursor.csv'),
+            skip_align=True)
+        gene_splicer.run(fasta, args)
+
+
+def test_pipeline_sample2():
+    conseq_path = data / 'example3' / 'inputs' / 'conseqs.csv'
+    contigs_path = data / 'example3' / 'inputs' / 'contigs.csv'
+    outpath = cwd / 'outputs' / 'example3'
+    fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
+                                    contigs_csv=open(contigs_path),
+                                    outpath=(outpath),
+                                    extended_size=1000)
+    for fasta in fasta_paths:
+        args = Args(
+            query_fasta=fasta,
+            name='example3',
             outpath=outpath,
             table_precursor_csv=(outpath / 'table_precursor.csv'),
             aligned_table_precursor_csv=(outpath /
