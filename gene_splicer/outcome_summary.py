@@ -11,7 +11,7 @@ import gene_splicer.utils as utils
 class OutcomeSummary:
     def __init__(self, conseqs_df, contigs_df, outpath):
         self.data = {}
-        self.path = outpath / 'outcome_summary.csv'
+        self.path = outpath
         # To know how many columns to produce
         self.max_failed = 0
         self.create(conseqs_df, contigs_df)

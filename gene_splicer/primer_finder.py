@@ -431,6 +431,7 @@ def filter_df(df, nodups=True):
 def run(contigs_csv,
         conseqs_csv,
         outpath,
+        outcome_summary_path,
         disable_hivseqinr=False,
         nodups=True,
         sample_size=50,
@@ -451,7 +452,7 @@ def run(contigs_csv,
     contigs_df = dfs['contigs'].fillna('')
     conseqs_df = dfs['conseqs'].fillna('')
     # Generate outcome summary
-    OutcomeSummary(contigs_df, conseqs_df, outpath)
+    OutcomeSummary(contigs_df, conseqs_df, outpath / 'outcome_summary.csv')
     filtered_contigs = filter_df(contigs_df, nodups)
     filtered_conseqs = filter_df(conseqs_df, nodups)
     joined = filtered_contigs.merge(filtered_conseqs,
@@ -506,6 +507,7 @@ def main():
     fasta_files = run(contigs_csv=args.contigs_csv,
                       conseqs_csv=args.conseqs_csv,
                       outpath=args.outpath.resolve(),
+                      outcome_summary_path=args.outcome_summary_csv,
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
                       sample_size=args.sample_size,

@@ -9,6 +9,7 @@ def main():
         gene_splicer.run(_file, args=data['args'])
     if not data['fasta_files']:
         data['args'].table_precursor_csv.touch()
+        data['args'].aligned_table_precursor_csv.touch()
 
 
 if __name__ == '__main__':

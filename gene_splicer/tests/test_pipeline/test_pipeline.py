@@ -57,10 +57,12 @@ def test_pipeline_sample1():
     conseq_path = cwd / 'inputs' / 'sample1' / 'conseq.csv'
     contigs_path = cwd / 'inputs' / 'sample1' / 'contigs.csv'
     outpath = cwd / 'outputs' / 'sample1'
-    fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
-                                    contigs_csv=open(contigs_path),
-                                    outpath=(outpath),
-                                    extended_size=1000)
+    fasta_paths = primer_finder.run(
+        conseqs_csv=open(conseq_path),
+        contigs_csv=open(contigs_path),
+        outpath=(outpath),
+        outcome_summary_path=(outpath / 'outcome_summary.csv'),
+        extended_size=1000)
     for fasta in fasta_paths:
         args = Args(
             query_fasta=fasta,
@@ -73,14 +75,16 @@ def test_pipeline_sample1():
         gene_splicer.run(fasta, args)
 
 
-def test_pipeline_sample2():
+def test_pipeline_example3():
     conseq_path = data / 'example3' / 'inputs' / 'conseqs.csv'
     contigs_path = data / 'example3' / 'inputs' / 'contigs.csv'
     outpath = cwd / 'outputs' / 'example3'
-    fasta_paths = primer_finder.run(conseqs_csv=open(conseq_path),
-                                    contigs_csv=open(contigs_path),
-                                    outpath=(outpath),
-                                    extended_size=1000)
+    fasta_paths = primer_finder.run(
+        conseqs_csv=open(conseq_path),
+        contigs_csv=open(contigs_path),
+        outpath=(outpath),
+        outcome_summary_path=(outpath / 'outcome_summary.csv'),
+        extended_size=1000)
     for fasta in fasta_paths:
         args = Args(
             query_fasta=fasta,
