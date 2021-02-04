@@ -3,9 +3,26 @@ import os
 import sys
 import csv
 import pandas
+import gene_splicer.yaml_helper
 from pathlib import Path
 from typing import ContextManager, List
 from contextlib import contextmanager
+
+
+class ProviralHelper:
+    def __init__(self) -> None:
+        self.cwd = Path(os.path.realpath(__file__)).parent
+        self.load_config()
+
+    def load_config(self):
+        with open(self.cwd / 'config.yaml') as o:
+            self.config = yaml.safe_load(o)
+
+    def get_proviral_samples(self, config):
+        return self.config['RESOURCES']['PROVIRAL_SAMPLES']
+
+    def is_proviral(self, sample):
+        return sample in self.config['RESOURCES']['PROVIRAL_SAMPLES']
 
 
 def parse_args():
@@ -106,33 +123,30 @@ def get_unique_samples(contigs_files):
     unique_samples_outfile.write_rows(unique_samples_data)
 
 
-def is_proviral(sample_name):
-    if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
-        ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
-            'HLA' in sample_name) or ('HCV' in sample_name):
-        return False
-    return True
+def init_run():
+    return {'passed': 0, 'no_contigs': 0, 'not_hiv': 0, 'hiv_but_failed': 0}
 
 
 def get_data(contigs_file, filtered_file, data=None):
+    proviral_helper = ProviralHelper()
     if not data:
         data = {}
     df = pandas.read_csv(contigs_file)
     run = None
     for index, row in df.iterrows():
-        if not is_proviral(row['sample']):
+        if not proviral_helper.is_proviral(row['sample']):
             continue
         sample = row['sample']
         run = row['run_name']
         if sample not in data:
-            data[sample] = {run: False}
+            data[sample] = {run: init_run()}
         elif run not in data[sample]:
-            data[sample][run] = False
+            data[sample][run] = init_run()
 
     df = pandas.read_csv(filtered_file)
     for index, row in df.iterrows():
         sample = row['sample']
-        if not is_proviral(sample):
+        if not proviral_helper.is_proviral(sample):
             continue
         # Check if sample has already passed, meaning two contigs passed
         if data[sample][run] is True:

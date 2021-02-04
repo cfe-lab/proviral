@@ -4,12 +4,14 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from gene_splicer.logger import logger
+import gene_splicer.primer_finder as primer_finder
 
 import gene_splicer.utils as utils
 
 
 class OutcomeSummary:
     def __init__(self, conseqs_df, contigs_df, outpath):
+        self.errors = primer_finder.PFErrors()
         self.data = {}
         self.path = outpath
         # To know how many columns to produce
@@ -61,20 +63,20 @@ class OutcomeSummary:
         ## Raises a specific exception to tell main loop to continue
         ## These error strings are set in primer_finder.find_primers() function
         # If conseq is not max, do not record it
-        if ((row['error'] == 'contig not MAX')
-                or (row['error'] == 'is V3 sequence')):
+        if ((row['error'] == self.errors.not_max)
+                or (row['error'] == self.errors.is_v3)):
             raise IndexError
         # If the sample is not proviral (see function in utils for details)
         # Remove this since the dev version should already only process NFLHIVDNA
         # elif not utils.isProviral(row['sample']):
         #     row['error'] = 'Sample is non-proviral'
         # If the sample had no contigs/conseqs (i.e. remap == 0)
-        elif row['error'] == 'No contig/conseq constructed':
+        elif row['error'] == self.errors.no_sequence:
             self.data['error'] = row['error']
             raise IndexError
         # If any reverse or unknown in reference, sample is non-HIV
         elif any([x in row['reference'] for x in ('reverse', 'unknown')]):
-            row['error'] = 'Sample does not align to HIV'
+            row['error'] = self.errors.non_hiv
 
     def processConseqs(self, conseqs_df):
         for index, row in conseqs_df.iterrows():
@@ -100,8 +102,7 @@ class OutcomeSummary:
                 'rev_error']
             # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
             if passed and self.data['contig_passed']:
-                self.setFailed(row,
-                               error='Sample has multiple passed sequences')
+                self.setFailed(row, error=self.errors.multiple_passed)
             # If the contig passes
             elif passed:
                 self.setPassed(row)
@@ -144,7 +145,7 @@ class OutcomeSummary:
         count_non_hiv = 0
         is_hiv_indicies = []
         for i, fail in enumerate(self.data['failed']):
-            if fail[f'fail_error_{i}'] == 'Sample does not align to HIV':
+            if fail[f'fail_error_{i}'] == self.errors.non_hiv:
                 count_non_hiv += 1
             else:
                 is_hiv_indicies.append(i)
@@ -153,7 +154,7 @@ class OutcomeSummary:
         if count_non_hiv == len(
                 self.data['failed']) and not self.data['passed'] and len(
                     self.data['failed']) > 0:
-            self.data['error'] = 'Sample does not align to HIV'
+            self.data['error'] = self.errors.non_hiv
             self.data['failed'] = []
 
         # Otherwise at least one sequence was not non-hiv so we should display only the error for that sequence
@@ -189,16 +190,16 @@ class OutcomeSummary:
             if 'primer' in self.data['failed'][0][
                     'fail_fwd_err_0'] or 'primer' in self.data['failed'][0][
                         'fail_rev_err_0']:
-                self.data['error'] = 'Primer error'
+                self.data['error'] = self.errors.primer_error
             # Case 2
             elif 'coverage' in self.data['failed'][0][
                     'fail_fwd_err_0'] or 'coverage' in self.data['failed'][0][
                         'fail_rev_error_0']:
-                self.data['error'] = 'Low end read coverage'
+                self.data['error'] = self.errors.low_end_cov
         # Case 3, 4, and 5
         elif not self.data['passed'] and len(self.data['failed']) > 1:
             # I can just set the error to multiple contigs?
-            self.data['error'] = 'Multiple contigs'
+            self.data['error'] = self.errors.multiple_contigs
 
     def create(self, conseqs_df, contigs_df):
         # Normalize nan to None

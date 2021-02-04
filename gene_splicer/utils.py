@@ -277,7 +277,6 @@ def coords_to_genes(coords, query):
     return genes
 
 
-# This function has not been tested yet
 def splice_aligned_genes(query, target, samfile, annotation):
     results = {}
     sequences = {}

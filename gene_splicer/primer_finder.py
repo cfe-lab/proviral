@@ -120,12 +120,31 @@ def make_path(path):
         os.makedirs(path)
 
 
+class PFErrors:
+    def __init__(self) -> None:
+        self.not_max = 'not MAX',
+        self.is_v3 = 'is V3 sequence',
+        self.low_internal_cov = 'low internal read coverage',
+        self.non_tcga = 'sequence contained non-TCGA/gap',
+        self.low_end_cov = 'low end read coverage',
+        self.no_primer = 'primer was not found',
+        self.failed_validation = 'primer failed validation',
+        self.no_sequence = 'no contig/conseq constructed'
+        self.non_hiv = 'sequence is non-hiv'
+        self.multiple_passed = 'sample has multiple QC-passed sequences'
+        self.primer_error = 'primer error'
+        self.multiple_contigs = 'multiple contigs'
+
+
 def find_primers(csv_filepath,
                  outpath,
                  seqtype,
                  sample_size=50,
                  extended_size=200):
     make_path(outpath)
+
+    errors = PFErrors()
+
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     columns = [
         'reference', 'error', 'sequence', 'seqlen', 'nmixtures', 'seqtype'
@@ -147,7 +166,6 @@ def find_primers(csv_filepath,
     # projects = ProjectConfig.loadDefault()
     # hxb2 = projects.getReference('HIV1-B-FR-K03455-seed')
     hxb2 = utils.hxb2
-    skipped = {}
     total = 0
     viable = 0
     contig_num = 0
@@ -167,8 +185,7 @@ def find_primers(csv_filepath,
         new_row['sequence'] = contig_seq
         # print(uname)
         if conseq_cutoff and conseq_cutoff != 'MAX':
-            skipped[uname] = 'contig not MAX'
-            new_row['error'] = skipped[uname]
+            new_row['error'] = errors.not_max
             writer.writerow(new_row)
             continue
 
@@ -176,8 +193,7 @@ def find_primers(csv_filepath,
         try:
             # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
             if row['region'] == v3_reference:
-                skipped[uname] = 'is V3 sequence'
-                new_row['error'] = skipped[uname]
+                new_row['error'] = errors.is_v3
                 writer.writerow(new_row)
                 continue
         except KeyError:
@@ -187,15 +203,13 @@ def find_primers(csv_filepath,
         x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
         if any([(sample_size < i < len(contig_seq) - (sample_size))
                 for i in x_locations]):
-            skipped[uname] = 'contig sequence contained internal X'
-            new_row['error'] = skipped[uname]
+            new_row['error'] = errors.low_internal_cov
             writer.writerow(new_row)
             continue
         found_non_tcga = re.findall(non_tcga, contig_seq)
         mixtures = len([x for x in found_non_tcga if x[0].upper() != 'X'])
         if (mixtures > 1):
-            skipped[uname] = 'contig sequence contained non-TCGA/gap'
-            new_row['error'] = skipped[uname]
+            new_row['error'] = errors.non_tcga
             new_row['nmixtures'] = mixtures
             writer.writerow(new_row)
             continue
@@ -224,7 +238,7 @@ def find_primers(csv_filepath,
                 oldseq = seq
                 seq = handle_x(seq)
                 if not seq or len(seq) < seqlen / 6:
-                    new_row[prefix + 'error'] = 'too many X in sequence'
+                    new_row[prefix + 'error'] = errors.low_end_cov
                     continue
 
             # if 'X' in seq:
@@ -249,11 +263,11 @@ def find_primers(csv_filepath,
             # Natalie's request
             # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
             if not finder.sample_primer:
-                new_row[prefix + 'error'] = 'primer was not found'
+                new_row[prefix + 'error'] = errors.no_primer
                 continue
             # This can happen if there are too many combinations of the sequence to unpack (too many mixtures or dashes etc)
             if not finder.is_valid:
-                new_row[prefix + 'error'] = 'primer was not found'
+                new_row[prefix + 'error'] = errors.failed_validation
                 continue
             new_row[prefix +
                     'canonical_primer_seq'] = primers[direction]['seq']
@@ -269,7 +283,7 @@ def find_primers(csv_filepath,
     # If no reads remapped, contig/conseq does not exist, write it as an error
     if total == 0:
         new_row = dict(reference=None,
-                       error='No contig/conseq constructed',
+                       error=errors.no_sequence,
                        sequence=None,
                        seqlen=None,
                        nmixtures=None)
