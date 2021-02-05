@@ -2,3 +2,4 @@ MACDATAFILE: &MDF /media/macdatafile
 
 RESOURCES:
   PROVIRAL_SAMPLES: !join [*MDF, '/Daniel/projects/proviral/all_hiv_samples_from_proviral_runs_ZB_WD.csv']
+  SAMPLE_PID_MAPPING: !join [*MDF, '/Daniel/projects/proviral/sample_mapping.csv']

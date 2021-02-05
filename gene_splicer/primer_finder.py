@@ -19,13 +19,13 @@ from gene_splicer.logger import logger
 from gene_splicer.primer_finder_class import PrimerFinder
 from gene_splicer.outcome_summary import OutcomeSummary
 from gene_splicer.hivseqinr import Hivseqinr
+from gene_splicer.primer_finder_errors import PrimerFinderErrors
 import gene_splicer.utils as utils
 
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
 logger = logging.getLogger('gene_splicer')
-
 
 # Note these are 1-based indicies
 primers = {
@@ -88,8 +88,7 @@ def parse_args():
 
     parser.add_argument(
         'outcome_summary_csv',
-        help=
-        'CSV file containing debugging information for samples',
+        help='CSV file containing debugging information for samples',
         type=Path)
 
     parser.add_argument('-o',
@@ -120,22 +119,7 @@ def make_path(path):
         os.makedirs(path)
 
 
-class PFErrors:
-    def __init__(self) -> None:
-        self.not_max = 'not MAX',
-        self.is_v3 = 'is V3 sequence',
-        self.low_internal_cov = 'low internal read coverage',
-        self.non_tcga = 'sequence contained non-TCGA/gap',
-        self.low_end_cov = 'low end read coverage',
-        self.no_primer = 'primer was not found',
-        self.failed_validation = 'primer failed validation',
-        self.no_sequence = 'no contig/conseq constructed'
-        self.non_hiv = 'sequence is non-hiv'
-        self.multiple_passed = 'sample has multiple QC-passed sequences'
-        self.primer_error = 'primer error'
-        self.multiple_contigs = 'multiple contigs'
-
-
+# I don't need to filter out non-proviral samples because every sample run by this pipeline should be tagged with the correct project code NFLHIVDNA
 def find_primers(csv_filepath,
                  outpath,
                  seqtype,
@@ -143,7 +127,7 @@ def find_primers(csv_filepath,
                  extended_size=200):
     make_path(outpath)
 
-    errors = PFErrors()
+    errors = PrimerFinderErrors()
 
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     columns = [

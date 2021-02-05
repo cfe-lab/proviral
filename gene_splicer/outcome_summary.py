@@ -4,14 +4,14 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from gene_splicer.logger import logger
-import gene_splicer.primer_finder as primer_finder
+from gene_splicer.primer_finder_errors import PrimerFinderErrors
 
 import gene_splicer.utils as utils
 
 
 class OutcomeSummary:
     def __init__(self, conseqs_df, contigs_df, outpath):
-        self.errors = primer_finder.PFErrors()
+        self.errors = PrimerFinderErrors()
         self.data = {}
         self.path = outpath
         # To know how many columns to produce

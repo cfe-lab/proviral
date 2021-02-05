@@ -3,26 +3,47 @@ import os
 import sys
 import csv
 import pandas
-import gene_splicer.yaml_helper
+import yaml
 from pathlib import Path
 from typing import ContextManager, List
 from contextlib import contextmanager
+from gene_splicer.primer_finder_errors import PrimerFinderErrors
 
 
+def join(loader, node):
+    seq = loader.construct_sequence(node)
+    return ''.join([str(i) for i in seq])
+
+
+yaml.add_constructor('!join', join)
+
+errors = PrimerFinderErrors()
+
+
+# force_all_proviral is for testing, forces samples to be considered proviral
 class ProviralHelper:
-    def __init__(self) -> None:
-        self.cwd = Path(os.path.realpath(__file__)).parent
+    def __init__(self, force_all_proviral=False) -> None:
+        self.force_all_proviral = force_all_proviral
+        self.cwd = self.getcwd()
         self.load_config()
+
+    @staticmethod
+    def getcwd():
+        return Path(os.path.realpath(__file__)).parent
 
     def load_config(self):
         with open(self.cwd / 'config.yaml') as o:
-            self.config = yaml.safe_load(o)
+            self.config = yaml.load(o, Loader=yaml.Loader)
 
-    def get_proviral_samples(self, config):
+    def get_proviral_samples(self):
         return self.config['RESOURCES']['PROVIRAL_SAMPLES']
 
     def is_proviral(self, sample):
-        return sample in self.config['RESOURCES']['PROVIRAL_SAMPLES']
+        return sample in self.config['RESOURCES'][
+            'PROVIRAL_SAMPLES'] or self.force_all_proviral
+
+    def get_sample_pid_mapping(self):
+        return self.config['RESOURCES']['SAMPLE_PID_MAPPING']
 
 
 def parse_args():
@@ -40,13 +61,21 @@ def parse_args():
     parser.add_argument(
         '--sample_mapping',
         type=Path,
-        required=True,
         help='A csv file with 2 columns: sample and participant_id')
     parser.add_argument('--outpath',
                         type=Path,
                         default=Path(os.getcwd()).resolve(),
                         help='Path to output files')
-    return parser.parse_args()
+    parser.add_argument(
+        '--force_all_proviral',
+        action='store_true',
+        help=
+        'FOR TESTING PURPOSES. Forces all samples to be considered proviral.')
+    args = parser.parse_args()
+    helper = ProviralHelper(force_all_proviral=args.force_all_proviral)
+    if not args.sample_mapping:
+        args.sample_mapping = helper.get_sample_pid_mapping()
+    return args
 
 
 class OutputFile:
@@ -123,12 +152,20 @@ def get_unique_samples(contigs_files):
     unique_samples_outfile.write_rows(unique_samples_data)
 
 
-def init_run():
-    return {'passed': 0, 'no_contigs': 0, 'not_hiv': 0, 'hiv_but_failed': 0}
+def init_run(row):
+    if row['error'] == errors.no_sequence:
+        return errors.no_sequence
+    elif 'unknown' in row['reference'] or row['error'] in (errors.is_v3,
+                                                           errors.non_hiv):
+        return errors.non_hiv
+    elif row['fwd_error'] or row['rev_error']:
+        return errors.hiv_but_failed
+    else:
+        return True
 
 
-def get_data(contigs_file, filtered_file, data=None):
-    proviral_helper = ProviralHelper()
+def get_data(contigs_file, filtered_file, data=None, force_all_proviral=False):
+    proviral_helper = ProviralHelper(force_all_proviral=force_all_proviral)
     if not data:
         data = {}
     df = pandas.read_csv(contigs_file)
@@ -139,9 +176,9 @@ def get_data(contigs_file, filtered_file, data=None):
         sample = row['sample']
         run = row['run_name']
         if sample not in data:
-            data[sample] = {run: init_run()}
+            data[sample] = {run: init_run(row)}
         elif run not in data[sample]:
-            data[sample][run] = init_run()
+            data[sample][run] = init_run(row)
 
     df = pandas.read_csv(filtered_file)
     for index, row in df.iterrows():
@@ -155,8 +192,11 @@ def get_data(contigs_file, filtered_file, data=None):
     return data
 
 
-def compute_failure_rate(total, passed):
-    return round(100 * ((total - passed) / total))
+def compute_failure_rate(subset, total):
+    try:
+        return round(100 * (subset / total))
+    except ZeroDivisionError:
+        return 0
 
 
 def compute_per_participant(data, mapping_filepath):
@@ -169,22 +209,43 @@ def compute_per_participant(data, mapping_filepath):
     for sample, runs in data.items():
         pid = mapping[sample]
         if pid not in result:
-            result[pid] = []
-        for run, passed in runs.items():
-            result[pid].append(passed)
+            result[pid] = {
+                errors.no_sequence: 0,
+                errors.non_hiv: 0,
+                errors.hiv_but_failed: 0,
+                'passed': 0,
+                'total': 0
+            }
+        for run, verdict in runs.items():
+            if verdict == errors.no_sequence:
+                result[pid][errors.no_sequence] += 1
+            elif verdict == errors.non_hiv:
+                result[pid][errors.non_hiv] += 1
+            elif verdict == errors.hiv_but_failed:
+                result[pid][errors.hiv_but_failed] += 1
+            elif verdict == 'passed':
+                result[pid]['passed'] += 1
+            result[pid]['total'] += 1
     for pid, qcs in result.items():
-        total = len(qcs)
-        passed = 0
-        for qc in qcs:
-            if qc:
-                passed += 1
-        failed = total - passed
-        percent_failure = compute_failure_rate(total, passed)
+        failed = qcs['total'] - qcs['passed']
+        percent_failure = compute_failure_rate(failed, qcs['total'])
+        percent_failure_no_sequence = compute_failure_rate(
+            qcs[errors.no_sequence], failed)
+        percent_failure_non_hiv = compute_failure_rate(qcs[errors.non_hiv],
+                                                       failed)
+        percent_failure_hiv = compute_failure_rate(qcs[errors.hiv_but_failed],
+                                                   failed)
         result[pid] = {
-            'total': total,
-            'passed': passed,
+            'total': qcs['total'],
+            'passed': qcs['passed'],
             'failed': failed,
-            'percent_failure': percent_failure
+            'percent_failure': percent_failure,
+            'failed_no_sequence': qcs[errors.no_sequence],
+            'percent_failed_no_sequence': percent_failure_no_sequence,
+            'failed_non_hiv': qcs[errors.non_hiv],
+            'percent_failed_non_hiv': percent_failure_non_hiv,
+            'failed_hiv': qcs[errors.hiv_but_failed],
+            'percent_failed_hiv': percent_failure_hiv
         }
     return result
 
@@ -194,29 +255,58 @@ def compute_stats(data):
     total = len(data)
     total_passed = 0
     for sample, runs in data.items():
-        for run, passed in runs.items():
+        for run, verdict in runs.items():
             if run not in per_run:
-                per_run[run] = {'total': 0, 'passed': 0}
+                per_run[run] = {
+                    'total': 0,
+                    'passed': 0,
+                    errors.no_sequence: 0,
+                    errors.non_hiv: 0,
+                    errors.hiv_but_failed: 0,
+                    'percent_failure': {}
+                }
             per_run[run]['total'] += 1
-            if passed:
+            if verdict is True:
                 per_run[run]['passed'] += 1
                 total_passed += 1
+            elif verdict == errors.no_sequence:
+                per_run[run][errors.no_sequence] += 1
+            elif verdict == errors.non_hiv:
+                per_run[run][errors.non_hiv] += 1
+            elif verdict == errors.hiv_but_failed:
+                per_run[run][errors.hiv_but_failed] += 1
     for run in per_run:
         per_run[run]['failed'] = per_run[run]['total'] - per_run[run]['passed']
-        per_run[run]['percent_failure'] = compute_failure_rate(
-            per_run[run]['total'], per_run[run]['passed'])
-    overall_percent_failure = compute_failure_rate(total, total_passed)
+        per_run[run]['total_percent_failure'] = compute_failure_rate(
+            per_run[run]['failed'], per_run[run]['total'])
+        # Get the percentage of failures that are due to no sequence
+        per_run[run]['percent_failure'][
+            errors.no_sequence] = compute_failure_rate(
+                per_run[run][errors.no_sequence], per_run[run]['failed'])
+        # Get the percentage of failures that are due to non hiv
+        per_run[run]['percent_failure'][errors.non_hiv] = compute_failure_rate(
+            per_run[run][errors.non_hiv], per_run[run]['failed'])
+        # Get the percentage of failures that are due to some other failure
+        per_run[run]['percent_failure'][
+            errors.hiv_but_failed] = compute_failure_rate(
+                per_run[run][errors.hiv_but_failed], per_run[run]['failed'])
+    overall_percent_failure = compute_failure_rate(total - total_passed, total)
     return overall_percent_failure, per_run
 
 
-def get_all_data(contigs_files_paths, filtered_files_paths):
+def get_all_data(contigs_files_paths,
+                 filtered_files_paths,
+                 force_all_proviral=False):
     assert len(contigs_files_paths) == len(filtered_files_paths)
     i = 0
     all_data = {}
     while i < len(contigs_files_paths):
         contig_path = contigs_files_paths[i]
         filtered_path = filtered_files_paths[i]
-        all_data = get_data(contig_path, filtered_path, all_data)
+        all_data = get_data(contig_path,
+                            filtered_path,
+                            all_data,
+                            force_all_proviral=force_all_proviral)
         i += 1
     return all_data
 
@@ -232,41 +322,85 @@ def write_data(data, outpath):
 
 
 def write_stats(per_run, overall, outpath):
-    output = CsvFile(
-        outpath,
-        'per_run',
-        fieldnames=['run', 'total', 'passed', 'failed', 'percent_failure'])
+    output = CsvFile(outpath,
+                     'per_run',
+                     fieldnames=[
+                         'run', 'total', 'passed', 'failed', 'percent_failure',
+                         'failed_no_sequence', 'percent_failed_no_sequence',
+                         'failed_non_hiv', 'percent_failed_non_hiv',
+                         'failed_hiv', 'percent_failed_hiv'
+                     ])
     with output.open() as o:
         for run, value in per_run.items():
             o.writerow({
-                'run': run,
-                'failed': value['failed'],
-                'passed': value['passed'],
-                'total': value['total'],
-                'percent_failure': value['percent_failure']
+                'run':
+                run,
+                'failed':
+                value['failed'],
+                'passed':
+                value['passed'],
+                'total':
+                value['total'],
+                'percent_failure':
+                value['total_percent_failure'],
+                'failed_no_sequence':
+                value[errors.no_sequence],
+                'percent_failed_no_sequence':
+                value['percent_failure'][errors.no_sequence],
+                'failed_non_hiv':
+                value[errors.non_hiv],
+                'percent_failed_non_hiv':
+                value['percent_failure'][errors.non_hiv],
+                'failed_hiv':
+                value[errors.hiv_but_failed],
+                'percent_failed_hiv':
+                value['percent_failure'][errors.hiv_but_failed]
             })
     print(f'Overall failure rate: {overall}')
 
 
 def write_per_participant(data, outpath):
-    output = CsvFile(
-        outpath,
-        'per_participant',
-        fieldnames=['pid', 'total', 'passed', 'failed', 'percent_failure'])
+    output = CsvFile(outpath,
+                     'per_participant',
+                     fieldnames=[
+                         'pid', 'total', 'passed', 'failed', 'percent_failure',
+                         'failed_no_sequence', 'percent_failed_no_sequence',
+                         'failed_non_hiv', 'percent_failed_non_hiv',
+                         'failed_hiv', 'percent_failed_hiv'
+                     ])
     with output.open() as o:
         for pid, mystats in data.items():
             o.writerow({
-                'pid': pid,
-                'failed': mystats['failed'],
-                'passed': mystats['passed'],
-                'total': mystats['total'],
-                'percent_failure': mystats['percent_failure']
+                'pid':
+                pid,
+                'failed':
+                mystats['failed'],
+                'passed':
+                mystats['passed'],
+                'total':
+                mystats['total'],
+                'percent_failure':
+                mystats['percent_failure'],
+                'failed_no_sequence':
+                mystats['failed_no_sequence'],
+                'percent_failed_no_sequence':
+                mystats['percent_failed_no_sequence'],
+                'failed_non_hiv':
+                mystats['failed_non_hiv'],
+                'percent_failed_non_hiv':
+                mystats['percent_failed_non_hiv'],
+                'failed_hiv':
+                mystats['failed_hiv'],
+                'percent_failed_hiv':
+                mystats['percent_failed_hiv']
             })
 
 
 def run(args):
     # unique_samples = get_unique_samples(args.contigs_analysis_csvs)
-    all_data = get_all_data(args.contigs_analysis_csvs, args.filtered_csvs)
+    all_data = get_all_data(args.contigs_analysis_csvs,
+                            args.filtered_csvs,
+                            force_all_proviral=args.force_all_proviral)
     write_data(all_data, args.outpath)
     overall_percent_failure, per_run = compute_stats(all_data)
     write_stats(per_run, overall_percent_failure, args.outpath)

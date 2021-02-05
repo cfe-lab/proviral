@@ -1,0 +1,220 @@
+run_name,sample,reference,error,sequence,seqlen,nmixtures,fwd_error,fwd_canonical_primer_seq,fwd_sample_primer_seq,fwd_sample_primer_start,fwd_sample_primer_end,fwd_sample_primer_size,fwd_hxb2_sample_primer_start,fwd_hxb2_sample_primer_end,rev_error,rev_canonical_primer_seq,rev_sample_primer_seq,rev_sample_primer_start,rev_sample_primer_end,rev_sample_primer_size,rev_hxb2_sample_primer_start,rev_hxb2_sample_primer_end
+example1,S0,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,34,50,16,9603,9619
+example1,S1,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S2,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S3,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S4,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,14,43,29,9603,9632
+example1,S5,2_HIV1-B-FR-KF716496-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,20,25,5,661,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S6,1_HIV1-B-US-KT284371-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,primer was not found,,X,,,,,
+example1,S7,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S8,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S9,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,primer was not found,,X,,,,,
+example1,S10,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S11,4_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,primer was not found,,X,,,,,
+example1,S12,5_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,42,46,4,9603,9607
+example1,S13,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S14,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S15,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S16,9_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S17,10_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S18,11_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S19,12_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S20,13_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S21,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S22,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,primer was not found,,X,,,,,
+example1,S23,3_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,primer was not found,,X,,,,,
+example1,S24,4_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,15,20,5,661,666,primer was not found,,X,,,,,
+example1,S25,5_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,18,22,4,9603,9607
+example1,S26,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S27,7_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,1,4,3,9603,9606
+example1,S28,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S29,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S30,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S31,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S32,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S33,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S34,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S35,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S36,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,29,50,21,9603,9624
+example1,S37,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S38,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S39,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S40,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S41,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S42,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S43,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S44,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S45,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S46,3_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,15,20,5,661,666,primer was not found,,X,,,,,
+example1,S47,4_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,18,22,4,9603,9607
+example1,S48,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S49,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S50,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S51,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S52,9_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S53,10_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S54,11_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S55,12_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S56,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S57,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S58,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S59,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S60,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S61,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S62,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S63,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S64,1_HIV1-B-US-KT284371-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S65,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S66,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,138,167,29,9603,9632
+example1,S67,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S68,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S69,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S70,1_HIV1-B-CH-KC797225-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S71,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S72,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S73,1_HIV1-B-KR-KJ140263-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S74,2_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,17,17,649,666,primer was not found,,X,,,,,
+example1,S75,3_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,32,50,18,9603,9621
+example1,S76,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S77,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S78,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,11,11,655,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,39,50,11,9603,9614
+example1,S79,1_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,primer was not found,,X,,,,,
+example1,S80,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S81,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S82,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S83,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S84,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S85,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S86,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S87,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S88,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S89,1_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,primer was not found,,X,,,,,
+example1,S90,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,145,174,29,9603,9632
+example1,S91,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S92,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,12,41,29,9603,9632
+example1,S93,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,8,8,658,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,34,50,16,9603,9619
+example1,S94,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,24,50,26,9603,9629
+example1,S95,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S96,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S97,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,146,175,29,9603,9632
+example1,S98,1_HIV1-B-JP-KF716498-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S99,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S100,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,129,158,29,9603,9632
+example1,S101,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S102,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S103,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S104,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S105,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S106,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,145,174,29,9603,9632
+example1,S107,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,15,20,5,661,666,primer was not found,,X,,,,,
+example1,S108,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S109,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S110,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S111,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S112,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,31,50,19,9603,9622
+example1,S113,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S114,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S115,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S116,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S117,3_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,15,20,5,661,666,primer was not found,,X,,,,,
+example1,S118,4_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,18,22,4,9603,9607
+example1,S119,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S120,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S121,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S122,8_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,46,50,4,662,666,primer was not found,,X,,,,,
+example1,S123,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S124,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,26,50,24,9603,9627
+example1,S125,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S126,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,primer was not found,,X,,,,,
+example1,S127,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S128,1_HIV1-B-KR-KJ140263-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S129,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,125,154,29,9603,9632
+example1,S130,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S131,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S132,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S133,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S134,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S135,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S136,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S137,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S138,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S139,1_HIV1-B-JP-KF716498-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S140,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,26,50,24,9603,9627
+example1,S141,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S142,2_HIV1-B-US-KT284371-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S143,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S144,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,primer was not found,,X,,,,,
+example1,S145,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S146,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S147,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S148,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S149,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S150,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,34,63,29,9603,9632
+example1,S151,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S152,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S153,3_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,18,22,4,9603,9607
+example1,S154,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S155,1_HIV1-B-RU-JX500708-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,115,144,29,9603,9632
+example1,S156,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S157,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,129,158,29,9603,9632
+example1,S158,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S159,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,34,50,16,9603,9619
+example1,S160,1_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S161,2_unknown,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,18,22,4,9603,9607
+example1,S162,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S163,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S164,5_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S165,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S166,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S167,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S168,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S169,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S170,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S171,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S172,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S173,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S174,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S175,9_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S176,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S177,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S178,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S179,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S180,1_HIV1-B-KR-KJ140263-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S181,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,127,156,29,9603,9632
+example1,S182,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,21,21,645,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S183,2_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S184,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,12,12,654,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,29,50,21,9603,9624
+example1,S185,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,22,22,644,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S186,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S187,2_HIV1-B-US-KT284371-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,10,13,3,9603,9606
+example1,S188,3_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S189,4_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,18,18,648,666,primer was not found,,X,,,,,
+example1,S190,5_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S191,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S192,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S193,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S194,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S195,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S196,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S197,4_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,primer was not found,,X,,,,,
+example1,S198,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S199,6_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S200,7_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S201,8_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S202,9_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S203,10_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S204,11_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S205,12_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S206,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S207,1_HIV1-B-US-KT284371-seed,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S208,2_unknown,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,9,12,3,663,666,primer was not found,,X,,,,,
+example1,S209,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S210,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,23,23,643,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,26,50,24,9603,9627
+example1,S211,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S212,3_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S213,4_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S214,5_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S215,1_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S216,2_unknown,,X,1,,primer was not found,,X,,,,,,primer was not found,,X,,,,,
+example1,S217,1_HIV1-B-FR-K03455-seed,,X,1,,,GCGCCCGAACAGGGACYTGAAARCGAAAG,X,0,6,6,660,666,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625
+example1,S218,1_HIV1-B-FR-K03455-seed,,X,1,,primer was not found,,X,,,,,,,TAAGCCTCAATAAAGCTTGCCTTGAGTGC,X,28,50,22,9603,9625

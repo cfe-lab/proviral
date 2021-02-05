@@ -3,6 +3,7 @@
 venv
 *egg-info
 **outputs
+**output
 
 # OSX system files
 .DS_Store
