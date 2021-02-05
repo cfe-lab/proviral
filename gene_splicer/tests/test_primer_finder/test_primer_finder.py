@@ -1,5 +1,4 @@
 import enum
-import pdb
 import pytest
 import math
 import os
@@ -10,7 +9,7 @@ cwd = Path(os.path.realpath(__file__)).parent
 sys.path.append(str(cwd.parent.parent))
 
 import gene_splicer.utils as utils
-from gene_splicer.primer_finder_2 import PrimerFinder
+from gene_splicer.primer_finder_class import PrimerFinder
 import Levenshtein
 from gene_splicer.primer_finder import primers
 
@@ -25,9 +24,6 @@ def test_case():
 
     sample_size = 50
     extended_length = 200
-
-    import pdb
-    pdb.set_trace()
 
     fwd_primer = PrimerFinder(case['sequence'],
                               primers['fwd']['seq'],

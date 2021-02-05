@@ -38,11 +38,24 @@ def write_annot(adict, filepath):
             })
 
 
-def write_fasta(adict, filename):
-    with open(filename, 'w') as o:
+def write_fasta(adict, filepath_or_fileobject):
+    """Writes a fasta file from a dictionary
+
+    Args:
+        adict (dict): A dictionary where the keys are header/sequence names and the values are the sequences
+        filepath_or_fileobject (Path/File): A path or file-like object
+
+    Returns:
+        Path/File: Path or file-like object
+    """
+    try:
+        with open(filepath_or_fileobject, 'w') as o:
+            for key, value in adict.items():
+                o.write(f'>{key}\n{value}\n')
+    except TypeError:
         for key, value in adict.items():
-            o.write(f'>{key}\n{value}\n')
-    return filename
+            filepath_or_fileobject.write(f'>{key}\n{value}\n')
+    return filepath_or_fileobject
 
 
 def read_csv(csvfile):
@@ -80,8 +93,28 @@ def split_cigar(row):
     return cigar
 
 
+class MyContextManager(object):
+    def __init__(self, file_name, method):
+        self.file_obj = open(file_name, method)
+
+    def __enter__(self):
+        return self.file_obj
+
+    def __exit__(self, type, value, traceback):
+        self.file_obj.close()
+
+
+def handle_file_or_fileobject(file_or_fileobject, method):
+    try:
+        file_or_fileobject.read()
+        file_or_fileobject.seek(0)
+        return file_or_fileobject
+    except AttributeError:
+        return MyContextManager(file_or_fileobject, method)
+
+
 def read_fasta(fasta_file):
-    with open(fasta_file) as fasta:
+    with handle_file_or_fileobject(fasta_file, 'r') as fasta:
         name, seq = None, []
         for line in fasta:
             line = line.rstrip()
@@ -407,6 +440,46 @@ def generate_table_precursor(name, outpath):
     return outfile
 
 
+def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
+                               genes_file, table_precursorfile):
+    try:
+        seqinr = pd.read_csv(hivseqinr_resultsfile)
+    except FileNotFoundError:
+        logger.error('hivseqinr could not produce results!')
+        # Create an empty results file
+        table_precursorfile.touch()
+        return False
+    # Assign new columns based on split
+    # Make sure this matches the join in primer_finder run()
+    seqinr[['reference', 'seqtype']] = seqinr['SEQID'].str.split('::',
+                                                                 expand=True)
+
+    # Load filtered sequences
+    filtered = pd.read_csv(filtered_file)
+
+    # Merge
+    merged = seqinr.merge(filtered,
+                          left_index=True,
+                          right_index=True,
+                          how='outer')
+    for gene in genes_of_interest:
+        merged[gene] = None
+
+    genes_fasta = read_fasta(genes_file)
+    genes = dict([x for x in genes_fasta])
+    for gene in genes_of_interest:
+        try:
+            seq = genes[f'>{gene}']
+        except KeyError:
+            seq = None
+        merged[gene] = seq
+
+    # Output csv
+    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+        table_precursorfile, index=False)
+    return table_precursorfile
+
+
 def get_softclipped_region(query, alignment):
     try:
         size, op = alignment.iloc[0]['cigar'][0]
@@ -468,7 +541,6 @@ def merge_coords(coords1, coords2):
 
 
 def filter_valid(df):
-    #    import pdb; pdb.set_trace()
     # Remove any row that has no errors
     filtered = df[(~df['error'].isna())
                   | (~df['fwd_error'].isna())

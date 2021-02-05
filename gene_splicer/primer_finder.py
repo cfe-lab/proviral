@@ -19,8 +19,10 @@ import math
 import Levenshtein
 from gotoh import align_it
 import logger
+from primer_finder_errors import PrimerFinderErrors
 from primer_finder_class import PrimerFinder
 from outcome_summary import OutcomeSummary
+from hivseqinr import Hivseqinr
 
 import utils
 mixture_dict = utils.mixture_dict
@@ -31,85 +33,6 @@ reverse_and_complement = utils.reverse_and_complement
 from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
-
-
-class Hivseqinr:
-    def __init__(self, outpath, fasta):
-        self.url = 'https://github.com/guineverelee/HIVSeqinR/raw/master/HIVSeqinR_ver2.7.1.zip'
-        self.outpath = outpath
-        self.fasta = fasta
-        self.download()
-        self.make_blast_dir()
-        self.fix_wds()
-        self.copy_fasta()
-        self.job = self.run()
-        self.finalize()
-
-    def to_rpath(self, path):
-        return path.replace('\\', '\\\\')
-
-    def copy_fasta(self):
-        raw_fastas_path = self.outpath / 'RAW_FASTA'
-        try:
-            os.makedirs(raw_fastas_path)
-        except FileExistsError:
-            pass
-        logger.debug('Attempting to copy "%s" to "%s"' %
-                     (self.fasta, raw_fastas_path))
-        shutil.copy(self.fasta, raw_fastas_path)
-        return True
-
-    def make_blast_dir(self):
-        dbdir = self.outpath / 'hxb2_blast_db'
-        try:
-            os.mkdir(dbdir)
-        except FileExistsError:
-            pass
-        hxb2_path = dbdir / 'HXB2.fasta'
-        shutil.copyfile(self.outpath / 'R_HXB2.fasta', hxb2_path)
-        cmd = [
-            'makeblastdb', '-in', hxb2_path, '-parse_seqids', '-dbtype', 'nucl'
-        ]
-        self.dbdir = dbdir
-        job = subprocess.run(cmd)
-        return job
-
-    def download(self):
-        response = requests.get(self.url)
-        file_like_object = io.BytesIO(response.content)
-        zipfile_obj = zipfile.ZipFile(file_like_object)
-        if not os.path.isdir(self.outpath):
-            os.makedirs(self.outpath)
-        zipfile_obj.extractall(self.outpath)
-        return True
-
-    def fix_wds(self):
-        rscript_path = os.path.join(
-            self.outpath, 'R_HIVSeqinR_Combined_ver09_ScrambleFix.R')
-        new_rscript_path = os.path.join(self.outpath, 'modified.R')
-        self.new_rscript_path = new_rscript_path
-        with open(self.new_rscript_path, 'w') as outfile:
-            with open(rscript_path, 'r') as infile:
-                for line in infile:
-                    if 'MyWD <- getwd()' in line:
-                        line = line.replace('MyWD <- getwd()',
-                                            f'MyWD = "{self.outpath}"\n')
-                    elif line.startswith('MyBlastnDir <-'):
-                        line = f'MyBlastnDir = "{str(self.dbdir) + os.path.sep*2}"\n'
-                    outfile.write(line)
-
-    def run(self):
-        cwd = os.getcwd()
-        os.chdir(self.outpath)
-        cmd = ['Rscript', './modified.R']
-        job = subprocess.run(cmd)
-        os.chdir(cwd)
-        return job
-
-    def finalize(self):
-        path = os.path.join(self.outpath, 'COMPLETE')
-        Path(path).touch()
-
 
 # Note these are 1-based indicies
 primers = {
@@ -188,6 +111,7 @@ def find_primers(csv_filepath,
                  all_samples,
                  sample_size=50,
                  extended_length=200):
+    errors = PrimerFinderErrors()
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
     make_path(outpath)
@@ -209,7 +133,6 @@ def find_primers(csv_filepath,
     writer = DictWriter(outfile, columns, lineterminator='\n')
     writer.writeheader()
     reader = DictReader(csv_filepath)
-    skipped = {}
     total = 0
     viable = 0
     unique_samples = 0
@@ -219,12 +142,12 @@ def find_primers(csv_filepath,
         # If no reads remapped, contig/conseq does not exist, write it as an error
         if all_samples[sample] == 0:
             new_row = dict(run_name=run_name,
-                            sample=sample,
-                            reference=None,
-                            error='No contig/conseq constructed',
-                            sequence=None,
-                            seqlen=None,
-                            nmixtures=None)
+                           sample=sample,
+                           reference=None,
+                           error=errors.no_sequence,
+                           sequence=None,
+                           seqlen=None,
+                           nmixtures=None)
             for prefix in ('fwd_', 'rev_'):
                 new_row[prefix + 'error'] = None
                 new_row[prefix + 'canonical_primer_seq'] = None
@@ -269,8 +192,7 @@ def find_primers(csv_filepath,
             new_row['sequence'] = contig_seq
             # print(uname)
             if conseq_cutoff and conseq_cutoff != 'MAX':
-                skipped[uname] = 'contig not MAX'
-                new_row['error'] = skipped[uname]
+                new_row['error'] = errors.not_max
                 writer.writerow(new_row)
                 continue
 
@@ -278,32 +200,23 @@ def find_primers(csv_filepath,
             try:
                 # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
                 if row['region'] == v3_reference:
-                    skipped[uname] = 'is V3 sequence'
-                    new_row['error'] = skipped[uname]
+                    new_row['error'] = errors.is_v3
                     writer.writerow(new_row)
                     continue
             except KeyError:
                 pass
 
-            # interest = 'HIV3428F1-L22-HIV_S6'
-            # if (sample_name == interest
-            #     and contig_name == '1_1-HIV1-B-FR-K03455-seed'
-            # ):
-            #     import pdb; pdb.set_trace()
-
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
             if any([(sample_size < i < len(contig_seq) - (sample_size))
                     for i in x_locations]):
-                skipped[uname] = 'low internal read coverage'
-                new_row['error'] = skipped[uname]
+                new_row['error'] = errors.low_internal_cov
                 writer.writerow(new_row)
                 continue
             found_non_tcga = re.findall(non_tcga, contig_seq)
             mixtures = len([x for x in found_non_tcga if x[0].upper() != 'X'])
             if (mixtures > 1):
-                skipped[uname] = 'contig sequence contained non-TCGA/gap'
-                new_row['error'] = skipped[uname]
+                new_row['error'] = errors.non_tcga
                 new_row['nmixtures'] = mixtures
                 writer.writerow(new_row)
                 continue
@@ -317,12 +230,6 @@ def find_primers(csv_filepath,
                         'run_name', 'reference'
                 ]:
                     new_row[key] = None
-
-            # interest = 'T0288D90-M7-HIV_S95'
-            # if (sample_name == interest
-            #         and contig_name == '1_1-HIV1-B-FR-K03455-seed'):
-            #     import pdb
-            #     pdb.set_trace()
 
             for end, seq, extended_seq in [
                 (5, prime5_seq, extended_prime5_seq),
@@ -344,14 +251,8 @@ def find_primers(csv_filepath,
                     seq = handle_x(seq)
                     if not seq or len(seq) < seqlen / 6:
                         new_row[prefix +
-                                'error'] = 'low read coverage in primer region'
+                                'error'] = errors.low_end_cov
                         continue
-
-                # interest = 'T0288D90-M7-HIV_S95'
-                # if (sample_name == interest
-                #         and contig_name == '8_2-unknown-partial'):
-                #     import pdb
-                #     pdb.set_trace()
 
                 finder = PrimerFinder(contig_seq,
                                       primers[direction]['seq'],
@@ -373,11 +274,11 @@ def find_primers(csv_filepath,
                 # Natalie's request
                 # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
                 if not finder.sample_primer:
-                    new_row[prefix + 'error'] = 'primer was not found'
+                    new_row[prefix + 'error'] = errors.no_primer
                     continue
                 elif not finder.is_valid:
                     new_row[prefix +
-                            'error'] = 'primer failed secondary validation'
+                            'error'] = errors.failed_validation
                     continue
                 new_row[prefix +
                         'canonical_primer_seq'] = primers[direction]['seq']
@@ -464,8 +365,7 @@ def filter_df(df, nodups=True):
     return filtered
 
 
-def run(contigs_csv, conseqs_csv, name, outpath, disable_hivseqinr, nodups,
-        split, sample_size, cascade_csv):
+def run(contigs_csv, conseqs_csv, cascade_csv, name, outpath, disable_hivseqinr=False, nodups=True, split=1, sample_size=50):
     all_samples = utils.getSamplesFromCascade(cascade_csv)
 
     contigs_out = find_primers(contigs_csv,
@@ -543,13 +443,13 @@ def main():
     args = parse_args()
     fasta_files = run(contigs_csv=args.contigs_csv,
                       conseqs_csv=args.conseqs_csv,
+                      cascade_csv=args.cascade_csv,
                       name=args.name,
                       outpath=args.outpath.resolve(),
                       disable_hivseqinr=args.disable_hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      sample_size=args.sample_size,
-                      cascade_csv=args.cascade_csv)
+                      sample_size=args.sample_size)
     return {'fasta_files': fasta_files, 'args': args}
 
 

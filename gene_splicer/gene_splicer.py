@@ -22,7 +22,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run(query_fasta, name, outdir):
+def run(query_fasta, outdir):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
