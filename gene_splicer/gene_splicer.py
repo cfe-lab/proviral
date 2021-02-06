@@ -51,7 +51,7 @@ def run(query_fasta, outdir):
 
 def main():
     args = parse_args()
-    run(query_fasta=args.query_fasta, name=args.name, outdir=args.outdir)
+    run(query_fasta=args.query_fasta, outdir=args.outdir)
 
 
 if __name__ == '__main__':

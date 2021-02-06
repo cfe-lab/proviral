@@ -6,9 +6,7 @@ import utils
 def main():
     data = primer_finder.main()
     for _file in data['fasta_files']:
-        gene_splicer.run(_file,
-                         name=data['args'].name,
-                         outdir=data['args'].outpath)
+        gene_splicer.run(_file, outdir=data['args'].outpath)
     utils.generate_table_precursor(name=data['args'].name,
                                    outpath=data['args'].outpath)
 
