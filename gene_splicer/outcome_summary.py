@@ -205,7 +205,8 @@ class OutcomeSummary:
                         # Reset the number
                         k = k.rsplit('_', 1)[0] + f'_{i}'
                         newfail[k] = v
-                        self.data[sample][k] = v
+                        # Why do I need this?
+                        # self.data[sample][k] = v
                     self.data[sample]['failed'][i] = newfail
 
                 # Update the max number of failures

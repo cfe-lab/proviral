@@ -385,7 +385,7 @@ def run(contigs_csv, conseqs_csv, cascade_csv, name, outpath, disable_hivseqinr=
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        OutcomeSummary(contigs_df, conseqs_df, outpath)
+        OutcomeSummary(conseqs_df, contigs_df, outpath)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)
