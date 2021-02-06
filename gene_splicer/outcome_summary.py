@@ -98,6 +98,12 @@ class OutcomeSummary:
                 self.addSample(row)
                 if passed:
                     self.setPassed(row)
+                else:
+                    try:
+                        self.handleEdgeCases(row)
+                    except IndexError:
+                        continue
+                    self.addFailure(row, seqtype=seqtype)
             # Else if sample is already in self.data
             else:
                 # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
