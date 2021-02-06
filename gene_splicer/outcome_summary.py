@@ -191,6 +191,7 @@ class OutcomeSummary:
                     self.data[sample]['failed']) > 0:
                 self.data[sample]['error'] = self.errors.non_hiv
                 self.data[sample]['failed'] = []
+                continue
 
             # Otherwise at least one sequence was not non-hiv so we should display only the error for that sequence
             else:
@@ -198,19 +199,19 @@ class OutcomeSummary:
                 for i in is_hiv_indicies:
                     new_failed.append(self.data[sample]['failed'][i])
                 self.data[sample]['failed'] = new_failed
-            for i, fail in enumerate(self.data[sample]['failed']):
-                newfail = {}
-                for k, v in fail.items():
-                    # Reset the number
-                    k = k.rsplit('_', 1)[0] + f'_{i}'
-                    newfail[k] = v
-                    self.data[sample][k] = v
-                self.data[sample]['failed'][i] = newfail
+                for i, fail in enumerate(self.data[sample]['failed']):
+                    newfail = {}
+                    for k, v in fail.items():
+                        # Reset the number
+                        k = k.rsplit('_', 1)[0] + f'_{i}'
+                        newfail[k] = v
+                        self.data[sample][k] = v
+                    self.data[sample]['failed'][i] = newfail
 
-            # Update the max number of failures
-            nfailed = len(self.data[sample]['failed'])
-            if nfailed > self.max_failed:
-                self.max_failed = nfailed
+                # Update the max number of failures
+                nfailed = len(self.data[sample]['failed'])
+                if nfailed > self.max_failed:
+                    self.max_failed = nfailed
 
             # Natalie's requests
             # 1. If sample has only one contig and it had primer failure -> primer error

@@ -5,7 +5,7 @@ import requests
 import zipfile
 import sys
 import io
-from gene_splicer.logger import logger
+from logger import logger
 
 
 class Hivseqinr:
