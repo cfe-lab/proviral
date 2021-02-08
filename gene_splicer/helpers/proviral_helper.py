@@ -33,7 +33,15 @@ class ProviralHelper:
         return proviral_samples
 
     def is_proviral(self, sample):
-        return sample in self.proviral_samples or self.force_all_proviral
+        if self.force_all_proviral:
+            return True
+        elif sample in self.proviral_samples:
+            return True
+        elif self.config['RESOURCES']['PROVIRAL_PROJECT_CODE'] in sample:
+            logger.debug(
+                'Sample was deemed proviral by project code but "%s" not in "%s"'
+                % (sample, self.config['RESOURCES']['PROVIRAL_SAMPLES']))
+            return True
 
     def pid_from_sample(self, sample):
         try:
