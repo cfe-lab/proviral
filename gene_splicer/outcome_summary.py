@@ -1,4 +1,5 @@
 import os
+import copy
 import csv
 import pandas as pd
 import numpy as np
@@ -162,20 +163,20 @@ class OutcomeSummary:
             new_failed = []
             for i in is_hiv_indicies:
                 new_failed.append(self.data['failed'][i])
-            self.data['failed'] = new_failed
-        for i, fail in enumerate(self.data['failed']):
-            newfail = {}
-            for k, v in fail.items():
-                # Reset the number
-                k = k.rsplit('_', 1)[0] + f'_{i}'
-                newfail[k] = v
-                self.data[k] = v
-            self.data['failed'][i] = newfail
+            self.data['failed'] = copy.deepcopy(new_failed)
+            for i, fail in enumerate(self.data['failed']):
+                newfail = {}
+                for k, v in fail.items():
+                    # Reset the number
+                    k = k.rsplit('_', 1)[0] + f'_{i}'
+                    newfail[k] = v
+                    self.data[k] = v
+                self.data['failed'][i] = newfail
 
-        # Update the max number of failures
-        nfailed = len(self.data['failed'])
-        if nfailed > self.max_failed:
-            self.max_failed = nfailed
+            # Update the max number of failures
+            nfailed = len(self.data['failed'])
+            if nfailed > self.max_failed:
+                self.max_failed = nfailed
 
         # Natalie's requests
         # 1. If sample has only one contig and it had primer failure -> primer error

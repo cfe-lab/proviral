@@ -8,42 +8,9 @@ from pathlib import Path
 from typing import ContextManager, List
 from contextlib import contextmanager
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
-
-
-def join(loader, node):
-    seq = loader.construct_sequence(node)
-    return ''.join([str(i) for i in seq])
-
-
-yaml.add_constructor('!join', join)
+from gene_splicer.helpers.proviral_helper import ProviralHelper
 
 errors = PrimerFinderErrors()
-
-
-# force_all_proviral is for testing, forces samples to be considered proviral
-class ProviralHelper:
-    def __init__(self, force_all_proviral=False) -> None:
-        self.force_all_proviral = force_all_proviral
-        self.cwd = self.getcwd()
-        self.load_config()
-
-    @staticmethod
-    def getcwd():
-        return Path(os.path.realpath(__file__)).parent
-
-    def load_config(self):
-        with open(self.cwd / 'config.yaml') as o:
-            self.config = yaml.load(o, Loader=yaml.Loader)
-
-    def get_proviral_samples(self):
-        return self.config['RESOURCES']['PROVIRAL_SAMPLES']
-
-    def is_proviral(self, sample):
-        return sample in self.config['RESOURCES'][
-            'PROVIRAL_SAMPLES'] or self.force_all_proviral
-
-    def get_sample_pid_mapping(self):
-        return self.config['RESOURCES']['SAMPLE_PID_MAPPING']
 
 
 def parse_args():
