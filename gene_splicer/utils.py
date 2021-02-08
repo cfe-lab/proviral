@@ -576,17 +576,6 @@ def isNan(num):
     return num != num
 
 
-# Given a sample name, return whether or not the sample is proviral-related
-# This function is based on a list of participant IDs and whether they are proviral or not (as deemed by myself and Z)
-# Unfortunately that list cannot be included in this repo due to privacy concerns
-def isProviral(sample_name):
-    if (('GAGGAG' in sample_name) or ('VIR' in sample_name) or
-        ('NEF-HIV') in sample_name) or ('V3LOOP' in sample_name) or (
-            'HLA' in sample_name) or ('HCV' in sample_name):
-        return False
-    return True
-
-
 def getSamplesFromCascade(cascade_csv):
     all_samples = {}
     reader = DictReader(cascade_csv)

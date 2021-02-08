@@ -10,13 +10,18 @@ setup(
         'numpy==1.18.4',
         'python-Levenshtein==0.12.0',
         'pandas==1.0.5',
-        'matplotlib==3.2.1',
+        'matplotlib==3.3.3',
         'requests==2.24.0',
-        'pyyaml'
+        'pyyaml',
+        'pytest'
     ],
+    package_data={
+        '':
+        ['genes_of_interest.yaml', 'annot.csv', 'hxb2.fasta', 'config.yaml']
+    },
     entry_points={
         'console_scripts': [
-            'gene_splicer_run = gene_splicer.master:main',
+            'gene_splicer_run = gene_splicer.piepline:main',
         ]
     }
 )

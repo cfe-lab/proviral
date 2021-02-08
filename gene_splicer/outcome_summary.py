@@ -5,8 +5,11 @@ import numpy as np
 from pathlib import Path
 from logger import logger
 from primer_finder_errors import PrimerFinderErrors
+from helpers.proviral_helper import ProviralHelper
 
 import utils
+
+proviral_helper = ProviralHelper()
 
 
 class OutcomeSummary:
@@ -77,7 +80,7 @@ class OutcomeSummary:
                 or (row['error'] == self.errors.is_v3)):
             raise IndexError
         # If the sample is not proviral (see function in utils for details)
-        elif not utils.isProviral(row['sample']):
+        elif not proviral_helper.is_proviral(row['sample']):
             row['error'] = self.errors.non_proviral
         # If the sample had no contigs/conseqs (i.e. remap == 0)
         elif row['error'] == self.errors.no_sequence:

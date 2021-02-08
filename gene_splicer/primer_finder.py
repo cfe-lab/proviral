@@ -23,6 +23,7 @@ from primer_finder_errors import PrimerFinderErrors
 from primer_finder_class import PrimerFinder
 from outcome_summary import OutcomeSummary
 from hivseqinr import Hivseqinr
+from helpers.proviral_helper import ProviralHelper
 
 import utils
 mixture_dict = utils.mixture_dict
@@ -33,6 +34,7 @@ reverse_and_complement = utils.reverse_and_complement
 from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
+proviral_helper = ProviralHelper()
 
 # Note these are 1-based indicies
 primers = {
@@ -161,7 +163,7 @@ def find_primers(csv_filepath,
 
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
         # Do not analyze non-proviral samples
-        if not utils.isProviral(sample_name):
+        if not proviral_helper.is_proviral(sample_name):
             logger.debug('Skipping sample "%s" because it is non-proviral' %
                          sample_name)
             continue
