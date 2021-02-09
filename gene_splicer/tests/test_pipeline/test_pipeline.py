@@ -1,11 +1,8 @@
 import os
-import sys
-import yaml
 from pathlib import Path
 import io
 
 cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
 
 data = cwd.parent / 'data'
 inputs = cwd / 'inputs'

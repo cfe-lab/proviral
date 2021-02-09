@@ -1,6 +1,6 @@
-import gene_splicer
-import primer_finder
-import utils
+import gene_splicer.gene_splicer as gene_splicer
+import gene_splicer.primer_finder as primer_finder
+import gene_splicer.utils as utils
 
 
 def main():

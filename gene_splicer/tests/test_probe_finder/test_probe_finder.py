@@ -1,11 +1,8 @@
 import os
-import sys
 import pytest
 from pathlib import Path
 
 cwd = Path(os.path.realpath(__file__)).parent
-
-sys.path.append(str(cwd.parent.parent))
 
 from gene_splicer.probe_finder import unpack_mixtures_and_reverse
 

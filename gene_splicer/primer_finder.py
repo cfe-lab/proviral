@@ -18,20 +18,20 @@ import math
 
 import Levenshtein
 from gotoh import align_it
-import logger
-from primer_finder_errors import PrimerFinderErrors
-from primer_finder_class import PrimerFinder
-from outcome_summary import OutcomeSummary
-from hivseqinr import Hivseqinr
-from helpers.proviral_helper import ProviralHelper
+from gene_splicer.logger import logger
+from gene_splicer.primer_finder_errors import PrimerFinderErrors
+from gene_splicer.primer_finder_class import PrimerFinder
+from gene_splicer.outcome_summary import OutcomeSummary
+from gene_splicer.hivseqinr import Hivseqinr
+from gene_splicer.helpers.proviral_helper import ProviralHelper
+from gene_splicer.probe_finder import ProbeFinder
 
-import utils
+import gene_splicer.utils as utils
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
 # from micall.core.project_config import ProjectConfig
 # from micall.utils.translation import mixture_dict, reverse_and_complement
-from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
 

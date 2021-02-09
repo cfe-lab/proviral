@@ -8,8 +8,7 @@ from operator import itemgetter
 import Levenshtein
 from gotoh import align_it
 
-# from micall.core.project_config import ProjectConfig
-import utils
+import gene_splicer.utils as utils
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 

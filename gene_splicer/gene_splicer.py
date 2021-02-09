@@ -1,8 +1,7 @@
-import utils
 import argparse
 import os
 from pathlib import Path
-import logger
+import gene_splicer.utils as utils
 
 
 def parse_args():

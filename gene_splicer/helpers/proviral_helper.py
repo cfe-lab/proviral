@@ -2,8 +2,8 @@ import yaml
 import os
 import csv
 from pathlib import Path
-import helpers.yaml_helper
-from logger import logger
+import gene_splicer.helpers.yaml_helper
+from gene_splicer.logger import logger
 
 
 # force_all_proviral is for testing, forces samples to be considered proviral

@@ -1,8 +1,8 @@
 import re
-import utils
 import Levenshtein
+import gene_splicer.utils as utils
+from gene_splicer.logger import logger
 from gotoh import align_it
-from logger import logger
 
 
 class PrimerFinder:

@@ -5,7 +5,6 @@ import csv
 from pathlib import Path
 
 cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
 
 import gene_splicer.utils as utils
 

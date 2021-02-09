@@ -1,4 +1,3 @@
-import enum
 import pytest
 import math
 import os
@@ -6,7 +5,6 @@ import sys
 from pathlib import Path
 
 cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
 
 import gene_splicer.utils as utils
 from gene_splicer.primer_finder_class import PrimerFinder
