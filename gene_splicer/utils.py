@@ -334,7 +334,7 @@ def load_samfile(samfile_path):
 def aligner_available(aligner_path='minimap2'):
     cmd = [aligner_path]
     try:
-        process = sp.run(cmd)
+        process = sp.run(cmd, stderr=sp.PIPE, stdout=sp.PIPE)
         if process.returncode == 0:
             return True
     except Exception:

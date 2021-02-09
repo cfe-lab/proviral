@@ -47,6 +47,6 @@ class ProviralHelper:
 
     def pid_from_sample(self, sample):
         try:
-            return self.proviral_samples[sample]['Category']
+            return self.proviral_samples[sample]['pid']
         except KeyError:
             logger.warning('Sample %s not in proviral samples file' % (sample))
