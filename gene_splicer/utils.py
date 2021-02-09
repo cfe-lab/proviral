@@ -498,7 +498,7 @@ def sequence_to_coords(query, target, alignment_path, annot):
     softclip = get_softclipped_region(query, aln)
     if softclip is None:
         return
-    import probe_finder
+    import gene_splicer.probe_finder
     finder = probe_finder.ProbeFinder(softclip, target)
     if not finder.valid:
         return None
