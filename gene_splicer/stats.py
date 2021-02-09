@@ -39,9 +39,6 @@ def parse_args():
         help=
         'FOR TESTING PURPOSES. Forces all samples to be considered proviral.')
     args = parser.parse_args()
-    helper = ProviralHelper(force_all_proviral=args.force_all_proviral)
-    if not args.sample_mapping:
-        args.sample_mapping = helper.get_sample_pid_mapping()
     return args
 
 
@@ -166,15 +163,10 @@ def compute_failure_rate(subset, total):
         return 0
 
 
-def compute_per_participant(data, mapping_filepath):
-    mapping = {}
-    with open(mapping_filepath, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            mapping[row['sample']] = row['participant_id']
+def compute_per_participant(data, pvhelper):
     result = {}
     for sample, runs in data.items():
-        pid = mapping[sample]
+        pid = pvhelper.pid_from_sample(sample)
         if pid not in result:
             result[pid] = {
                 errors.no_sequence: 0,
@@ -365,13 +357,14 @@ def write_per_participant(data, outpath):
 
 def run(args):
     # unique_samples = get_unique_samples(args.contigs_analysis_csvs)
+    pvhelper = ProviralHelper(sample_map_path_override=args.sample_mapping)
     all_data = get_all_data(args.contigs_analysis_csvs,
                             args.filtered_csvs,
                             force_all_proviral=args.force_all_proviral)
     write_data(all_data, args.outpath)
     overall_percent_failure, per_run = compute_stats(all_data)
     write_stats(per_run, overall_percent_failure, args.outpath)
-    per_participant = compute_per_participant(all_data, args.sample_mapping)
+    per_participant = compute_per_participant(all_data, pvhelper)
     write_per_participant(per_participant, args.outpath)
 
 
