@@ -34,7 +34,6 @@ reverse_and_complement = utils.reverse_and_complement
 from probe_finder import ProbeFinder
 
 logger = logging.getLogger('gene_splicer')
-proviral_helper = ProviralHelper()
 
 # Note these are 1-based indicies
 primers = {
@@ -112,7 +111,9 @@ def find_primers(csv_filepath,
                  run_name,
                  all_samples,
                  sample_size=50,
-                 extended_length=200):
+                 extended_length=200,
+                 test=False):
+    proviral_helper = ProviralHelper(force_all_proviral=test)
     errors = PrimerFinderErrors()
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     print(run_name)
@@ -135,9 +136,6 @@ def find_primers(csv_filepath,
     writer = DictWriter(outfile, columns, lineterminator='\n')
     writer.writeheader()
     reader = DictReader(csv_filepath)
-    total = 0
-    viable = 0
-    unique_samples = 0
 
     # all_samples is a dict whose keys are sample names and values are the remap column (constructed from cascade.csv file)
     for sample in all_samples:
@@ -168,22 +166,12 @@ def find_primers(csv_filepath,
                          sample_name)
             continue
         contig_num = 0
-        unique_samples += 1
 
         for row in sample_rows:
-            total += 1
             seed_name = row.get('genotype') or row.get('ref') or row['region']
             conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_num += 1
             contig_name = f'{contig_num}_{seed_name}'
-            uname = f'{sample_name}_{contig_name}_{contig_num}'
-
-            # interesting_sample = 'HIV3428G2-P19-HIV_S56'
-            # pause = False
-            # if ((sample_name == interesting_sample)
-            #  and (seed_name == '1-HIV1-B-FR-K03455-seed')
-            #  and (run_name.endswith('conseqs'))):
-            #     pause = True
 
             new_row = dict(run_name=run_name,
                            sample=sample_name,
@@ -192,7 +180,6 @@ def find_primers(csv_filepath,
             contig_seq = contig_seq.upper()
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
-            # print(uname)
             if conseq_cutoff and conseq_cutoff != 'MAX':
                 new_row['error'] = errors.not_max
                 writer.writerow(new_row)
@@ -252,8 +239,7 @@ def find_primers(csv_filepath,
                     seqlen = len(seq)
                     seq = handle_x(seq)
                     if not seq or len(seq) < seqlen / 6:
-                        new_row[prefix +
-                                'error'] = errors.low_end_cov
+                        new_row[prefix + 'error'] = errors.low_end_cov
                         continue
 
                 finder = PrimerFinder(contig_seq,
@@ -279,8 +265,7 @@ def find_primers(csv_filepath,
                     new_row[prefix + 'error'] = errors.no_primer
                     continue
                 elif not finder.is_valid:
-                    new_row[prefix +
-                            'error'] = errors.failed_validation
+                    new_row[prefix + 'error'] = errors.failed_validation
                     continue
                 new_row[prefix +
                         'canonical_primer_seq'] = primers[direction]['seq']
@@ -294,7 +279,6 @@ def find_primers(csv_filepath,
                 new_row[prefix + 'hxb2_sample_primer_end'] = finder.hxb2_end
 
             writer.writerow(new_row)
-            viable += 1
     outfile.close()
     return outfilepath
 
@@ -367,19 +351,30 @@ def filter_df(df, nodups=True):
     return filtered
 
 
-def run(contigs_csv, conseqs_csv, cascade_csv, name, outpath, disable_hivseqinr=False, nodups=True, split=1, sample_size=50):
+def run(contigs_csv,
+        conseqs_csv,
+        cascade_csv,
+        name,
+        outpath,
+        disable_hivseqinr=False,
+        nodups=True,
+        split=1,
+        sample_size=50,
+        test=False):
     all_samples = utils.getSamplesFromCascade(cascade_csv)
 
     contigs_out = find_primers(contigs_csv,
                                outpath,
                                f'{name}_contigs',
                                sample_size=sample_size,
-                               all_samples=all_samples)
+                               all_samples=all_samples,
+                               test=test)
     conseqs_out = find_primers(conseqs_csv,
                                outpath,
                                f'{name}_conseqs',
                                sample_size=sample_size,
-                               all_samples=all_samples)
+                               all_samples=all_samples,
+                               test=test)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -387,7 +382,7 @@ def run(contigs_csv, conseqs_csv, cascade_csv, name, outpath, disable_hivseqinr=
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        OutcomeSummary(conseqs_df, contigs_df, outpath)
+        OutcomeSummary(conseqs_df, contigs_df, outpath, test=test)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)

@@ -65,7 +65,8 @@ def test_pipeline_sample1():
                                     cascade_csv=open(cascade_path),
                                     outpath=(outpath),
                                     name='sample1',
-                                    disable_hivseqinr=True)
+                                    disable_hivseqinr=True,
+                                    test=True)
     # outcome_summary_path=(outpath / 'outcome_summary.csv'),
     # extended_size=1000)
     for fasta in fasta_paths:

@@ -9,11 +9,10 @@ from helpers.proviral_helper import ProviralHelper
 
 import utils
 
-proviral_helper = ProviralHelper()
-
 
 class OutcomeSummary:
-    def __init__(self, conseqs_df, contigs_df, outpath):
+    def __init__(self, conseqs_df, contigs_df, outpath, test=False):
+        self.proviral_helper = ProviralHelper(test)
         self.errors = PrimerFinderErrors()
         self.data = {}
         self.path = outpath / 'outcome_summary.csv'
@@ -80,7 +79,7 @@ class OutcomeSummary:
                 or (row['error'] == self.errors.is_v3)):
             raise IndexError
         # If the sample is not proviral (see function in utils for details)
-        elif not proviral_helper.is_proviral(row['sample']):
+        elif not self.proviral_helper.is_proviral(row['sample']):
             row['error'] = self.errors.non_proviral
         # If the sample had no contigs/conseqs (i.e. remap == 0)
         elif row['error'] == self.errors.no_sequence:

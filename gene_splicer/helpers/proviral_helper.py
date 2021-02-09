@@ -9,8 +9,8 @@ from logger import logger
 # force_all_proviral is for testing, forces samples to be considered proviral
 class ProviralHelper:
     def __init__(self, force_all_proviral=False) -> None:
-        self.force_all_proviral = force_all_proviral
         self.cwd = self.getcwd()
+        self.force_all_proviral = force_all_proviral
         self.config = self.load_config()
         self.proviral_samples = self.load_proviral_samples()
 
@@ -23,6 +23,8 @@ class ProviralHelper:
             return yaml.load(o, Loader=yaml.Loader)
 
     def load_proviral_samples(self):
+        if self.force_all_proviral:
+            return
         apath = self.config['RESOURCES']['PROVIRAL_SAMPLES']
         proviral_samples = {}
         with open(apath, newline='') as csvfile:
