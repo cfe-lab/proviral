@@ -106,13 +106,17 @@ def make_path(path):
         os.makedirs(path)
 
 
-def find_primers(csv_filepath,
-                 outpath,
-                 run_name,
-                 all_samples,
-                 sample_size=50,
-                 extended_length=200,
-                 test=False):
+def find_primers(
+        csv_filepath,
+        outpath,
+        run_name,
+        all_samples,
+        # The sequence type, can be either 'contigs' or 'conseqs'
+        seqtype,
+        sample_size=50,
+        extended_length=200,
+        test=False):
+    reversed_conseqs = {}
     proviral_helper = ProviralHelper(force_all_proviral=test)
     errors = PrimerFinderErrors()
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
@@ -168,32 +172,45 @@ def find_primers(csv_filepath,
         contig_num = 0
 
         for row in sample_rows:
-            seed_name = row.get('genotype') or row.get('ref') or row['region']
-            conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_num += 1
-            contig_name = f'{contig_num}_{seed_name}'
+
+            seed_name = row.get('ref') or row['region'] or row.get('genotype')
+
+            # Keep track of reversed conseq seeds
+            if seqtype == 'conseqs':
+                conseq_num, seed = seed_name.split('-', 1)
+                conseq_num = int(conseq_num)
+                if 'reversed' in seed_name:
+                    reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
+
+            conseq_cutoff = row.get('consensus-percent-cutoff')
+            contig_name = f'{contig_num}-{seed_name}'
 
             new_row = dict(run_name=run_name,
                            sample=sample_name,
                            reference=contig_name)
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
+
+            # If corresponding conseq is reversed, reverse contig
+            # TODO Reverse conseq as well if reversed seed
+            if f'{contig_num}-{sample_name}' in reversed_conseqs:
+                contig_seq = utils.reverse_and_complement(contig_seq)
+
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
+
+            # If the sample is non-proviral, skip
+            if not proviral_helper.is_proviral(row.get('sample')):
+                new_row['error'] = errors.non_proviral
+                writer.writerow(new_row)
+                continue
+
+            # If percent consensus cutoff is not max, skip
             if conseq_cutoff and conseq_cutoff != 'MAX':
                 new_row['error'] = errors.not_max
                 writer.writerow(new_row)
                 continue
-
-            # I don't think we need this try block if I am already removing non-proviral stuff up on line 218
-            try:
-                # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
-                if row['region'] == v3_reference:
-                    new_row['error'] = errors.is_v3
-                    writer.writerow(new_row)
-                    continue
-            except KeyError:
-                pass
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
@@ -202,6 +219,8 @@ def find_primers(csv_filepath,
                 new_row['error'] = errors.low_internal_cov
                 writer.writerow(new_row)
                 continue
+
+            # Determine if sequence has non-tcga characters
             found_non_tcga = re.findall(non_tcga, contig_seq)
             mixtures = len([x for x in found_non_tcga if x[0].upper() != 'X'])
             if (mixtures > 1):
@@ -209,6 +228,7 @@ def find_primers(csv_filepath,
                 new_row['nmixtures'] = mixtures
                 writer.writerow(new_row)
                 continue
+
             prime5_seq = contig_seq[:sample_size]
             extended_prime5_seq = contig_seq[:extended_length]
             prime3_seq = contig_seq[-sample_size:]
@@ -366,12 +386,14 @@ def run(contigs_csv,
     contigs_out = find_primers(contigs_csv,
                                outpath,
                                f'{name}_contigs',
+                               seqtype='contigs',
                                sample_size=sample_size,
                                all_samples=all_samples,
                                test=test)
     conseqs_out = find_primers(conseqs_csv,
                                outpath,
                                f'{name}_conseqs',
+                               seqtype='conseqs',
                                sample_size=sample_size,
                                all_samples=all_samples,
                                test=test)

@@ -73,14 +73,10 @@ class OutcomeSummary:
     def handleEdgeCases(self, row):
         ## Determine type of error for certain cases
         ## Raises a specific exception to tell main loop to continue
-        ## These error strings are set in primer_finder.find_primers() function
         # If conseq is not max, do not record it
-        if ((row['error'] == self.errors.not_max)
-                or (row['error'] == self.errors.is_v3)):
+        if (row['error'] == self.errors.not_max
+                or row['error'] == self.errors.non_proviral):
             raise IndexError
-        # If the sample is not proviral (see function in utils for details)
-        elif not self.proviral_helper.is_proviral(row['sample']):
-            row['error'] = self.errors.non_proviral
         # If the sample had no contigs/conseqs (i.e. remap == 0)
         elif row['error'] == self.errors.no_sequence:
             self.data[row['sample']]['error'] = row['error']

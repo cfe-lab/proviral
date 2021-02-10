@@ -1,7 +1,6 @@
 class PrimerFinderErrors:
     def __init__(self) -> None:
         self.not_max = 'not MAX'
-        self.is_v3 = 'is V3 sequence'
         self.low_internal_cov = 'low internal read coverage'
         self.non_tcga = 'sequence contained non-TCGA/gap'
         self.low_end_cov = 'low end read coverage'
