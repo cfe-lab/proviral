@@ -184,6 +184,17 @@ def find_primers(
                            sample=sample_name,
                            reference=contig_name)
 
+            contig_seq: str = row.get('contig') or row['sequence']
+            contig_seq = contig_seq.upper()
+
+            # Determine if sequence has internal Xs
+            x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
+            if any([(sample_size < i < len(contig_seq) - (sample_size))
+                    for i in x_locations]):
+                new_row['error'] = errors.low_internal_cov
+                writer.writerow(new_row)
+                continue
+
             # Skip v3 sequences
             try:
                 # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
@@ -200,9 +211,6 @@ def find_primers(
                 conseq_num = int(conseq_num)
                 if 'reversed' in seed_name:
                     reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
-
-            contig_seq: str = row.get('contig') or row['sequence']
-            contig_seq = contig_seq.upper()
 
             # If corresponding conseq is reversed, reverse contig
             # TODO Reverse conseq as well if reversed seed
@@ -221,14 +229,6 @@ def find_primers(
             # If percent consensus cutoff is not max, skip
             if conseq_cutoff and conseq_cutoff != 'MAX':
                 new_row['error'] = errors.not_max
-                writer.writerow(new_row)
-                continue
-
-            # Determine if sequence has internal Xs
-            x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            if any([(sample_size < i < len(contig_seq) - (sample_size))
-                    for i in x_locations]):
-                new_row['error'] = errors.low_internal_cov
                 writer.writerow(new_row)
                 continue
 
