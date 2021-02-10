@@ -177,13 +177,6 @@ def find_primers(
             contig_num += 1
             seed_name = row.get('ref') or row['region'] or row.get('genotype')
 
-            # Keep track of reversed conseq seeds
-            if seqtype == 'conseqs':
-                conseq_num, seed = seed_name.split('-', 1)
-                conseq_num = int(conseq_num)
-                if 'reversed' in seed_name:
-                    reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
-
             conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_name = f'{contig_num}-{seed_name}'
 
@@ -200,6 +193,13 @@ def find_primers(
                     continue
             except KeyError:
                 pass
+
+            # Keep track of reversed conseq seeds
+            if seqtype == 'conseqs':
+                conseq_num, seed = seed_name.split('-', 1)
+                conseq_num = int(conseq_num)
+                if 'reversed' in seed_name:
+                    reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
