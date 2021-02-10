@@ -164,16 +164,17 @@ def find_primers(
             writer.writerow(new_row)
 
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
+
         # Do not analyze non-proviral samples
         if not proviral_helper.is_proviral(sample_name):
             logger.debug('Skipping sample "%s" because it is non-proviral' %
                          sample_name)
             continue
+
         contig_num = 0
 
         for row in sample_rows:
             contig_num += 1
-
             seed_name = row.get('ref') or row['region'] or row.get('genotype')
 
             # Keep track of reversed conseq seeds
@@ -189,6 +190,17 @@ def find_primers(
             new_row = dict(run_name=run_name,
                            sample=sample_name,
                            reference=contig_name)
+
+            # Skip v3 sequences
+            try:
+                # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
+                if row['region'] == v3_reference:
+                    new_row['error'] = errors.non_proviral
+                    writer.writerow(new_row)
+                    continue
+            except KeyError:
+                pass
+
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
 
