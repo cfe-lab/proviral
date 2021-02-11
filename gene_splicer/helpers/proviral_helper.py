@@ -60,7 +60,7 @@ class ProviralHelper:
             return True
         elif self.config['RESOURCES']['PROVIRAL_PROJECT_CODE'] in sample:
             logger.debug(
-                'Sample was deemed proviral by project code but "%s" not in "%s"'
+                'Sample "%s" was deemed proviral by project code but is currently not in this file, which it should be "%s"'
                 % (sample, self.config['RESOURCES']['PROVIRAL_SAMPLES']))
             return True
 
@@ -68,4 +68,6 @@ class ProviralHelper:
         try:
             return self.proviral_samples[sample]['pid']
         except KeyError:
-            logger.warning('Sample %s not in proviral samples file' % (sample))
+            logger.warning(
+                'Sample "%s" not in proviral samples-PID mapping file %s' %
+                (sample, self.config['RESOURCES']['SAMPLE_PID_MAPPING']))
