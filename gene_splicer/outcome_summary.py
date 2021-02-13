@@ -127,9 +127,19 @@ class OutcomeSummary:
                 'rev_error']
             # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
             if row['sample'] not in self.data:
+                # TODO Don this is where the program will detect if a conseq was not found for a particular sample, and yet a contig was
                 logger.warning(
                     'Sample "%s" not found in conseqs but was in contigs?!' %
                     sample)
+                self.addSample(row)
+                if passed:
+                    self.setPassed(row)
+                else:
+                    try:
+                        self.handleEdgeCases(row)
+                    except IndexError:
+                        continue
+                    self.addFailure(row, seqtype=seqtype)
             # Else if sample is already in self.data
             else:
                 if passed and self.data[sample]['contig_passed']:
@@ -217,6 +227,7 @@ class OutcomeSummary:
                 nfailed = len(self.data[sample]['failed'])
                 if nfailed > self.max_failed:
                     self.max_failed = nfailed
+                self.data[sample]['error'] = self.errors.hiv_but_failed
 
             # Natalie's requests
             # 1. If sample has only one contig and it had primer failure -> primer error
@@ -229,14 +240,18 @@ class OutcomeSummary:
             if len(self.data[sample]
                    ['failed']) == 1 and not self.data[sample]['passed']:
                 # Case 1
-                if 'primer' in self.data[sample]['failed'][0][
-                        'fail_fwd_err_0'] or 'primer' in self.data[sample][
-                            'failed'][0]['fail_rev_err_0']:
+                if self.data[sample]['failed'][0]['fail_fwd_err_0'] in (
+                        self.errors.no_primer, self.errors.failed_validation,
+                        self.errors.low_end_cov
+                ) or self.data[sample]['failed'][0]['fail_rev_err_0'] in (
+                        self.errors.no_primer, self.errors.failed_validation,
+                        self.errors.low_end_cov):
                     self.data[sample]['error'] = self.errors.primer_error
                 # Case 2
-                elif 'coverage' in self.data[sample]['failed'][0][
-                        'fail_fwd_err_0'] or 'coverage' in self.data[sample][
-                            'failed'][0]['fail_rev_error_0']:
+                elif self.data[sample]['failed'][0][
+                        'fail_fwd_err_0'] == self.errors.low_internal_cov or self.data[
+                            sample]['failed'][0][
+                                'fail_rev_error_0'] == self.errors.low_internal_cov:
                     self.data[sample]['error'] = self.errors.low_end_cov
             # Case 3, 4, and 5
             elif not self.data[sample]['passed'] and len(

@@ -206,16 +206,16 @@ def find_primers(
                 pass
 
             # Keep track of reversed conseq seeds
-            if seqtype == 'conseqs':
-                conseq_num, seed = seed_name.split('-', 1)
-                conseq_num = int(conseq_num)
-                if 'reversed' in seed_name:
-                    reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
+            # if seqtype == 'conseqs':
+            #     conseq_num, seed = seed_name.split('-', 1)
+            #     conseq_num = int(conseq_num)
+            #     if 'reversed' in seed_name:
+            #         reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
 
             # If corresponding conseq is reversed, reverse contig
             # TODO Reverse conseq as well if reversed seed
-            if f'{contig_num}-{sample_name}' in reversed_conseqs:
-                contig_seq = utils.reverse_and_complement(contig_seq)
+            # if f'{contig_num}-{sample_name}' in reversed_conseqs:
+            #     contig_seq = utils.reverse_and_complement(contig_seq)
 
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
