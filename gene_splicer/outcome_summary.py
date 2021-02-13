@@ -101,9 +101,10 @@ class OutcomeSummary:
             seqtype = 'contig'
             passed = not row['error'] and not row['fwd_error'] and not row[
                 'rev_error']
-            # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
+            # If conseq passed and then the contig passed, do nothing?
             if passed and self.data['contig_passed']:
-                self.setFailed(row, error=self.errors.multiple_passed)
+                # self.setFailed(row, error=self.errors.multiple_passed)
+                pass
             # If the contig passes
             elif passed:
                 self.setPassed(row)
@@ -186,19 +187,24 @@ class OutcomeSummary:
         # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage ->  MULTIPLE CONTIGS
 
         # Case 1 and 2
-        if len(self.data['failed']) == 1 and not self.data['passed']:
+        if len(self.data
+                ['failed']) == 1 and not self.data['passed']:
             # Case 1
-            if 'primer' in self.data['failed'][0][
-                    'fail_fwd_err_0'] or 'primer' in self.data['failed'][0][
-                        'fail_rev_err_0']:
+            if self.data['failed'][0]['fail_fwd_err_0'] in (
+                    self.errors.no_primer, self.errors.failed_validation,
+                    self.errors.low_end_cov
+            ) or self.data['failed'][0]['fail_rev_err_0'] in (
+                    self.errors.no_primer, self.errors.failed_validation,
+                    self.errors.low_end_cov):
                 self.data['error'] = self.errors.primer_error
             # Case 2
-            elif 'coverage' in self.data['failed'][0][
-                    'fail_fwd_err_0'] or 'coverage' in self.data['failed'][0][
-                        'fail_rev_error_0']:
+            elif self.data['failed'][0][
+                    'fail_fwd_err_0'] == self.errors.low_internal_cov or self.data['failed'][0][
+                            'fail_rev_error_0'] == self.errors.low_internal_cov:
                 self.data['error'] = self.errors.low_end_cov
         # Case 3, 4, and 5
-        elif not self.data['passed'] and len(self.data['failed']) > 1:
+        elif not self.data['passed'] and len(
+                self.data['failed']) > 1:
             # I can just set the error to multiple contigs?
             self.data['error'] = self.errors.multiple_contigs
 

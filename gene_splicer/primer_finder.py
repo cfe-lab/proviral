@@ -1,18 +1,9 @@
 import re
-import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader, DictWriter
-from itertools import groupby
-from operator import itemgetter
 import os
 import pandas as pd
-import subprocess
-import requests
-import io
-import zipfile
-import shutil
 from pathlib import Path
-import sys
 import logging
 
 from gene_splicer.logger import logger
@@ -425,7 +416,7 @@ def filter_df(df, nodups=True):
     filtered = filtered[['reference', 'sequence', 'seqtype']]
     return filtered
 
-
+# TODO This function could be designed better in that you can search conseqs first, and then for all conseqs that failed you would then search contigs to see if you can recover
 def run(contigs_csv,
         conseqs_csv,
         outpath,
