@@ -499,7 +499,7 @@ def sequence_to_coords(query, target, alignment_path, annot):
     if softclip is None:
         return
     import gene_splicer.probe_finder
-    finder = probe_finder.ProbeFinder(softclip, target)
+    finder = gene_splicer.probe_finder.ProbeFinder(softclip, target)
     if not finder.valid:
         return None
     # query_match = target[finder.start:len(finder.contig_match)]
