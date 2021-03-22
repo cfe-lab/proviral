@@ -124,7 +124,7 @@ def find_primers(
     make_path(outpath)
     columns = [
         'run_name', 'sample', 'reference', 'error', 'sequence', 'seqlen',
-        'nmixtures'
+        'nmixtures', 'is_rev_comp'
     ]
     for direction in primers:
         for column_type in [
@@ -177,12 +177,20 @@ def find_primers(
             contig_num += 1
             seed_name = row.get('ref') or row['region'] or row.get('genotype')
 
+            if 'HIV' not in seed_name:
+                logger.debug("Skipping contig %d of sample %s, because it "
+                             "didn't BLAST to HIV.",
+                             contig_num,
+                             sample_name)
+                continue
+
             conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_name = f'{contig_num}-{seed_name}'
 
             new_row = dict(run_name=run_name,
                            sample=sample_name,
-                           reference=contig_name)
+                           reference=contig_name,
+                           is_rev_comp='N')
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
@@ -241,78 +249,106 @@ def find_primers(
                 writer.writerow(new_row)
                 continue
 
-            prime5_seq = contig_seq[:sample_size]
-            extended_prime5_seq = contig_seq[:extended_length]
-            prime3_seq = contig_seq[-sample_size:]
-            extended_prime3_seq = contig_seq[-extended_length:]
             for key in columns:
-                if key not in [
-                        'sample', 'contig', 'seqlen', 'error', 'sequence',
-                        'run_name', 'reference'
-                ]:
+                if key not in ('sample', 'contig', 'seqlen', 'error',
+                               'sequence', 'run_name', 'reference',
+                               'is_rev_comp'):
                     new_row[key] = None
-
-            for end, seq, extended_seq in [
-                (5, prime5_seq, extended_prime5_seq),
-                (3, prime3_seq, extended_prime3_seq)
-            ]:
-                if end == 5:
-                    direction = 'fwd'
-                    hxb2_target_start = primers[direction]['hxb2_start']
-                    hxb2_target_end = primers[direction]['hxb2_end']
-                else:
-                    direction = 'rev'
-                    hxb2_target_start = primers[direction]['hxb2_start']
-                    hxb2_target_end = primers[direction]['hxb2_end']
-
-                prefix = direction + '_'
-
-                if 'X' in seq:
-                    seqlen = len(seq)
-                    seq = handle_x(seq)
-                    if not seq or len(seq) < seqlen / 6:
-                        new_row[prefix + 'error'] = errors.low_end_cov
-                        continue
-
-                finder = PrimerFinder(contig_seq,
-                                      primers[direction]['seq'],
-                                      direction,
-                                      hxb2_target_start,
-                                      hxb2_target_end,
-                                      sample_size=sample_size)
-
-                if not finder.is_full_length:
-                    finder2 = PrimerFinder(contig_seq,
-                                           primers[direction]['seq'],
-                                           direction,
-                                           hxb2_target_start,
-                                           hxb2_target_end,
-                                           sample_size=extended_length)
-                    if finder2.is_full_length:
-                        finder = finder2
-
-                # Natalie's request
-                # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
-                if not finder.sample_primer:
-                    new_row[prefix + 'error'] = errors.no_primer
-                    continue
-                elif not finder.is_valid:
-                    new_row[prefix + 'error'] = errors.failed_validation
-                    continue
-                new_row[prefix +
-                        'canonical_primer_seq'] = primers[direction]['seq']
-                new_row[prefix + 'sample_primer_seq'] = finder.sample_primer
-                new_row[prefix + 'sample_primer_start'] = finder.start
-                new_row[prefix + 'sample_primer_end'] = finder.end
-                new_row[prefix + 'sample_primer_size'] = len(
-                    finder.sample_primer)
-                new_row[prefix +
-                        'hxb2_sample_primer_start'] = finder.hxb2_start
-                new_row[prefix + 'hxb2_sample_primer_end'] = finder.hxb2_end
+            rev_row = dict(new_row)
+            record_primers(contig_seq,
+                           new_row,
+                           errors,
+                           sample_size,
+                           extended_length)
+            if new_row.get('error') is None and (
+                    new_row.get('fwd_error') is not None or
+                    new_row.get('rev_error') is not None):
+                # Forward version failed, try reverse complement.
+                utils.complement_dict['X'] = 'X'
+                rev_seq = reverse_and_complement(contig_seq)
+                del utils.complement_dict['X']
+                record_primers(rev_seq,
+                               rev_row,
+                               errors,
+                               sample_size,
+                               extended_length)
+                if (rev_row.get('error') is None and
+                        rev_row.get('fwd_error') is None and
+                        rev_row.get('rev_error') is None):
+                    # Reverse complement worked, use it instead.
+                    rev_row['is_rev_comp'] = 'Y'
+                    new_row = rev_row
+                    logger.warning(f'primers found in reverse complement of '
+                                   f'{run_name}: {sample_name} - '
+                                   f'{contig_name} - {seqtype}')
 
             writer.writerow(new_row)
     outfile.close()
     return outfilepath
+
+
+def record_primers(contig_seq, new_row, errors, sample_size, extended_length):
+    prime5_seq = contig_seq[:sample_size]
+    extended_prime5_seq = contig_seq[:extended_length]
+    prime3_seq = contig_seq[-sample_size:]
+    extended_prime3_seq = contig_seq[-extended_length:]
+    for end, seq, extended_seq in [
+        (5, prime5_seq, extended_prime5_seq),
+        (3, prime3_seq, extended_prime3_seq)
+    ]:
+        if end == 5:
+            direction = 'fwd'
+            hxb2_target_start = primers[direction]['hxb2_start']
+            hxb2_target_end = primers[direction]['hxb2_end']
+        else:
+            direction = 'rev'
+            hxb2_target_start = primers[direction]['hxb2_start']
+            hxb2_target_end = primers[direction]['hxb2_end']
+
+        prefix = direction + '_'
+
+        if 'X' in seq:
+            seqlen = len(seq)
+            seq = handle_x(seq)
+            if not seq or len(seq) < seqlen / 6:
+                new_row[prefix + 'error'] = errors.low_end_cov
+                continue
+
+        finder = PrimerFinder(contig_seq,
+                              primers[direction]['seq'],
+                              direction,
+                              hxb2_target_start,
+                              hxb2_target_end,
+                              sample_size=sample_size)
+
+        if not finder.is_full_length:
+            finder2 = PrimerFinder(contig_seq,
+                                   primers[direction]['seq'],
+                                   direction,
+                                   hxb2_target_start,
+                                   hxb2_target_end,
+                                   sample_size=extended_length)
+            if finder2.is_full_length:
+                finder = finder2
+
+        # Natalie's request
+        # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
+        if not finder.sample_primer:
+            new_row[prefix + 'error'] = errors.no_primer
+            continue
+        elif not finder.is_valid:
+            new_row[prefix + 'error'] = errors.failed_validation
+            continue
+        new_row[prefix +
+                'canonical_primer_seq'] = primers[direction]['seq']
+        new_row[prefix + 'sample_primer_seq'] = finder.sample_primer
+        new_row[prefix + 'sample_primer_start'] = finder.start
+        new_row[prefix + 'sample_primer_end'] = finder.end
+        new_row[prefix + 'sample_primer_size'] = len(
+            finder.sample_primer)
+        new_row[prefix +
+                'hxb2_sample_primer_start'] = finder.hxb2_start
+        new_row[prefix + 'hxb2_sample_primer_end'] = finder.hxb2_end
 
 
 def handle_x(sequence):
