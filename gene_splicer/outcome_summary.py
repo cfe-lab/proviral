@@ -1,5 +1,7 @@
 import os
 import csv
+from collections import Counter
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -236,9 +238,20 @@ class OutcomeSummary:
             # 4. A sample that yielded multiple contigs, all of which SOLELY suffered low coverage ->  MULTIPLE CONTIGS
             # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage ->  MULTIPLE CONTIGS
 
+            sample_passed = self.data[sample]['passed']
+            failure_counts = Counter()
+            for i, row in enumerate(self.data[sample]['failed']):
+                sequence_type = row[f'fail_seqtype_{i}']
+                failure_counts[sequence_type] += 1
+            if not failure_counts:
+                failure_count = 0
+            else:
+                failure_count = max(failure_counts.values())
+
             # Case 1 and 2
-            if len(self.data[sample]
-                   ['failed']) == 1 and not self.data[sample]['passed']:
+            if sample_passed:
+                self.data[sample]['error'] = None
+            if failure_count == 1 and not sample_passed:
                 # Case 1
                 if self.data[sample]['failed'][0]['fail_fwd_err_0'] in (
                         self.errors.no_primer, self.errors.failed_validation,
@@ -254,8 +267,7 @@ class OutcomeSummary:
                                 'fail_rev_error_0'] == self.errors.low_internal_cov:
                     self.data[sample]['error'] = self.errors.low_end_cov
             # Case 3, 4, and 5
-            elif not self.data[sample]['passed'] and len(
-                    self.data[sample]['failed']) > 1:
+            elif not sample_passed and failure_count > 1:
                 # I can just set the error to multiple contigs?
                 self.data[sample]['error'] = self.errors.multiple_contigs
 
