@@ -79,6 +79,27 @@ E0003-NFLHIVDNA_S1,200115_M22222,P2
     assert summary.run_paths == (run1_path,)
 
 
+def test_load_runs_not_in_samples(tmp_path):
+    runs_root = tmp_path
+    run1_path = runs_root / '200101_M11111_0001_0000000-J1HRQ'
+    run1_path.mkdir()
+    run2_path = runs_root / '200115_M22222_0003_0000000-Y8E4T'
+    run2_path.mkdir()
+
+    samples_csv = StringIO("""\
+sample,run,pid
+E0001-NFLHIVDNA_S1,200101_M11111,P1
+E0002-NFLHIVDNA_S2,200101_M11111,P2
+""")
+    requested_runs = [str(run1_path), str(run2_path)]
+    summary = StudySummary()
+
+    summary.load_runs(requested_runs)
+    summary.load_samples(samples_csv, runs_root)
+
+    assert summary.run_paths == (run1_path, run2_path)
+
+
 def test_load_outcome():
     summary = StudySummary()
     outcome_summary_csv = StringIO("""\
@@ -164,6 +185,39 @@ E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
     assert summary.participant_counts == expected_participant_counts
 
 
+def test_find_unmapped_samples(tmp_path):
+    runs_root = tmp_path
+    run1_path = runs_root / '200101_M11111_0001_0000000-J1HRQ'
+    run1_path.mkdir()
+
+    samples_csv = StringIO("""\
+sample,run,pid
+E0001-NFLHIVDNA_S1,200101_M11111,P1
+E0002-NFLHIVDNA_S2,200101_M11111,P2
+""")
+    outcome_summary_csv = StringIO("""\
+sample,run,passed,error
+E0001-NFLHIVDNA_S1,200101_M11111,True,
+E0002-NFLHIVDNA_S2,200101_M11111,False,primer error
+E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
+""")
+    expected_participant_counts = {'P1': dict(samples=1, passed=1),
+                                   'P2': dict(samples=1,
+                                              errors=1,
+                                              primer_error=1),
+                                   'E0003': dict(samples=1,
+                                                 errors=1,
+                                                 multiple_contigs=1)}
+    expected_unmapped_samples = [('200101_M11111', 'E0003-NFLHIVDNA_S3')]
+    summary = StudySummary()
+
+    summary.load_samples(samples_csv, runs_root)
+    summary.load_outcome(outcome_summary_csv)
+
+    assert summary.participant_counts == expected_participant_counts
+    assert summary.unmapped_samples == expected_unmapped_samples
+
+
 def test_write():
     summary = StudySummary()
     outcome_summary_csv = StringIO("""\
@@ -187,3 +241,53 @@ total,total,3,1,2,0,0,0,1,0,1
     summary.write(study_summary_csv)
 
     assert study_summary_csv.getvalue() == expected_study_summary_csv
+
+
+def test_write_warnings():
+    summary = StudySummary()
+    summary.unmapped_samples.extend((('200101_M11111', 'E0003-NFLHIVDNA_S3'),
+                                     ('200101_M11111', 'E0007-NFLHIVDNA_S5'),
+                                     ('200108_M11111', 'E0009-NFLHIVDNA_S2')))
+    expected_warnings = """\
+WARNING, some samples did not map to participant ids:
+200101_M11111:
+  E0003-NFLHIVDNA_S3
+  E0007-NFLHIVDNA_S5
+200108_M11111:
+  E0009-NFLHIVDNA_S2
+"""
+    report = StringIO()
+
+    summary.write_warnings(report)
+
+    assert report.getvalue() == expected_warnings
+
+
+def test():
+    summary = StudySummary()
+    summary.unmapped_samples.extend(((f'run{i // 10}', f'sample{i}')
+                                     for i in range(50)))
+    expected_warnings = """\
+WARNING, some samples did not map to participant ids:
+run0:
+  sample0
+  sample1
+  sample2
+  sample3
+  sample4
+  sample5
+  sample6
+  sample7
+  sample8
+  sample9
+run1:
+  sample10
+  sample11
+  [8 more samples...]
+[30 more samples in 3 more runs...]
+"""
+    report = StringIO()
+
+    summary.write_warnings(report, limit=12)
+
+    assert report.getvalue() == expected_warnings
