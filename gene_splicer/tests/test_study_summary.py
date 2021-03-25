@@ -227,13 +227,13 @@ P2-NFLHIVDNA_S2,200101_M11111,False,primer error
 P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
-type,name,samples,passed,errors,no_sequence,non_hiv,hiv_but_failed,\
+type,name,samples,passed,errors,no_sequence,non_hiv,\
 primer_error,low_internal_cov,multiple_contigs
-run,200101_M11111,3,1,2,0,0,0,1,0,1
-participant,P1,1,1,0,0,0,0,0,0,0
-participant,P2,1,0,1,0,0,0,1,0,0
-participant,P3,1,0,1,0,0,0,0,0,1
-total,total,3,1,2,0,0,0,1,0,1
+run,200101_M11111,3,1,2,0,0,1,0,1
+participant,P1,1,1,0,0,0,0,0,0
+participant,P2,1,0,1,0,0,1,0,0
+participant,P3,1,0,1,0,0,0,0,1
+total,total,3,1,2,0,0,1,0,1
 """
     study_summary_csv = StringIO()
 

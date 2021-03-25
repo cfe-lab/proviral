@@ -116,7 +116,6 @@ class StudySummary:
                          'errors',
                          'no_sequence',
                          'non_hiv',
-                         'hiv_but_failed',
                          'primer_error',
                          'low_internal_cov',
                          'multiple_contigs']
