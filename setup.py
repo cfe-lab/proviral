@@ -16,5 +16,6 @@ setup(
     entry_points={
         'console_scripts': [
             'gene_splicer_run = gene_splicer.pipeline:main',
+            'gene_splicer_study = gene_splicer.study_summary:main',
         ]
     })
