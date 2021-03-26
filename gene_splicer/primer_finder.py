@@ -147,20 +147,7 @@ def find_primers(
         if all_samples[sample] == 0:
             new_row = dict(run_name=run_name,
                            sample=sample,
-                           reference=None,
-                           error=errors.no_sequence,
-                           sequence=None,
-                           seqlen=None,
-                           nmixtures=None)
-            for prefix in ('fwd_', 'rev_'):
-                new_row[prefix + 'error'] = None
-                new_row[prefix + 'canonical_primer_seq'] = None
-                new_row[prefix + 'sample_primer_seq'] = None
-                new_row[prefix + 'sample_primer_start'] = None
-                new_row[prefix + 'sample_primer_end'] = None
-                new_row[prefix + 'sample_primer_size'] = None
-                new_row[prefix + 'hxb2_sample_primer_start'] = None
-                new_row[prefix + 'hxb2_sample_primer_end'] = None
+                           error=errors.no_sequence)
             writer.writerow(new_row)
 
     for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
@@ -172,18 +159,16 @@ def find_primers(
             continue
 
         contig_num = 0
+        contig_row_count = 0
 
         for row in sample_rows:
             contig_num += 1
             seed_name = row.get('ref') or row['region'] or row.get('genotype')
 
             if 'HIV' not in seed_name:
-                logger.debug("Skipping contig %d of sample %s, because it "
-                             "didn't BLAST to HIV.",
-                             contig_num,
-                             sample_name)
                 continue
 
+            contig_row_count += 1
             conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_name = f'{contig_num}-{seed_name}'
 
@@ -212,18 +197,6 @@ def find_primers(
                     continue
             except KeyError:
                 pass
-
-            # Keep track of reversed conseq seeds
-            # if seqtype == 'conseqs':
-            #     conseq_num, seed = seed_name.split('-', 1)
-            #     conseq_num = int(conseq_num)
-            #     if 'reversed' in seed_name:
-            #         reversed_conseqs[f'{conseq_num}-{sample_name}'] = seed
-
-            # If corresponding conseq is reversed, reverse contig
-            # TODO Reverse conseq as well if reversed seed
-            # if f'{contig_num}-{sample_name}' in reversed_conseqs:
-            #     contig_seq = utils.reverse_and_complement(contig_seq)
 
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
@@ -282,6 +255,11 @@ def find_primers(
                                    f'{run_name}: {sample_name} - '
                                    f'{contig_name} - {seqtype}')
 
+            writer.writerow(new_row)
+        if contig_row_count == 0:
+            new_row = dict(run_name=run_name,
+                           sample=sample_name,
+                           error=errors.non_hiv)
             writer.writerow(new_row)
     outfile.close()
     return outfilepath

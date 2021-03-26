@@ -187,6 +187,7 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path):
     short_run_name = '_'.join(full_run_name.split('_')[:2])
     python_path = sys.executable
     launch_path = Path(__file__).parent.parent
+    log_path = outcome_folder / 'gene_splicer.log'
     pipeline_args = [python_path,
                      '-m', 'gene_splicer.pipeline',
                      '--outpath', str(outcome_folder),
@@ -195,14 +196,15 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path):
                      cascade_path,
                      short_run_name]
     try:
-        run(pipeline_args,
-            stdout=PIPE,
-            stderr=STDOUT,
-            check=True,
-            encoding=sys.getdefaultencoding(),
-            cwd=launch_path)
-    except CalledProcessError as ex:
-        print(ex.stdout, file=sys.stderr)
+        with log_path.open('w') as log_file:
+            run(pipeline_args,
+                stdout=log_file,
+                stderr=STDOUT,
+                check=True,
+                encoding=sys.getdefaultencoding(),
+                cwd=launch_path)
+    except CalledProcessError:
+        print(log_path.read_text(), file=sys.stderr)
         raise
     print('.', end='')
 

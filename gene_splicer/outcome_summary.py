@@ -1,15 +1,10 @@
-import os
 import csv
 from collections import Counter
 
 import pandas as pd
-import numpy as np
-from pathlib import Path
 from gene_splicer.logger import logger
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
 from gene_splicer.helpers.proviral_helper import ProviralHelper
-
-import gene_splicer.utils
 
 
 class OutcomeSummary:
@@ -22,7 +17,7 @@ class OutcomeSummary:
         self.max_failed = 0
         self.create(conseqs_df, contigs_df)
 
-    def addSample(self, row):
+    def add_sample(self, row):
         self.data[row['sample']] = {
             'sample': row['sample'],
             # Since I add suffix "_conseq", remove it
@@ -37,14 +32,14 @@ class OutcomeSummary:
             'error': ''
         }
 
-    def setPassed(self, row):
+    def set_passed(self, row):
         self.data[row['sample']]['reference'] = row['reference']
         self.data[row['sample']]['seqlen'] = row['seqlen']
         self.data[row['sample']]['conseq_passed'] = True
         self.data[row['sample']]['sequence'] = row['sequence']
         self.data[row['sample']]['seqtype'] = row['seqtype']
 
-    def setFailed(self, row, error):
+    def set_failed(self, row, error):
         logger.critical('Sample "%s" already has a passed sequence!' %
                         row['sample'])
         self.data[row['sample']]['conseq_passed'] = False
@@ -53,7 +48,7 @@ class OutcomeSummary:
         self.data[row['sample']]['seqtype'] = ''
         self.data[row['sample']]['error'] = error
 
-    def addFailure(self, row, seqtype):
+    def add_failure(self, row, seqtype):
         nfailed = len(self.data[row['sample']]['failed'])
         self.data[row['sample']]['failed'].append({
             f'fail_error_{nfailed}':
@@ -72,9 +67,10 @@ class OutcomeSummary:
             row['reference']
         })
 
-    def handleEdgeCases(self, row):
-        ## Determine type of error for certain cases
-        ## Raises a specific exception to tell main loop to continue
+    def handle_edge_cases(self, row):
+        # Determine type of error for certain cases
+        # Raises a specific exception to tell main loop to continue
+
         # If conseq is not max, do not record it
         if (row['error'] == self.errors.not_max
                 or row['error'] == self.errors.non_proviral):
@@ -87,7 +83,7 @@ class OutcomeSummary:
         elif any([x in row['reference'] for x in ('reverse', 'unknown')]):
             row['error'] = self.errors.non_hiv
 
-    def processConseqs(self, conseqs_df):
+    def process_conseqs(self, conseqs_df):
         for index, row in conseqs_df.iterrows():
             seqtype = 'conseq'
             sample = row['sample']
@@ -95,66 +91,68 @@ class OutcomeSummary:
                 'rev_error']
             # If sample not in data yet
             if row['sample'] not in self.data:
-                self.addSample(row)
+                self.add_sample(row)
                 if passed:
-                    self.setPassed(row)
+                    self.set_passed(row)
                 else:
                     try:
-                        self.handleEdgeCases(row)
+                        self.handle_edge_cases(row)
                     except IndexError:
                         continue
-                    self.addFailure(row, seqtype=seqtype)
+                    self.add_failure(row, seqtype=seqtype)
             # Else if sample is already in self.data
             else:
-                # If we have already seen a conseq that passed, set them both to fail since this means multiple passing conseqs
+                # If we have already seen a conseq that passed, set them both to
+                # fail since this means multiple passing conseqs
                 if passed and self.data[sample]['conseq_passed']:
-                    self.setFailed(row, error=self.errors.multiple_passed)
+                    self.set_failed(row, error=self.errors.multiple_passed)
                 # If we have not seen a conseq that passed, set to pass
                 elif passed:
-                    self.setPassed(row)
+                    self.set_passed(row)
                 # If not passed
                 else:
                     try:
-                        self.handleEdgeCases(row)
+                        self.handle_edge_cases(row)
                     except IndexError:
                         continue
-                    self.addFailure(row, seqtype=seqtype)
+                    self.add_failure(row, seqtype=seqtype)
 
-    def processContigs(self, contigs_df):
+    def process_contigs(self, contigs_df):
         # Go through all the contigs
         for index, row in contigs_df.iterrows():
             seqtype = 'contig'
             sample = row['sample']
             passed = not row['error'] and not row['fwd_error'] and not row[
                 'rev_error']
-            # If sample not in data yet, print a warning because we already went through all of the conseqs and so we should have captured every sample
+            # If sample not in data yet, print a warning because we already went
+            # through all of the conseqs and so we should have captured every
+            # sample
             if row['sample'] not in self.data:
-                # TODO Don this is where the program will detect if a conseq was not found for a particular sample, and yet a contig was
                 logger.warning(
                     'Sample "%s" not found in conseqs but was in contigs?!' %
                     sample)
-                self.addSample(row)
+                self.add_sample(row)
                 if passed:
-                    self.setPassed(row)
+                    self.set_passed(row)
                 else:
                     try:
-                        self.handleEdgeCases(row)
+                        self.handle_edge_cases(row)
                     except IndexError:
                         continue
-                    self.addFailure(row, seqtype=seqtype)
+                    self.add_failure(row, seqtype=seqtype)
             # Else if sample is already in self.data
             else:
                 if passed and self.data[sample]['contig_passed']:
-                    self.setFailed(row, error=self.errors.multiple_passed)
+                    self.set_failed(row, error=self.errors.multiple_passed)
                 # If the contig passes
                 elif passed:
-                    self.setPassed(row)
+                    self.set_passed(row)
                 else:
                     try:
-                        self.handleEdgeCases(row)
+                        self.handle_edge_cases(row)
                     except IndexError:
                         continue
-                    self.addFailure(row, seqtype=seqtype)
+                    self.add_failure(row, seqtype=seqtype)
 
     def write(self):
         fieldnames = [
@@ -201,10 +199,9 @@ class OutcomeSummary:
                     is_hiv_indicies.append(i)
 
             # If the number of failures is equal to the count of non-hiv failures then all failures are due to non-hiv
-            if count_non_hiv == len(
-                    self.data[sample]
-                ['failed']) and not self.data[sample]['passed'] and len(
-                    self.data[sample]['failed']) > 0:
+            if (count_non_hiv == len(self.data[sample]['failed']) and
+                    not self.data[sample]['passed'] and
+                    len(self.data[sample]['failed']) > 0):
                 self.data[sample]['error'] = self.errors.non_hiv
                 self.data[sample]['failed'] = []
                 continue
@@ -236,7 +233,8 @@ class OutcomeSummary:
             # 2. A sample that yielded only one contig, and it had low coverage -> LOW COVERAGE
             # 3. A sample that yielded multiple contigs, all of which SOLELY suffered primer failure -> MULTIPLE CONTIGS
             # 4. A sample that yielded multiple contigs, all of which SOLELY suffered low coverage ->  MULTIPLE CONTIGS
-            # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage ->  MULTIPLE CONTIGS
+            # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage
+            #   ->  MULTIPLE CONTIGS
 
             sample_passed = self.data[sample]['passed']
             failure_counts = Counter()
@@ -276,8 +274,8 @@ class OutcomeSummary:
         contigs_df = contigs_df.where(pd.notnull(contigs_df), '')
         conseqs_df = conseqs_df.where(pd.notnull(conseqs_df), '')
 
-        self.processConseqs(conseqs_df)
-        self.processContigs(contigs_df)
+        self.process_conseqs(conseqs_df)
+        self.process_contigs(contigs_df)
 
         self.reduce()
 

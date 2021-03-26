@@ -4,9 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-gotoh = {editable = true, path = "."}
+gotoh = {subdirectory = "micall/alignment", ref = "v7.7.0", git = "https://github.com/cfe-lab/MiCall.git"}
+numpy = "==1.18.4"
+python-levenshtein = "==0.12.0"
+pandas = "==1.0.5"
+matplotlib = "==3.3.3"
+requests = "==2.24.0"
+pyyaml = "*"
 
 [dev-packages]
+pytest = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.8"
