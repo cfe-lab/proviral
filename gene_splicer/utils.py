@@ -360,7 +360,7 @@ def align(target_seq,
           outdir=Path(os.getcwd()).resolve(),
           aligner_path='minimap2'):
     if not aligner_available(aligner_path):
-        return None
+        raise FileNotFoundError(f'Aligner {aligner_path} not found.')
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)

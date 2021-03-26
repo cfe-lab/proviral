@@ -2,6 +2,7 @@ class PrimerFinderErrors:
     def __init__(self) -> None:
         self.not_max = 'not MAX'
         self.low_internal_cov = 'low internal read coverage'
+        self.low_cov = 'low coverage'
         self.non_tcga = 'sequence contained non-TCGA/gap'
         self.low_end_cov = 'low end read coverage'
         self.no_primer = 'primer was not found'

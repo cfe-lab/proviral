@@ -105,13 +105,13 @@ def test_load_outcome():
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer error
+P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
 P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_run_counts = {'200101_M11111': dict(samples=3,
                                                  passed=1,
                                                  errors=2,
-                                                 primer_error=1,
+                                                 no_primer=1,
                                                  multiple_contigs=1)}
 
     summary.load_outcome(outcome_summary_csv)
@@ -124,7 +124,7 @@ def test_load_multiple_run_outcomes():
     outcome1_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer error
+P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
 """)
     outcome2_summary_csv = StringIO("""\
 sample,run,passed,error
@@ -134,7 +134,7 @@ P3-NFLHIVDNA_S2,200108_M11111,False,multiple contigs
     expected_run_counts = {'200101_M11111': dict(samples=2,
                                                  passed=1,
                                                  errors=1,
-                                                 primer_error=1),
+                                                 no_primer=1),
                            '200108_M11111': dict(samples=2,
                                                  passed=1,
                                                  errors=1,
@@ -143,7 +143,7 @@ P3-NFLHIVDNA_S2,200108_M11111,False,multiple contigs
                                    'P2': dict(samples=2,
                                               passed=1,
                                               errors=1,
-                                              primer_error=1),
+                                              no_primer=1),
                                    'P3': dict(samples=1,
                                               errors=1,
                                               multiple_contigs=1)}
@@ -169,13 +169,13 @@ E0003-NFLHIVDNA_S3,200101_M11111,P2
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 E0001-NFLHIVDNA_S1,200101_M11111,True,
-E0002-NFLHIVDNA_S2,200101_M11111,False,primer error
+E0002-NFLHIVDNA_S2,200101_M11111,False,primer was not found
 E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_participant_counts = {'P1': dict(samples=1, passed=1),
                                    'P2': dict(samples=2,
                                               errors=2,
-                                              primer_error=1,
+                                              no_primer=1,
                                               multiple_contigs=1)}
     summary = StudySummary()
 
@@ -198,13 +198,13 @@ E0002-NFLHIVDNA_S2,200101_M11111,P2
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 E0001-NFLHIVDNA_S1,200101_M11111,True,
-E0002-NFLHIVDNA_S2,200101_M11111,False,primer error
+E0002-NFLHIVDNA_S2,200101_M11111,False,primer was not found
 E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_participant_counts = {'P1': dict(samples=1, passed=1),
                                    'P2': dict(samples=1,
                                               errors=1,
-                                              primer_error=1),
+                                              no_primer=1),
                                    'E0003': dict(samples=1,
                                                  errors=1,
                                                  multiple_contigs=1)}
@@ -218,17 +218,35 @@ E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
     assert summary.unmapped_samples == expected_unmapped_samples
 
 
-def test_write():
+def test_combined_error_types():
     summary = StudySummary()
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
 P2-NFLHIVDNA_S2,200101_M11111,False,primer error
+P3-NFLHIVDNA_S3,200101_M11111,False,primer failed validation
+""")
+    expected_run_counts = {'200101_M11111': dict(samples=3,
+                                                 passed=1,
+                                                 errors=2,
+                                                 no_primer=2)}
+
+    summary.load_outcome(outcome_summary_csv)
+
+    assert summary.run_counts == expected_run_counts
+
+
+def test_write():
+    summary = StudySummary()
+    outcome_summary_csv = StringIO("""\
+sample,run,passed,error
+P1-NFLHIVDNA_S1,200101_M11111,True,
+P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
 P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
 type,name,samples,passed,errors,no_sequence,non_hiv,\
-primer_error,low_internal_cov,multiple_contigs
+no_primer,low_cov,multiple_contigs
 run,200101_M11111,3,1,2,0,0,1,0,1
 participant,P1,1,1,0,0,0,0,0,0
 participant,P2,1,0,1,0,0,1,0,0
@@ -263,7 +281,7 @@ WARNING, some samples did not map to participant ids:
     assert report.getvalue() == expected_warnings
 
 
-def test():
+def test_write_warnings_with_limit():
     summary = StudySummary()
     summary.unmapped_samples.extend(((f'run{i // 10}', f'sample{i}')
                                      for i in range(50)))
