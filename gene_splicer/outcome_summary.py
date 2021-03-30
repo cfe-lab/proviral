@@ -120,8 +120,12 @@ class OutcomeSummary:
     def process_contigs(self, contigs_df):
         # Go through all the contigs
         for index, row in contigs_df.iterrows():
-            seqtype = 'contig'
             sample = row['sample']
+            conseq_data = self.data.get(sample)
+            if conseq_data and conseq_data['conseq_passed']:
+                continue
+
+            seqtype = 'contig'
             passed = not row['error'] and not row['fwd_error'] and not row[
                 'rev_error']
             # If sample not in data yet, print a warning because we already went
@@ -182,11 +186,11 @@ class OutcomeSummary:
         # Perform some final filtering steps
         for sample in self.data:
             # Set passed if either contig or conseq passes
-            self.data[sample]['passed'] = self.data[sample][
+            sample_passed = self.data[sample]['passed'] = self.data[sample][
                 'conseq_passed'] or self.data[sample]['contig_passed']
 
             # Zabrina's request to remove all failed seqs if sample passed
-            if self.data[sample]['passed']:
+            if sample_passed:
                 self.data[sample]['failed'] = []
 
             # Zabrina's request to simply display a single error if all failures are due to not aligning to HIV
@@ -206,8 +210,9 @@ class OutcomeSummary:
                 self.data[sample]['failed'] = []
                 continue
 
-            # Otherwise at least one sequence was not non-hiv so we should display only the error for that sequence
-            else:
+            # Otherwise at least one failed sequence was hiv so we should
+            # display only the error for that sequence
+            elif not sample_passed and self.data[sample]['failed']:
                 new_failed = []
                 for i in is_hiv_indicies:
                     new_failed.append(self.data[sample]['failed'][i])
@@ -228,45 +233,68 @@ class OutcomeSummary:
                     self.max_failed = nfailed
                 self.data[sample]['error'] = self.errors.hiv_but_failed
 
-            # Natalie's requests
-            # 1. If sample has only one contig and it had primer failure -> primer error
-            # 2. A sample that yielded only one contig, and it had low coverage -> LOW COVERAGE
-            # 3. A sample that yielded multiple contigs, all of which SOLELY suffered primer failure -> MULTIPLE CONTIGS
-            # 4. A sample that yielded multiple contigs, all of which SOLELY suffered low coverage ->  MULTIPLE CONTIGS
-            # 5. A sample that yielded multiple contigs, some of which failed due to primer, some due to low coverage
-            #   ->  MULTIPLE CONTIGS
-
-            sample_passed = self.data[sample]['passed']
-            failure_counts = Counter()
+            # When generating output summary for a sample:
+            # Any contigs or conseqs that didn't BLAST to HIV have been removed
+            # by earlier code.
+            # 1. If conseqs passed, produce output summary from them. (earlier)
+            # 2. Else if contigs passed, produce output summary from them. (earlier)
+            # 3. Else if there are no conseqs, and contig error is "non-HIV" or
+            #    "no sequence", report that.
+            # 4. Else if there are no conseqs, generate error "low coverage".
+            # 5. Else if sample has only one conseq and it had primer failure,
+            #    report primer error
+            # 6. A sample that yielded only one conseq, and it had low coverage,
+            #    report low coverage
+            # 7. A sample that yielded multiple contigs, all of which SOLELY
+            #    suffered primer failure -> MULTIPLE CONTIGS
+            # 8. A sample that yielded multiple contigs, all of which SOLELY
+            #    suffered low coverage ->  MULTIPLE CONTIGS
+            # 9. A sample that yielded multiple contigs, some of which failed
+            #    due to primer, some due to low coverage ->  MULTIPLE CONTIGS
+            conseq_failures = []
             for i, row in enumerate(self.data[sample]['failed']):
                 sequence_type = row[f'fail_seqtype_{i}']
-                failure_counts[sequence_type] += 1
-            if not failure_counts:
-                failure_count = 0
-            else:
-                failure_count = max(failure_counts.values())
+                if sequence_type == 'conseq':
+                    j = len(conseq_failures)
+                    new_row = {}
+                    for old_name, value in row.items():
+                        name_parts = old_name.split('_')
+                        name_parts[-1] = str(j)
+                        new_row['_'.join(name_parts)] = value
+                    conseq_failures.append(new_row)
+            conseq_failure_count = len(conseq_failures)
 
             # Case 1 and 2
             if sample_passed:
                 self.data[sample]['error'] = None
-            if failure_count == 1 and not sample_passed:
-                # Case 1
-                if self.data[sample]['failed'][0]['fail_fwd_err_0'] in (
-                        self.errors.no_primer, self.errors.failed_validation,
-                        self.errors.low_end_cov
-                ) or self.data[sample]['failed'][0]['fail_rev_err_0'] in (
-                        self.errors.no_primer, self.errors.failed_validation,
-                        self.errors.low_end_cov):
+            elif conseq_failure_count == 0:
+                contig_errors = self.data[sample]['failed']
+                if not contig_errors:
+                    assert self.data[sample]['error']
+                else:
+                    first_error = (contig_errors[0]['fail_fwd_err_0'] or
+                                   contig_errors[0]['fail_rev_err_0'])
+                    if first_error in (self.errors.non_hiv,
+                                       self.errors.no_sequence):
+                        # Case 3
+                        self.data[sample]['error'] = first_error
+                    else:
+                        # Case 4
+                        self.data[sample]['error'] = self.errors.low_cov
+            elif conseq_failure_count == 1:
+                # Case 5
+                primer_errors = (self.errors.no_primer,
+                                 self.errors.failed_validation,
+                                 self.errors.low_end_cov)
+                if (conseq_failures[0]['fail_fwd_err_0'] in primer_errors or
+                        conseq_failures[0]['fail_rev_err_0'] in primer_errors):
                     self.data[sample]['error'] = self.errors.primer_error
-                # Case 2
-                elif self.data[sample]['failed'][0][
-                        'fail_fwd_err_0'] == self.errors.low_internal_cov or self.data[
-                            sample]['failed'][0][
-                                'fail_rev_error_0'] == self.errors.low_internal_cov:
-                    self.data[sample]['error'] = self.errors.low_end_cov
-            # Case 3, 4, and 5
-            elif not sample_passed and failure_count > 1:
-                # I can just set the error to multiple contigs?
+                # Case 6
+                elif (conseq_failures[0]['fail_fwd_err_0'] == self.errors.low_internal_cov or
+                      conseq_failures[0]['fail_rev_error_0'] == self.errors.low_internal_cov):
+                    self.data[sample]['error'] = self.errors.low_internal_cov
+            else:
+                # Case 7, 8, 9
                 self.data[sample]['error'] = self.errors.multiple_contigs
 
     def create(self, conseqs_df, contigs_df):

@@ -145,6 +145,11 @@ def find_primers(
     for sample in all_samples:
         # If no reads remapped, contig/conseq does not exist, write it as an error
         if all_samples[sample] == 0:
+            # Do not analyze non-proviral samples
+            if not proviral_helper.is_proviral(sample):
+                logger.debug('Skipping sample "%s" because it is non-proviral' %
+                             sample)
+                continue
             new_row = dict(run_name=run_name,
                            sample=sample,
                            error=errors.no_sequence)
@@ -190,7 +195,9 @@ def find_primers(
 
             # Skip v3 sequences
             try:
-                # If "region" is a column of row, then we are looking at a conseq and not a contig. Only conseqs can have V3 sequences so if we can't access this key we do nothing
+                # If "region" is a column of row, then we are looking at a
+                # conseq and not a contig. Only conseqs can have V3 sequences
+                # so if we can't access this key we do nothing
                 if row['region'] == v3_reference:
                     new_row['error'] = errors.non_proviral
                     writer.writerow(new_row)
@@ -216,7 +223,7 @@ def find_primers(
             # Determine if sequence has non-tcga characters
             found_non_tcga = re.findall(non_tcga, contig_seq)
             mixtures = len([x for x in found_non_tcga if x[0].upper() != 'X'])
-            if (mixtures > 1):
+            if mixtures > 1:
                 new_row['error'] = errors.non_tcga
                 new_row['nmixtures'] = mixtures
                 writer.writerow(new_row)
