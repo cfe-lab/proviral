@@ -105,7 +105,7 @@ def test_load_outcome():
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
+P2-NFLHIVDNA_S2,200101_M11111,False,primer error
 P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_run_counts = {'200101_M11111': dict(samples=3,
@@ -124,7 +124,7 @@ def test_load_multiple_run_outcomes():
     outcome1_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
+P2-NFLHIVDNA_S2,200101_M11111,False,primer error
 """)
     outcome2_summary_csv = StringIO("""\
 sample,run,passed,error
@@ -169,7 +169,7 @@ E0003-NFLHIVDNA_S3,200101_M11111,P2
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 E0001-NFLHIVDNA_S1,200101_M11111,True,
-E0002-NFLHIVDNA_S2,200101_M11111,False,primer was not found
+E0002-NFLHIVDNA_S2,200101_M11111,False,primer error
 E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_participant_counts = {'P1': dict(samples=1, passed=1),
@@ -198,7 +198,7 @@ E0002-NFLHIVDNA_S2,200101_M11111,P2
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 E0001-NFLHIVDNA_S1,200101_M11111,True,
-E0002-NFLHIVDNA_S2,200101_M11111,False,primer was not found
+E0002-NFLHIVDNA_S2,200101_M11111,False,primer error
 E0003-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_participant_counts = {'P1': dict(samples=1, passed=1),
@@ -223,13 +223,13 @@ def test_combined_error_types():
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer error
-P3-NFLHIVDNA_S3,200101_M11111,False,primer failed validation
+P2-NFLHIVDNA_S2,200101_M11111,False,low end read coverage
+P3-NFLHIVDNA_S3,200101_M11111,False,low internal read coverage
 """)
     expected_run_counts = {'200101_M11111': dict(samples=3,
                                                  passed=1,
                                                  errors=2,
-                                                 no_primer=2)}
+                                                 low_cov=2)}
 
     summary.load_outcome(outcome_summary_csv)
 
@@ -241,17 +241,17 @@ def test_write():
     outcome_summary_csv = StringIO("""\
 sample,run,passed,error
 P1-NFLHIVDNA_S1,200101_M11111,True,
-P2-NFLHIVDNA_S2,200101_M11111,False,primer was not found
+P2-NFLHIVDNA_S2,200101_M11111,False,primer error
 P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
 type,name,samples,passed,errors,no_sequence,non_hiv,\
-no_primer,low_cov,multiple_contigs
-run,200101_M11111,3,1,2,0,0,1,0,1
-participant,P1,1,1,0,0,0,0,0,0
-participant,P2,1,0,1,0,0,1,0,0
-participant,P3,1,0,1,0,0,0,0,1
-total,total,3,1,2,0,0,1,0,1
+no_primer,low_cov,multiple_contigs,hiv_but_failed
+run,200101_M11111,3,1,2,0,0,1,0,1,0
+participant,P1,1,1,0,0,0,0,0,0,0
+participant,P2,1,0,1,0,0,1,0,0,0
+participant,P3,1,0,1,0,0,0,0,1,0
+total,total,3,1,2,0,0,1,0,1,0
 """
     study_summary_csv = StringIO()
 

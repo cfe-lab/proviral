@@ -66,16 +66,13 @@ class StudySummary:
         errors = PrimerFinderErrors()
         self.error_lookup = {errors.no_sequence: 'no_sequence',
                              errors.non_hiv: 'non_hiv',
-                             errors.no_primer: 'no_primer',
-                             errors.failed_validation: 'no_primer',
                              errors.primer_error: 'no_primer',
                              errors.low_cov: 'low_cov',
                              errors.low_internal_cov: 'low_cov',
                              errors.low_end_cov: 'low_cov',
                              errors.multiple_contigs: 'multiple_contigs',
                              errors.multiple_passed: 'multiple_contigs',
-                             errors.hiv_but_failed: 'multiple_contigs'}  # REMOVE!
-        # TODO: handle or remove errors: non_proviral, hiv_but_failed, non_tcga.
+                             errors.hiv_but_failed: 'hiv_but_failed'}
 
     def load_runs(self, requested_runs: typing.Iterable[str]):
         self.run_paths = tuple(Path(run_path) for run_path in requested_runs)
@@ -134,7 +131,8 @@ class StudySummary:
                          'non_hiv',
                          'no_primer',
                          'low_cov',
-                         'multiple_contigs']
+                         'multiple_contigs',
+                         'hiv_but_failed']
         writer = DictWriter(study_summary_csv,
                             ['type',  # run, participant, or total
                              'name'] + count_columns,
