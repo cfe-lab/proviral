@@ -10,12 +10,34 @@ import glob
 import numpy as np
 from pathlib import Path
 from csv import DictWriter, DictReader
+import string
+import secrets
+
 from gene_splicer.logger import logger
+
+
+class Random:
+
+    alphabet = string.ascii_letters
+
+    def __init__(self, size: int = 10) -> None:
+        self.size = size
+        return
+
+    @staticmethod
+    def upper(size=10):
+        return ''.join(secrets.choice(self.alphabet)
+                       for i in range(size)).upper()
 
 
 def load_yaml(afile):
     with open(afile) as f:
         return yaml.load(f, Loader=yaml.SafeLoader)
+
+
+def dump_yaml(data, afile):
+    with open(afile, 'w') as o:
+        yaml.dump(data, o)
 
 
 def reverse_and_complement(seq):
@@ -88,7 +110,7 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
 
 
 def split_cigar(row):
-    pattern = re.compile('(\d+)([A-Z])')
+    pattern = re.compile(r'(\d+)([A-Z])')
     cigar = re.findall(pattern, row[5])
     return cigar
 
@@ -178,10 +200,8 @@ def modify_annot(annot):
     for gene, (start, stop) in annot.items():
         if gene in genes_of_interest:
             newannot[gene] = [start, stop]
-
-
-#     newannot = dict(annot)
-# Offset by second round fwd primer trim (666 trimmed from start)
+    # newannot = dict(annot)
+    # Offset by second round fwd primer trim (666 trimmed from start)
     offset = -666
     for gene, (start, stop) in newannot.items():
         start += offset
@@ -254,26 +274,24 @@ def splice_genes(query, target, samfile, annotation):
     return results
 
 
-def coords_to_genes(results, query):
+def coords_to_genes(coords, query):
     genes = {
         gene: query[coords[0]:coords[1] + 1]
-        for gene, coords in results.items()
+        for gene, coords in coords.items()
     }
     return genes
 
 
-# This function has not been tested yet
-def get_sequences(query, target, samfile, annotation):
+def splice_aligned_genes(query, target, samfile, annotation):
     results = {}
     sequences = {}
     for i, row in samfile.iterrows():
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
-        genes = get_genes(annotation, target_pos)
         query_pos = None
         for size, op in row['cigar']:
-            print(f'size: {size}, op: {op}')
-            print(f'target_pos: {target_pos}, query_pos: {query_pos}')
+            # print(f'size: {size}, op: {op}')
+            # print(f'target_pos: {target_pos}, query_pos: {query_pos}')
             size = int(size)
             # If the first section is hard-clipped the query should start at
             # the first non-hard-clipped-based. The target should also be offset
@@ -293,7 +311,7 @@ def get_sequences(query, target, samfile, annotation):
                     try:
                         target_nuc = target[target_pos]
                     except IndexError:
-                        print(f'{target_pos} not in range of target')
+                        logger.warning(f'{target_pos} not in range of target')
                         break
                     query_nuc = query[query_pos]
                     match = (target_nuc == query_nuc)
@@ -308,8 +326,7 @@ def get_sequences(query, target, samfile, annotation):
                             results[gene][1] = query_pos
                             sequences[gene].append(query_nuc)
                     query_pos += 1
-                    if op != 'I':
-                        target_pos += 1
+                    target_pos += 1
             elif op == 'D':
                 target_pos += size
                 for i in range(size):
@@ -376,14 +393,15 @@ def align(target_seq,
     with open(alignment_path, 'w') as alignment:
         process = sp.run(cmd, stdout=alignment, errors=True)
     if process.returncode != 0:
-        raise UserWarning(f'Alignment failed! Error: {process.stderr}')
+        logger.error('Alignment failed! Error: %s' % process.stderr)
+        return False
     else:
         return alignment_path
 
 
 def generate_table_precursor(name, outpath):
     # Load filtered sequences
-    filtered_path = outpath / f'{name}_filtered.csv'
+    filtered_path = outpath / 'filtered.csv'
     filtered = pd.read_csv(filtered_path)
     # Load hivseqinr data
     seqinr_paths = glob.glob(
@@ -429,6 +447,11 @@ def generate_table_precursor(name, outpath):
     for gene, seqs in data.items():
         merged[gene] = seqs
 
+    if add_columns:
+        for key, val in add_columns.items():
+            merged[key] = val
+    else:
+        add_columns = {}
     # Output csv
     outfile = outpath / 'table_precursor.csv'
     if parts:

@@ -1,6 +1,6 @@
 {
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
-    "python.formatting.provider": "yapf",
-    "python.pythonPath": "C:\\Users\\Dan\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe"
+    "python.formatting.provider": "none",
+    "python.pythonPath": "c:\\Users\\Dan\\AppData\\Local\\Programs\\Python\\Python38-32\\python.exe"
 }

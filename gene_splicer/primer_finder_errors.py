@@ -3,6 +3,7 @@ class PrimerFinderErrors:
         self.not_max = 'not MAX'
         self.low_internal_cov = 'low internal read coverage'
         self.low_cov = 'low coverage'
+        self.is_v3 = 'is V3 sequence'
         self.non_tcga = 'sequence contained non-TCGA/gap'
         self.low_end_cov = 'low end read coverage'
         self.no_primer = 'primer was not found'
