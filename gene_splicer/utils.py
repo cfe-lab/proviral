@@ -399,9 +399,9 @@ def align(target_seq,
         return alignment_path
 
 
-def generate_table_precursor(name, outpath):
+def generate_table_precursor(name, outpath, add_columns=None):
     # Load filtered sequences
-    filtered_path = outpath / 'filtered.csv'
+    filtered_path = outpath / (name + '_filtered.csv')
     filtered = pd.read_csv(filtered_path)
     # Load hivseqinr data
     seqinr_paths = glob.glob(
