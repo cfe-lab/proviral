@@ -21,7 +21,7 @@ jobs:
         cd /opt
         wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
         tar -jxvf ./minimap2-2.17_x64-linux.tar.bz2
-        ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
+        echo /opt/minimap2-2.17_x64-linux/minimap2 >> $GITHUB_PATH
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip pipenv
