@@ -401,9 +401,10 @@ def filter_df(df, nodups=True):
     filtered = filtered.apply(remove_primers, axis=1)
     if nodups:
         filtered = filtered.drop_duplicates(subset='sample', keep=False)
-    # Remove any rows with references containing "reverse" or "unknown"
-    filtered = filtered[(~filtered['reference'].str.contains('reverse'))
-                        & (~filtered['reference'].str.contains('unknown'))]
+    if not filtered.empty:
+        # Remove any rows with references containing "reverse" or "unknown"
+        filtered = filtered[(~filtered['reference'].str.contains('reverse'))
+                            & (~filtered['reference'].str.contains('unknown'))]
     # duplicates = filtered.duplicated(subset='sample', keep=False)
     # duplicates = filtered[duplicates[duplicates].index]['sample'].unique()
     columns = ['reference', 'sequence', 'seqtype']
@@ -445,8 +446,8 @@ def run(contigs_csv,
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
     for name in dfs:
-        contigs_df = dfs[name]['contigs'].fillna('')
-        conseqs_df = dfs[name]['conseqs'].fillna('')
+        contigs_df = dfs[name]['contigs']
+        conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
         OutcomeSummary(conseqs_df, contigs_df, outpath, test=test)
         # Generate the failure summary
@@ -483,12 +484,12 @@ def run(contigs_csv,
             if stop > nrows:
                 stop = nrows - 1
             for row in joined.iloc[start:stop].itertuples():
-                # I don't remember why it was necessary to replace dashes with underscores but I think it was because HIVSEQINR doesn't like dashes in names
+                # I don't remember why it was necessary to replace dashes with
+                # underscores but I think it was because HIVSEQINR doesn't like dashes in names
                 # I've commented it out for now
                 # header = f'>{row.name}_{row.sample}_{row.reference}_{row.seqtype}'.replace('-', '_')
                 # The header delimiter, this must match the split in gene_splicer
-                header = '>' + '::'.join(
-                    (row.name, row.sample, row.reference, row.seqtype))
+                header = f'>{row.name}::{row.sample}::{row.reference}::{row.seqtype}'
                 o.write(
                     f'{header}\n{primers["fwd"]["nomix"] + row.sequence.replace("-", "") + primers["rev"]["nomix"]}\n'
                 )

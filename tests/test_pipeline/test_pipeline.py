@@ -100,4 +100,5 @@ def test_pipeline_example3():
             aligned_table_precursor_csv=(outpath /
                                          'aligned_table_precursor.csv'),
             skip_align=True)
-        gene_splicer.run(fasta, args)
+        # noinspection PyUnresolvedReferences
+        gene_splicer.run(fasta, args.outpath)
