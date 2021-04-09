@@ -1,11 +1,4 @@
-import os
-import sys
-from pathlib import Path
-
-cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
-
-from file import File
+from gene_splicer.file import File
 
 
 def test_file_inmem():

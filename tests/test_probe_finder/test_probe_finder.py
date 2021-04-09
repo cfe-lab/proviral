@@ -2,19 +2,18 @@ import os
 import pytest
 from pathlib import Path
 
-cwd = Path(os.path.realpath(__file__)).parent
-
-from gene_splicer.probe_finder import unpack_mixtures_and_reverse
+from gene_splicer.probe_finder import ProbeFinder
 
 
 @pytest.fixture
-def setup():
-    return {'cwd': Path(os.path.realpath(__file__)).parent}
+def currentdir():
+    cwd = Path(os.path.realpath(__file__)).parent
+    return cwd
 
 
-# Personally I had trouble with the unpack_mixtures_and_reverse() taking an inordinate amount of time to complete
-def test_intractable(setup):
-    seq = None
-    with open(setup['cwd'] / 'data' / 'intractable_sequence.txt') as f:
-        seq = f.read().strip()
-    unpack_mixtures_and_reverse(seq)
+def test_probe_finder(currentdir):
+    # Try to find TCGA, with 10 "X"s on either side
+    target = 'CCCCCCCCCCTCGACCCCCCCCCC'
+    query = 'TCGA'
+    finder = ProbeFinder(query, target)
+    assert finder.contig_match == 'TCGA'

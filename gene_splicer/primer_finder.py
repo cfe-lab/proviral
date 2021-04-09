@@ -155,10 +155,14 @@ def find_primers(
                            error=errors.no_sequence)
             writer.writerow(new_row)
 
-    for sample_name, sample_rows in groupby(reader, itemgetter('sample')):
+    if 'sample' in reader.fieldnames:
+        sample_groups = groupby(reader, itemgetter('sample'))
+    else:
+        sample_groups = [(None, reader)]
+    for sample_name, sample_rows in sample_groups:
 
         # Do not analyze non-proviral samples
-        if not proviral_helper.is_proviral(sample_name):
+        if sample_name and not proviral_helper.is_proviral(sample_name):
             logger.debug('Skipping sample "%s" because it is non-proviral' %
                          sample_name)
             continue
@@ -178,9 +182,10 @@ def find_primers(
             contig_name = f'{contig_num}-{seed_name}'
 
             new_row = dict(run_name=run_name,
-                           sample=sample_name,
                            reference=contig_name,
                            is_rev_comp='N')
+            if sample_name is not None:
+                new_row['sample'] = sample_name
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
@@ -265,8 +270,9 @@ def find_primers(
             writer.writerow(new_row)
         if contig_row_count == 0:
             new_row = dict(run_name=run_name,
-                           sample=sample_name,
                            error=errors.non_hiv)
+            if sample_name is not None:
+                new_row['sample'] = sample_name
             writer.writerow(new_row)
     outfile.close()
     return outfilepath
@@ -361,6 +367,7 @@ def load_csv(csv_filepath, name, seqtype, results=None):
     if results is None:
         results = {}
     df = pd.read_csv(csv_filepath)
+    df['sample'].fillna('', inplace=True)
     df['name'] = name
     df['seqtype'] = seqtype
     if name not in results:
@@ -414,7 +421,7 @@ def run(contigs_csv,
         split=1,
         sample_size=50,
         test=False):
-    all_samples = utils.getSamplesFromCascade(cascade_csv)
+    all_samples = utils.get_samples_from_cascade(cascade_csv)
 
     contigs_out = find_primers(contigs_csv,
                                outpath,

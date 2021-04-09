@@ -1,5 +1,4 @@
 import csv
-from collections import Counter
 
 import pandas as pd
 from gene_splicer.logger import logger
@@ -175,7 +174,7 @@ class OutcomeSummary:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             for sample in sorted(self.data,
-                                 key=lambda x: int(x.rsplit('_')[-1][1:])):
+                                 key=lambda x: x and int(x.rsplit('_')[-1][1:])):
                 self.data[sample] = {
                     k: v
                     for k, v in self.data[sample].items() if k in fieldnames

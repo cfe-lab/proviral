@@ -1,1 +1,0 @@
-Both the `conseq.csv` and `contigs.csv` file contain one sequence, which is the full hxb2 sequence

@@ -2,8 +2,15 @@ import yaml
 import os
 import csv
 from pathlib import Path
-import gene_splicer.helpers.yaml_helper
 from gene_splicer.logger import logger
+
+
+def join(loader, node):
+    seq = loader.construct_sequence(node)
+    return ''.join([str(i) for i in seq])
+
+
+yaml.add_constructor('!join', join)
 
 
 # force_all_proviral is for testing, forces samples to be considered proviral
@@ -55,6 +62,9 @@ class ProviralHelper:
 
     def is_proviral(self, sample):
         if self.force_all_proviral:
+            return True
+        elif sample is None:
+            # In single-sample mode, only called on proviral samples.
             return True
         elif sample in self.proviral_samples:
             return True

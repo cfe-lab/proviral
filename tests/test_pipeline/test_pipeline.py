@@ -2,15 +2,15 @@ import os
 from pathlib import Path
 import io
 
-cwd = Path(os.path.realpath(__file__)).parent
+import gene_splicer.utils as utils
+import gene_splicer.primer_finder as primer_finder
+import gene_splicer.gene_splicer as gene_splicer
 
+cwd = Path(os.path.realpath(__file__)).parent
 data = cwd.parent / 'data'
 inputs = cwd / 'inputs'
 outputs = cwd / 'outputs'
 
-import gene_splicer.utils as utils
-import gene_splicer.primer_finder as primer_finder
-import gene_splicer.gene_splicer as gene_splicer
 
 utils.write_fasta({'MOD_HXB2': utils.mod_hxb2}, inputs / 'mod_hxb2.fasta')
 
@@ -70,6 +70,29 @@ def test_pipeline_sample1():
         args = Args(
             query_fasta=fasta,
             name='sample1',
+            outpath=outpath,
+            table_precursor_csv=(outpath / 'table_precursor.csv'),
+            aligned_table_precursor_csv=(outpath /
+                                         'aligned_table_precursor.csv'),
+            skip_align=True)
+        gene_splicer.run(fasta, args)
+
+
+def test_pipeline_example3():
+    conseq_path = data / 'example3' / 'inputs' / 'conseqs.csv'
+    contigs_path = data / 'example3' / 'inputs' / 'contigs.csv'
+    cascade_path = data / 'example3' / 'inputs' / 'cascade.csv'
+    outpath = cwd / 'outputs' / 'example3'
+    fasta_paths = primer_finder.run(
+        conseqs_csv=open(conseq_path),
+        contigs_csv=open(contigs_path),
+        cascade_csv=open(cascade_path),
+        name='example3',
+        outpath=outpath)
+    for fasta in fasta_paths:
+        args = Args(
+            query_fasta=fasta,
+            name='example3',
             outpath=outpath,
             table_precursor_csv=(outpath / 'table_precursor.csv'),
             aligned_table_precursor_csv=(outpath /

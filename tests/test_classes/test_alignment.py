@@ -1,13 +1,11 @@
 import os
-import sys
 from pathlib import Path
 
-cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
-
 import gene_splicer.utils as utils
-from fasta import Fasta
 from gene_splicer.alignment import Alignment
+from gene_splicer.fasta import Fasta
+
+cwd = Path(os.path.realpath(__file__)).parent
 
 
 def test_alignment(tmp_path):

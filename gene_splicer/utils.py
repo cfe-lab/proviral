@@ -599,12 +599,17 @@ def isNan(num):
     return num != num
 
 
-def getSamplesFromCascade(cascade_csv):
+def get_samples_from_cascade(cascade_csv):
     all_samples = {}
     reader = DictReader(cascade_csv)
-    for row in reader:
-        all_samples[row['sample']] = int(row['remap'])
-    return all_samples
+    if 'sample' in reader.fieldnames:
+        for row in reader:
+            all_samples[row['sample']] = int(row['remap'])
+        return all_samples
+    rows = list(reader)
+    assert len(rows) == 1, len(rows)
+    remap_count = int(rows[0]['remap'])
+    return {None: remap_count}
 
 
 ## Define some variables

@@ -1,12 +1,4 @@
-import os
-import sys
-from pathlib import Path
-
-cwd = Path(os.path.realpath(__file__)).parent
-sys.path.append(str(cwd.parent.parent))
-
-from fasta import Fasta
-import gene_splicer.utils as utils
+from gene_splicer.fasta import Fasta
 
 
 def test_fasta():
