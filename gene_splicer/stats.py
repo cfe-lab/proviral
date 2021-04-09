@@ -36,7 +36,8 @@ def main():
 
 def run(args):
     errors = PrimerFinderErrors()
-    pvhelper = ProviralHelper(sample_map_path_override=args.sample_mapping)
+    pvhelper = ProviralHelper(sample_map_path_override=args.sample_mapping,
+                              force_all_proviral=args.force_all_proviral)
 
 
 if __name__ == '__main__':

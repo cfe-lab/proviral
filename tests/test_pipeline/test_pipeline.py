@@ -88,7 +88,8 @@ def test_pipeline_example3():
         contigs_csv=open(contigs_path),
         cascade_csv=open(cascade_path),
         name='example3',
-        outpath=outpath)
+        outpath=outpath,
+        test=True)
     for fasta in fasta_paths:
         args = Args(
             query_fasta=fasta,
