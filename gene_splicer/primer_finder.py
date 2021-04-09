@@ -367,7 +367,6 @@ def load_csv(csv_filepath, name, seqtype, results=None):
     if results is None:
         results = {}
     df = pd.read_csv(csv_filepath)
-    df['sample'].fillna('', inplace=True)
     df['name'] = name
     df['seqtype'] = seqtype
     if name not in results:
@@ -407,7 +406,12 @@ def filter_df(df, nodups=True):
                         & (~filtered['reference'].str.contains('unknown'))]
     # duplicates = filtered.duplicated(subset='sample', keep=False)
     # duplicates = filtered[duplicates[duplicates].index]['sample'].unique()
-    filtered = filtered[['name', 'sample', 'reference', 'sequence', 'seqtype']]
+    columns = ['reference', 'sequence', 'seqtype']
+    if 'sample' in filtered.columns:
+        columns.insert(0, 'sample')
+    if 'name' in filtered.columns:
+        columns.insert(0, 'name')
+    filtered = filtered[columns]
     return filtered
 
 
@@ -441,8 +445,8 @@ def run(contigs_csv,
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
     for name in dfs:
-        contigs_df = dfs[name]['contigs']
-        conseqs_df = dfs[name]['conseqs']
+        contigs_df = dfs[name]['contigs'].fillna('')
+        conseqs_df = dfs[name]['conseqs'].fillna('')
         # Generate outcome summary
         OutcomeSummary(conseqs_df, contigs_df, outpath, test=test)
         # Generate the failure summary
