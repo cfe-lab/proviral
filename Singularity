@@ -14,18 +14,11 @@ From: centos:7
     KIVE_THREADS 1
     KIVE_MEMORY 6000
 
-%setup
-    # Unneeded once Singularity creates parent dirs:
-    # https://github.com/singularityware/singularity/issues/1549
-    mkdir ${SINGULARITY_ROOTFS}/opt/primer_finder
-
 %files
-    ## Primer Finder
-    ../* /opt/primer_finder
+    setup.py /opt/primer_finder/
+    gene_splicer /opt/primer_finder/
 
 %post
-    # Remove singularity image from self
-
     echo ===== Installing Prerequisites ===== >/dev/null
     yum update -q -y
 
@@ -44,35 +37,6 @@ From: centos:7
     rm -rf Python*
     ln -s /usr/local/bin/python3.8 /usr/local/bin/python3
 
-    echo ===== Installing IVA dependencies ===== >/dev/null
-    yum install -q -y tcsh ncurses-devel zlib-devel
-    cd /bin
-    wget -q http://sun.aei.polsl.pl/kmc/download-2.1.1/linux/kmc
-    wget -q http://sun.aei.polsl.pl/kmc/download-2.1.1/linux/kmc_dump
-    chmod +x kmc kmc_dump
-    cd /opt
-    wget -q https://sourceforge.net/projects/mummer/files/mummer/3.23/MUMmer3.23.tar.gz
-    tar -xzf MUMmer3.23.tar.gz --no-same-owner
-    cd MUMmer3.23
-    make --quiet install
-    rm -r docs src ../MUMmer3.23.tar.gz
-    ln -s /opt/MUMmer3.23/nucmer \
-        /opt/MUMmer3.23/delta-filter \
-        /opt/MUMmer3.23/show-coords \
-        /bin
-    cd /opt
-    wget -q https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2
-    tar -xf samtools-1.3.1.tar.bz2 --no-same-owner --bzip2
-    cd samtools-1.3.1
-    ./configure --quiet --prefix=/
-    make --quiet
-    make --quiet install
-    cd /opt
-    rm -rf samtools-1.3.1*
-    wget -q http://downloads.sourceforge.net/project/smalt/smalt-0.7.6-bin.tar.gz
-    tar -xzf smalt-0.7.6-bin.tar.gz --no-same-owner
-    ln -s /opt/smalt-0.7.6-bin/smalt_x86_64 /bin/smalt
-
     echo ===== Installing blast ===== >/dev/null
     cd /root
     # Saved our own copy, because download was slow from ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.6.0/ncbi-blast-2.6.0+-1.x86_64.rpm
@@ -85,15 +49,10 @@ From: centos:7
     wget -q https://bootstrap.pypa.io/get-pip.py
     python3 get-pip.py
     rm get-pip.py
-    cd /opt
-    pip install --quiet -r /opt/primer_finder/gene_splicer/requirements.txt
     cd /opt/primer_finder
     pip install .
     ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
     python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
-
-    # Install dependencies for genetracks/drawSvg
-    yum install -q -y cairo-devel cairo cairo-tools zlib-devel
 
     # Note that yum installs need to happen before the alternatives command is run, yum will not work with Python3
     echo ===== Installing R ===== >/dev/null
@@ -109,12 +68,12 @@ From: centos:7
     ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
     rm minimap2-2.17_x64-linux.tar.bz2
 
-    # CLean up
-    # yum groupremove -q -y 'development tools'
-    # yum remove -q -y epel-release wget unzip
-    # yum autoremove -q -y
-    # yum clean all
-    # rm -rf /var/cache/yum
+    # Clean up
+    yum groupremove -q -y 'development tools'
+    yum remove -q -y epel-release wget unzip
+    yum autoremove -q -y
+    yum clean all
+    rm -rf /var/cache/yum
 
     ## CAUTION! This changes the default python command to python3!
     ## This breaks many things, including yum!
@@ -122,9 +81,6 @@ From: centos:7
     # sudo alternatives --set python /usr/bin/python2
     alternatives --install /usr/bin/python python /usr/bin/python2 50
     alternatives --install /usr/bin/python python /usr/local/bin/python3 60
-
-    # Clean up singularity images
-    rm -rf /opt/primer_finder/gene_splicer/simages/* && echo "Leftover singularity images cleaned!"
 
 %environment
     export LANG=en_US.UTF-8
