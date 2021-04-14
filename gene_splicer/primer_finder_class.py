@@ -1,8 +1,10 @@
+import logging
 import re
 import Levenshtein
 import gene_splicer.utils as utils
-from gene_splicer.logger import logger
 from gotoh import align_it
+
+logger = logging.getLogger(__name__)
 
 
 class PrimerFinder:

@@ -12,28 +12,20 @@ import io
 import zipfile
 import shutil
 from pathlib import Path
-import sys
 import logging
 import math
 
-import Levenshtein
-from gotoh import align_it
-from gene_splicer.logger import logger
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
 from gene_splicer.primer_finder_class import PrimerFinder
 from gene_splicer.outcome_summary import OutcomeSummary
 from gene_splicer.hivseqinr import Hivseqinr
 from gene_splicer.helpers.proviral_helper import ProviralHelper
-from gene_splicer.probe_finder import ProbeFinder
 
 import gene_splicer.utils as utils
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
-# from micall.core.project_config import ProjectConfig
-# from micall.utils.translation import mixture_dict, reverse_and_complement
-
-logger = logging.getLogger('gene_splicer')
+logger = logging.getLogger(__name__)
 
 # Note these are 1-based indicies
 primers = {
@@ -82,9 +74,11 @@ def parse_args():
                         help='The path to save the output',
                         default=Path(os.getcwd()),
                         type=Path)
-    parser.add_argument('--disable_hivseqinr',
-                        action='store_true',
-                        help='Disable running hivseqinr')
+    parser.add_argument('--hivseqinr',
+                        type=Path,
+                        help="Path to HIVSeqinR source code, or download "
+                             "destination. HIVSeqinR will be skipped if this "
+                             "isn't given.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -120,7 +114,6 @@ def find_primers(
     proviral_helper = ProviralHelper(force_all_proviral=test)
     errors = PrimerFinderErrors()
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
-    print(run_name)
     make_path(outpath)
     columns = [
         'run_name', 'sample', 'reference', 'error', 'sequence', 'seqlen',
@@ -421,7 +414,7 @@ def run(contigs_csv,
         cascade_csv,
         name,
         outpath,
-        disable_hivseqinr=False,
+        hivseqinr: Path = None,
         nodups=True,
         split=1,
         sample_size=50,
@@ -496,9 +489,11 @@ def run(contigs_csv,
                 o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
             o.close()
             o2.close()
-            if not disable_hivseqinr:
-                hivseqinr = Hivseqinr(outpath / f'hivseqinr_{i}',
-                                      synthetic_primers_fasta)
+            if hivseqinr is not None:
+                hivseqinr_runner = Hivseqinr(hivseqinr,
+                                             outpath / f'hivseqinr_{i}',
+                                             synthetic_primers_fasta)
+                hivseqinr_runner.run()
             files.append(no_primers_fasta)
     return files
 
@@ -510,7 +505,7 @@ def main():
                       cascade_csv=args.cascade_csv,
                       name=args.name,
                       outpath=args.outpath.resolve(),
-                      disable_hivseqinr=args.disable_hivseqinr,
+                      hivseqinr=args.hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
                       sample_size=args.sample_size)

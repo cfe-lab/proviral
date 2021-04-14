@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
@@ -224,6 +225,7 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path):
 
 
 def main():
+    logging.basicConfig(level=logging.WARNING)
     args = parse_args()
     summary = StudySummary()
     if args.runs:

@@ -1,9 +1,12 @@
+import logging
+
 import gene_splicer.gene_splicer as gene_splicer
 import gene_splicer.primer_finder as primer_finder
 import gene_splicer.utils as utils
 
 
 def main():
+    logging.basicConfig(level=logging.WARNING)
     data = primer_finder.main()
     for _file in data['fasta_files']:
         gene_splicer.run(_file, outdir=data['args'].outpath)

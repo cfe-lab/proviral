@@ -1,9 +1,11 @@
 import csv
+import logging
 
 import pandas as pd
-from gene_splicer.logger import logger
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
 from gene_splicer.helpers.proviral_helper import ProviralHelper
+
+logger = logging.getLogger(__name__)
 
 
 class OutcomeSummary:

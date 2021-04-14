@@ -1,8 +1,11 @@
+import logging
+
 import yaml
 import os
 import csv
 from pathlib import Path
-from gene_splicer.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 def join(loader, node):
@@ -70,7 +73,8 @@ class ProviralHelper:
             return True
         elif self.config['RESOURCES']['PROVIRAL_PROJECT_CODE'] in sample:
             logger.debug(
-                'Sample "%s" was deemed proviral by project code but is currently not in this file, which it should be "%s"'
+                ('Sample "%s" was deemed proviral by project code but is '
+                 'currently not in this file, which it should be "%s"')
                 % (sample, self.config['RESOURCES']['PROVIRAL_SAMPLES']))
             return True
 

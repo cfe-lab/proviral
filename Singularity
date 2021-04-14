@@ -10,9 +10,9 @@ From: centos:7
 %labels
     MAINTAINER BC CfE in HIV/AIDS https://github.com/cfe-lab/
     KIVE_INPUTS contigs_csv conseqs_csv
-    KIVE_OUTPUTS table_precursor_csv aligned_table_precursor_csv outcome_summary_csv
+    KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv table_precursor_csv
     KIVE_THREADS 1
-    KIVE_MEMORY 6000
+    KIVE_MEMORY 200
 
 %files
     setup.py /opt/primer_finder/

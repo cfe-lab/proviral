@@ -1,10 +1,12 @@
+import logging
 import shutil
 import os
 import subprocess
 from pathlib import Path
 
 import gene_splicer.utils as utils
-from gene_splicer.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 # Adding comment to fix filename bug

@@ -1,24 +1,23 @@
+import logging
 import shutil
 import os
 import subprocess
+from pathlib import Path
+
 import requests
 import zipfile
-import sys
 import io
-from gene_splicer.logger import logger
+
+logger = logging.getLogger(__name__)
+SOURCE_URL = 'https://github.com/guineverelee/HIVSeqinR/raw/master/HIVSeqinR_ver2.7.1.zip'
 
 
 class Hivseqinr:
-    def __init__(self, outpath, fasta):
-        self.url = 'https://github.com/guineverelee/HIVSeqinR/raw/master/HIVSeqinR_ver2.7.1.zip'
+    def __init__(self, source_path: Path, outpath: Path, fasta: Path):
+        self.source_path = source_path.resolve()
+        self.blast_db = self.source_path / 'hxb2_blast_db'
         self.outpath = outpath
         self.fasta = fasta
-        self.download()
-        self.make_blast_dir()
-        self.fix_wds()
-        self.copy_fasta()
-        self.job = self.run()
-        self.finalize()
 
     def copy_fasta(self):
         raw_fastas_path = self.outpath / 'RAW_FASTA'
@@ -32,55 +31,57 @@ class Hivseqinr:
         return True
 
     def make_blast_dir(self):
-        dbdir = self.outpath / 'hxb2_blast_db'
-        try:
-            os.mkdir(dbdir)
-        except FileExistsError:
-            pass
-        hxb2_path = dbdir / 'HXB2.fasta'
-        shutil.copyfile(self.outpath / 'R_HXB2.fasta', hxb2_path)
+        self.blast_db.mkdir(exist_ok=True)
+        hxb2_path = self.blast_db / 'HXB2.fasta'
+        shutil.copyfile(self.source_path / 'R_HXB2.fasta', hxb2_path)
         cmd = [
             'makeblastdb', '-in', hxb2_path, '-parse_seqids', '-dbtype', 'nucl'
         ]
-        self.dbdir = dbdir
-        job = subprocess.run(cmd)
-        return job
+        log_path = self.blast_db / 'blast.log'
+        with log_path.open('w') as log_file:
+            subprocess.run(cmd, stdout=log_file, check=True)
+        log_path.unlink()
 
     def download(self):
-        response = requests.get(self.url)
+        license_path = self.source_path / 'LICENSE.txt'
+        if license_path.exists():
+            return
+        response = requests.get(SOURCE_URL)
         file_like_object = io.BytesIO(response.content)
         zipfile_obj = zipfile.ZipFile(file_like_object)
-        if not os.path.isdir(self.outpath):
-            os.makedirs(self.outpath)
-        zipfile_obj.extractall(self.outpath)
-        return True
+        if not os.path.isdir(self.source_path):
+            os.makedirs(self.source_path)
+        zipfile_obj.extractall(self.source_path)
+        self.make_blast_dir()
+        self.fix_wds()
 
     def fix_wds(self):
-        rscript_path = os.path.join(
-            self.outpath, 'R_HIVSeqinR_Combined_ver09_ScrambleFix.R')
-        new_rscript_path = os.path.join(self.outpath, 'modified.R')
-        self.new_rscript_path = new_rscript_path
-        with open(self.new_rscript_path, 'w') as outfile:
+        rscript_path = self.source_path / 'R_HIVSeqinR_Combined_ver09_ScrambleFix.R'
+        new_rscript_path = self.source_path / 'modified.R'
+        with open(new_rscript_path, 'w') as outfile:
             with open(rscript_path, 'r') as infile:
                 for line in infile:
-                    if 'MyWD <- getwd()' in line:
+                    if False and 'MyWD <- getwd()' in line:
                         line = line.replace('MyWD <- getwd()',
                                             f'MyWD = "{self.outpath}"\n')
                     elif line.startswith('MyBlastnDir <-'):
-                        line = f'MyBlastnDir = "{str(self.dbdir) + os.path.sep*2}"\n'
+                        line = f'MyBlastnDir = "{str(self.blast_db) + os.path.sep*2}"\n'
                     outfile.write(line)
 
     def run(self):
-        cwd = os.getcwd()
-        os.chdir(self.outpath)
-        cmd = ['Rscript', './modified.R']
-        job = subprocess.run(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        print(self.clean_output(job.stdout))
-        print(self.clean_output(job.stderr), file=sys.stderr)
-        os.chdir(cwd)
-        return job
+        self.download()
+        self.copy_fasta()
+        outpath = Path(self.outpath)
+        cmd = ['Rscript', self.source_path / 'modified.R']
+        log_path = outpath / 'hivseqinr.log'
+        error_path = outpath / 'hivseqinr_error.log'
+        with log_path.open('w') as log_file, error_path.open('w') as error_file:
+            subprocess.run(cmd,
+                           stdout=log_file,
+                           stderr=error_file,
+                           cwd=self.outpath,
+                           check=True)
+        self.finalize()
 
     @staticmethod
     def clean_output(output):

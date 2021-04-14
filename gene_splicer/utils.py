@@ -1,19 +1,17 @@
-import math
+import logging
 import os
 import re
-from typing import Dict
 import yaml
 import shutil
 import subprocess as sp
 import pandas as pd
 import glob
-import numpy as np
 from pathlib import Path
 from csv import DictWriter, DictReader
 import string
 import secrets
 
-from gene_splicer.logger import logger
+logger = logging.getLogger(__name__)
 
 
 class Random:
@@ -390,10 +388,14 @@ def align(target_seq,
                                     outdir / 'target.fasta')
     cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
     alignment_path = outdir / 'alignment.sam'
-    with open(alignment_path, 'w') as alignment:
-        process = sp.run(cmd, stdout=alignment, errors=True)
+    log_path = outdir / 'minimap2.log'
+    with alignment_path.open('w') as alignment, log_path.open('w') as log_file:
+        process = sp.run(cmd,
+                         stdout=alignment,
+                         stderr=log_file,
+                         check=True)
     if process.returncode != 0:
-        logger.error('Alignment failed! Error: %s' % process.stderr)
+        logger.error('Alignment failed! Details in %s.', log_path)
         return False
     else:
         return alignment_path
@@ -503,14 +505,15 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def get_softclipped_region(query, alignment):
+def get_softclipped_region(query, alignment, alignment_path):
     try:
         size, op = alignment.iloc[0]['cigar'][0]
     except IndexError:
-        logger.warning('No alignment!')
+        logger.warning('No alignment in %s!', alignment_path)
         return
     if op != 'S':
-        logger.warning('Alignment does not start with softclip')
+        logger.warning('Alignment does not start with softclip in %s.',
+                       alignment_path)
         return
     size = int(size)
     return query[:size]
@@ -518,7 +521,7 @@ def get_softclipped_region(query, alignment):
 
 def sequence_to_coords(query, target, alignment_path, annot):
     aln = load_samfile(alignment_path)
-    softclip = get_softclipped_region(query, aln)
+    softclip = get_softclipped_region(query, aln, alignment_path)
     if softclip is None:
         return
     import gene_splicer.probe_finder

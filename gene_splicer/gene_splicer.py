@@ -1,7 +1,6 @@
 import argparse
 import os
 from pathlib import Path
-from gene_splicer.logger import logger
 import gene_splicer.utils as utils
 
 
