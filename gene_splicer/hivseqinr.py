@@ -28,7 +28,8 @@ class Hivseqinr:
         logger.debug('Attempting to copy "%s" to "%s"' %
                      (self.fasta, raw_fastas_path))
         shutil.copy(self.fasta, raw_fastas_path)
-        return True
+        shutil.copy(self.source_path / 'R_HXB2.fasta',
+                    self.outpath / 'R_HXB2.fasta')
 
     def make_blast_dir(self):
         self.blast_db.mkdir(exist_ok=True)
