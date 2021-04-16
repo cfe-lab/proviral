@@ -1,16 +1,10 @@
 import re
-import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader, DictWriter
 from itertools import groupby
 from operator import itemgetter
 import os
 import pandas as pd
-import subprocess
-import requests
-import io
-import zipfile
-import shutil
 from pathlib import Path
 import logging
 import math
@@ -26,6 +20,7 @@ mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
 logger = logging.getLogger(__name__)
+DEFAULT_SAMPLE_NAME = 'kive-sample_S1'
 
 # Note these are 1-based indicies
 primers = {
@@ -177,7 +172,9 @@ def find_primers(
             new_row = dict(run_name=run_name,
                            reference=contig_name,
                            is_rev_comp='N')
-            if sample_name is not None:
+            if sample_name is None:
+                new_row['sample'] = DEFAULT_SAMPLE_NAME
+            else:
                 new_row['sample'] = sample_name
 
             contig_seq: str = row.get('contig') or row['sequence']
@@ -266,6 +263,8 @@ def find_primers(
                            error=errors.non_hiv)
             if sample_name is not None:
                 new_row['sample'] = sample_name
+            else:
+                new_row['sample'] = DEFAULT_SAMPLE_NAME
             writer.writerow(new_row)
     outfile.close()
     return outfilepath

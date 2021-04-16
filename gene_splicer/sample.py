@@ -74,7 +74,7 @@ def main():
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
-                                    name='kive',
+                                    name='kive_run',
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,
                                     nodups=args.nodups,
