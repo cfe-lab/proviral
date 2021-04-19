@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class OutcomeSummary:
-    def __init__(self, conseqs_df, contigs_df, outpath, test=False):
-        self.proviral_helper = ProviralHelper(test)
+    def __init__(self, conseqs_df, contigs_df, outpath, force_all_proviral=False):
+        self.proviral_helper = ProviralHelper(force_all_proviral)
         self.errors = PrimerFinderErrors()
         self.data = {}
         self.path = outpath / 'outcome_summary.csv'

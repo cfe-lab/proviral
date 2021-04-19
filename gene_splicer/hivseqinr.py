@@ -2,6 +2,7 @@ import logging
 import shutil
 import os
 import subprocess
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from pathlib import Path
 
 import requests
@@ -23,7 +24,7 @@ class Hivseqinr:
 
     def copy_fasta(self):
         raw_fastas_path = self.outpath / 'RAW_FASTA'
-        raw_fastas_path.mkdir(exist_ok=True)
+        raw_fastas_path.mkdir(parents=True, exist_ok=True)
         target_path = raw_fastas_path / self.fasta.name
         logger.debug('Attempting to copy "%s" to "%s"' %
                      (self.fasta, raw_fastas_path))
@@ -64,6 +65,8 @@ class Hivseqinr:
         if not os.path.isdir(self.source_path):
             os.makedirs(self.source_path)
         zipfile_obj.extractall(self.source_path)
+        osx_path = self.source_path / '__MACOSX'
+        shutil.rmtree(osx_path)
         response = requests.get(SOURCE_URL + REFERENCE_FILE)
         reference_path = self.source_path / REFERENCE_FILE
         reference_path.write_bytes(response.content)
@@ -106,3 +109,25 @@ class Hivseqinr:
     def finalize(self):
         path = self.outpath / 'HIVSEQINR_COMPLETE'
         path.touch()
+
+
+def parse_args():
+    parser = ArgumentParser(description="Install the HIVSeqinR source code, "
+                                        "and create a BLAST search db.",
+                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument("source_path",
+                        type=Path,
+                        help='Where to install the source code.')
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    hivseqinr = Hivseqinr(args.source_path,
+                          outpath=Path(),
+                          fasta=Path())
+    hivseqinr.download()
+
+
+if __name__ == '__main__':
+    main()

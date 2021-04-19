@@ -10,7 +10,8 @@ import gene_splicer.utils as utils
 
 def parse_args():
     parser = ArgumentParser(
-        description='Search sequences for primers and identify errors',
+        description='Search sequences from a single sample for primers, and '
+                    'identify errors.',
         formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('contigs_csv',
                         help='CSV file with contig sequences',
@@ -71,22 +72,24 @@ def main():
     outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True)
+    default_run_name = 'kive_run'
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
-                                    name='kive_run',
+                                    name=default_run_name,
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,
                                     nodups=args.nodups,
                                     split=args.split,
-                                    sample_size=args.sample_size)
+                                    sample_size=args.sample_size,
+                                    force_all_proviral=True)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
-    utils.generate_table_precursor(name='kive', outpath=outpath)
+    utils.generate_table_precursor(name=default_run_name, outpath=outpath)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
-    copy_output(outpath / 'kive_conseqs_primer_analysis.csv',
+    copy_output(outpath / 'kive_run_conseqs_primer_analysis.csv',
                 args.conseqs_primers_csv)
-    copy_output(outpath / 'kive_contigs_primer_analysis.csv',
+    copy_output(outpath / 'kive_run_contigs_primer_analysis.csv',
                 args.contigs_primers_csv)
     copy_output(outpath / 'table_precursor.csv', args.table_precursor_csv)
 

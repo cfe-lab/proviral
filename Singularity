@@ -9,7 +9,7 @@ From: centos:7
 
 %labels
     MAINTAINER BC CfE in HIV/AIDS https://github.com/cfe-lab/
-    KIVE_INPUTS contigs_csv conseqs_csv
+    KIVE_INPUTS contigs_csv conseqs_csv cascade_csv
     KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv table_precursor_csv
     KIVE_THREADS 1
     KIVE_MEMORY 200
@@ -45,14 +45,11 @@ From: centos:7
     rm ncbi-blast-2.6.0+-1.x86_64.rpm
 
     echo ===== Installing Python packages ===== >/dev/null
-    # Also trigger matplotlib to build its font cache.
     wget -q https://bootstrap.pypa.io/get-pip.py
     python3 get-pip.py
     rm get-pip.py
     cd /opt/primer_finder
     pip install .
-    ln -s /usr/local/bin/cutadapt /usr/local/bin/cutadapt-1.11
-    python3 -c 'import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot'
 
     # Note that yum installs need to happen before the alternatives command is run, yum will not work with Python3
     echo ===== Installing R ===== >/dev/null
@@ -67,6 +64,9 @@ From: centos:7
     tar -jxvf ./minimap2-2.17_x64-linux.tar.bz2
     ln -s /opt/minimap2-2.17_x64-linux/minimap2 /bin
     rm minimap2-2.17_x64-linux.tar.bz2
+
+    echo ===== Installing HIVSeqinR ===== >/dev/null
+    python3 -m gene_splicer.hivseqinr /opt/hivseqinr
 
     # Clean up
     yum groupremove -q -y 'development tools'
@@ -86,4 +86,4 @@ From: centos:7
     export LANG=en_US.UTF-8
 
 %runscript
-    gene_splicer_run "$@"
+    gene_splicer_run --hivseqinr /opt/hivseqinr "$@"

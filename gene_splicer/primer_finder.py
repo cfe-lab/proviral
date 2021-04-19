@@ -61,8 +61,8 @@ def parse_args():
         '-p',
         '--sample_size',
         type=int,
-        help=
-        'Length of sequence (probe) from each end of sample to search for primer',
+        help='Length of sequence (probe) from each end of sample to search for '
+             'primer',
         default=50)
     parser.add_argument('-o',
                         '--outpath',
@@ -77,15 +77,17 @@ def parse_args():
     parser.add_argument(
         '--nodups',
         action='store_false',
-        help=
-        'Set this flag to disable the removal of duplicate samples that pass QC'
+        help='Set this flag to disable the removal of duplicate samples that '
+             'pass QC'
     )
     parser.add_argument(
         '--split',
         type=int,
         default=1,
-        help=
-        'To avoid memory issues in hivseqinr, split the resulting qc-passed sequences into this number of fastas, each will be processed sequentially and then all will be merged into the final result'
+        help='To avoid memory issues in hivseqinr, split the resulting '
+             'qc-passed sequences into this number of fastas, each will be '
+             'processed sequentially and then all will be merged into the '
+             'final result'
     )
     return parser.parse_args()
 
@@ -104,9 +106,8 @@ def find_primers(
         seqtype,
         sample_size=50,
         extended_length=200,
-        test=False):
-    reversed_conseqs = {}
-    proviral_helper = ProviralHelper(force_all_proviral=test)
+        force_all_proviral=False):
+    proviral_helper = ProviralHelper(force_all_proviral=force_all_proviral)
     errors = PrimerFinderErrors()
     v3_reference = 'HIV1-CON-XX-Consensus-seed'
     make_path(outpath)
@@ -129,7 +130,8 @@ def find_primers(
     writer.writeheader()
     reader = DictReader(csv_filepath)
 
-    # all_samples is a dict whose keys are sample names and values are the remap column (constructed from cascade.csv file)
+    # all_samples is a dict whose keys are sample names and values are the remap
+    # column (constructed from cascade.csv file)
     for sample in all_samples:
         # If no reads remapped, contig/conseq does not exist, write it as an error
         if all_samples[sample] == 0:
@@ -182,7 +184,7 @@ def find_primers(
 
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
-            if any([(sample_size < i < len(contig_seq) - (sample_size))
+            if any([(sample_size < i < len(contig_seq) - sample_size)
                     for i in x_locations]):
                 new_row['error'] = errors.low_internal_cov
                 writer.writerow(new_row)
@@ -315,7 +317,9 @@ def record_primers(contig_seq, new_row, errors, sample_size, extended_length):
                 finder = finder2
 
         # Natalie's request
-        # If a primer is not found at all, have a custom error for it, if there is something found but it did not pass secondary validation then make a different error for that
+        # If a primer is not found at all, have a custom error for it, if there
+        # is something found but it did not pass secondary validation then make
+        # a different error for that
         if not finder.sample_primer:
             new_row[prefix + 'error'] = errors.no_primer
             continue
@@ -417,7 +421,7 @@ def run(contigs_csv,
         nodups=True,
         split=1,
         sample_size=50,
-        test=False):
+        force_all_proviral=False):
     all_samples = utils.get_samples_from_cascade(cascade_csv)
 
     contigs_out = find_primers(contigs_csv,
@@ -426,14 +430,14 @@ def run(contigs_csv,
                                seqtype='contigs',
                                sample_size=sample_size,
                                all_samples=all_samples,
-                               test=test)
+                               force_all_proviral=force_all_proviral)
     conseqs_out = find_primers(conseqs_csv,
                                outpath,
                                f'{name}_conseqs',
                                seqtype='conseqs',
                                sample_size=sample_size,
                                all_samples=all_samples,
-                               test=test)
+                               force_all_proviral=force_all_proviral)
     dfs = load_csv(contigs_out, name, 'contigs')
     dfs = load_csv(conseqs_out, name, 'conseqs', dfs)
     files = []
@@ -441,7 +445,7 @@ def run(contigs_csv,
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        OutcomeSummary(conseqs_df, contigs_df, outpath, test=test)
+        OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(contigs_df, nodups)

@@ -62,7 +62,7 @@ def test_pipeline_sample1():
                                     cascade_csv=open(cascade_path),
                                     outpath=(outpath),
                                     name='sample1',
-                                    test=True)
+                                    force_all_proviral=True)
     # outcome_summary_path=(outpath / 'outcome_summary.csv'),
     # extended_size=1000)
     for fasta in fasta_paths:
@@ -88,7 +88,7 @@ def test_pipeline_example3():
         cascade_csv=open(cascade_path),
         name='example3',
         outpath=outpath,
-        test=True)
+        force_all_proviral=True)
     for fasta in fasta_paths:
         args = Args(
             query_fasta=fasta,

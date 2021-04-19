@@ -46,13 +46,13 @@ def test_filter_df():
                                              run_name,
                                              all_samples,
                                              'contigs',
-                                             test=True)
+                                             force_all_proviral=True)
     conseqs_out = primer_finder.find_primers(open(conseqs_csv_path),
                                              outpath,
                                              run_name,
                                              all_samples,
                                              'conseqs',
-                                             test=True)
+                                             force_all_proviral=True)
     dfs = primer_finder.load_csv(contigs_out, run_name, 'contigs')
     dfs = primer_finder.load_csv(conseqs_out, run_name, 'conseqs', dfs)
     # If you remove the below 2 lines, the NaN (which are actually floats) will
