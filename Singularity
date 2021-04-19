@@ -69,8 +69,8 @@ From: centos:7
     python3 -m gene_splicer.hivseqinr /opt/hivseqinr
 
     # Clean up
-    yum groupremove -q -y 'development tools'
-    yum remove -q -y epel-release wget unzip
+    yum --setopt=groupremove_leaf_only=1 groupremove -q -y 'development tools'
+    yum remove -q -y epel-release wget git
     yum autoremove -q -y
     yum clean all
     rm -rf /var/cache/yum
@@ -86,4 +86,4 @@ From: centos:7
     export LANG=en_US.UTF-8
 
 %runscript
-    gene_splicer_run --hivseqinr /opt/hivseqinr "$@"
+    gene_splicer_sample --hivseqinr /opt/hivseqinr "$@"
