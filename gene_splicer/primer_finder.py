@@ -20,7 +20,6 @@ mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
 logger = logging.getLogger(__name__)
-DEFAULT_SAMPLE_NAME = 'kive-sample_S1'
 
 # Note these are 1-based indicies
 primers = {
@@ -148,11 +147,12 @@ def find_primers(
     if 'sample' in reader.fieldnames:
         sample_groups = groupby(reader, itemgetter('sample'))
     else:
-        sample_groups = [(None, reader)]
+        sample_name, = all_samples.keys()  # Should be exactly one entry.
+        sample_groups = [(sample_name, reader)]
     for sample_name, sample_rows in sample_groups:
 
         # Do not analyze non-proviral samples
-        if sample_name and not proviral_helper.is_proviral(sample_name):
+        if not (force_all_proviral or proviral_helper.is_proviral(sample_name)):
             logger.debug('Skipping sample "%s" because it is non-proviral' %
                          sample_name)
             continue
@@ -174,10 +174,7 @@ def find_primers(
             new_row = dict(run_name=run_name,
                            reference=contig_name,
                            is_rev_comp='N')
-            if sample_name is None:
-                new_row['sample'] = DEFAULT_SAMPLE_NAME
-            else:
-                new_row['sample'] = sample_name
+            new_row['sample'] = sample_name
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
@@ -263,10 +260,7 @@ def find_primers(
         if contig_row_count == 0:
             new_row = dict(run_name=run_name,
                            error=errors.non_hiv)
-            if sample_name is not None:
-                new_row['sample'] = sample_name
-            else:
-                new_row['sample'] = DEFAULT_SAMPLE_NAME
+            new_row['sample'] = sample_name
             writer.writerow(new_row)
     outfile.close()
     return outfilepath
@@ -421,8 +415,10 @@ def run(contigs_csv,
         nodups=True,
         split=1,
         sample_size=50,
-        force_all_proviral=False):
-    all_samples = utils.get_samples_from_cascade(cascade_csv)
+        force_all_proviral=False,
+        default_sample_name: str = None):
+    all_samples = utils.get_samples_from_cascade(cascade_csv,
+                                                 default_sample_name)
 
     contigs_out = find_primers(contigs_csv,
                                outpath,

@@ -1,6 +1,8 @@
 import logging
 import os
 import re
+import typing
+
 import yaml
 import shutil
 import subprocess as sp
@@ -8,24 +10,8 @@ import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
-import string
-import secrets
 
 logger = logging.getLogger(__name__)
-
-
-class Random:
-
-    alphabet = string.ascii_letters
-
-    def __init__(self, size: int = 10) -> None:
-        self.size = size
-        return
-
-    @staticmethod
-    def upper(size=10):
-        return ''.join(secrets.choice(self.alphabet)
-                       for i in range(size)).upper()
 
 
 def load_yaml(afile):
@@ -305,7 +291,7 @@ def splice_aligned_genes(query, target, samfile, annotation):
                 print('=' * 50)
                 continue
             elif op in ('M', '=', 'X'):
-                for i in range(size):
+                for _ in range(size):
                     try:
                         target_nuc = target[target_pos]
                     except IndexError:
@@ -327,7 +313,7 @@ def splice_aligned_genes(query, target, samfile, annotation):
                     target_pos += 1
             elif op == 'D':
                 target_pos += size
-                for i in range(size):
+                for _ in range(size):
                     sequences[gene].append('-')
                 print('=' * 50)
                 continue
@@ -604,7 +590,8 @@ def isNan(num):
     return num != num
 
 
-def get_samples_from_cascade(cascade_csv):
+def get_samples_from_cascade(cascade_csv: typing.IO,
+                             default_sample_name: str = None):
     all_samples = {}
     reader = DictReader(cascade_csv)
     if 'sample' in reader.fieldnames:
@@ -614,7 +601,7 @@ def get_samples_from_cascade(cascade_csv):
     rows = list(reader)
     assert len(rows) == 1, len(rows)
     remap_count = int(rows[0]['remap'])
-    return {None: remap_count}
+    return {default_sample_name: remap_count}
 
 
 ## Define some variables

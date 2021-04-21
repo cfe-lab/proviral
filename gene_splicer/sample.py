@@ -1,6 +1,7 @@
 import logging
 import typing
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
+from csv import DictReader
 from pathlib import Path
 
 import gene_splicer.gene_splicer as gene_splicer
@@ -13,6 +14,10 @@ def parse_args():
         description='Search sequences from a single sample for primers, and '
                     'identify errors.',
         formatter_class=ArgumentDefaultsHelpFormatter)
+    # inputs
+    parser.add_argument('sample_info_csv',
+                        help='sample name and other details',
+                        type=FileType())
     parser.add_argument('contigs_csv',
                         help='CSV file with contig sequences',
                         type=FileType())
@@ -22,6 +27,7 @@ def parse_args():
     parser.add_argument('cascade_csv',
                         help='CSV file from MiCall output',
                         type=FileType())
+    # outputs
     parser.add_argument('outcome_summary_csv',
                         help='Summary result for the whole sample',
                         type=FileType('w'))
@@ -72,24 +78,28 @@ def main():
     outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True)
-    default_run_name = 'kive_run'
+    with args.sample_info_csv:
+        info_reader = DictReader(args.sample_info_csv)
+        sample_info: dict = next(info_reader)
+    run_name = sample_info.get('run_name', 'kive_run')
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
-                                    name=default_run_name,
+                                    name=run_name,
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,
                                     nodups=args.nodups,
                                     split=args.split,
                                     sample_size=args.sample_size,
-                                    force_all_proviral=True)
+                                    force_all_proviral=True,
+                                    default_sample_name=sample_info['sample'])
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
-    utils.generate_table_precursor(name=default_run_name, outpath=outpath)
+    utils.generate_table_precursor(name=run_name, outpath=outpath)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
-    copy_output(outpath / 'kive_run_conseqs_primer_analysis.csv',
+    copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)
-    copy_output(outpath / 'kive_run_contigs_primer_analysis.csv',
+    copy_output(outpath / (run_name + '_contigs_primer_analysis.csv'),
                 args.contigs_primers_csv)
     copy_output(outpath / 'table_precursor.csv', args.table_precursor_csv)
 
