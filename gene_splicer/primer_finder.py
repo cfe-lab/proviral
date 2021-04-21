@@ -460,7 +460,10 @@ def run(contigs_csv,
         joined['seqtype'] = joined['seqtype_conseq'].fillna(
             joined['seqtype_contig'])
         joined['name'] = joined['name_conseq'].fillna(joined['name_contig'])
-        joined['seqlen'] = joined['sequence'].str.len()
+        if joined.empty:
+            joined['seqlen'] = 0
+        else:
+            joined['seqlen'] = joined['sequence'].str.len()
         joined['reference'] = joined['reference_conseq'].fillna(
             joined['reference_contig'])
         joined = joined[[

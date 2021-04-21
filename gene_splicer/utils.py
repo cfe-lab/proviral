@@ -402,6 +402,9 @@ def align(target_seq,
 
 
 def generate_table_precursor(name, outpath, add_columns=None):
+    # Output csv
+    precursor_path: Path = outpath / 'table_precursor.csv'
+
     # Load filtered sequences
     filtered_path = outpath / (name + '_filtered.csv')
     filtered = pd.read_csv(filtered_path)
@@ -424,9 +427,12 @@ def generate_table_precursor(name, outpath, add_columns=None):
         # Merge
         merged = seqinr.merge(filtered, on='sample')
     except ValueError:
-        print('No hivseqinr runs found')
-        seqinr = None
-        merged = filtered
+        with precursor_path.open('w') as output_file:
+            writer = DictWriter(output_file,
+                                ['sample', 'sequence', 'MyVerdict'] +
+                                genes_of_interest)
+            writer.writeheader()
+        return precursor_path
 
     for gene in genes_of_interest:
         merged[gene] = None
@@ -452,17 +458,13 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
-    else:
-        add_columns = {}
-    # Output csv
-    outfile = outpath / 'table_precursor.csv'
     if parts:
         merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
-            outfile, index=False)
+            precursor_path, index=False)
     else:
-        merged[['sample', 'sequence'] + genes_of_interest].to_csv(outfile,
+        merged[['sample', 'sequence'] + genes_of_interest].to_csv(precursor_path,
                                                                   index=False)
-    return outfile
+    return precursor_path
 
 
 def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
