@@ -39,6 +39,7 @@ class OutcomeSummary:
         self.data[row['sample']]['conseq_passed'] = True
         self.data[row['sample']]['sequence'] = row['sequence']
         self.data[row['sample']]['seqtype'] = row['seqtype']
+        self.data[row['sample']]['is_rev_comp'] = row['is_rev_comp']
 
     def set_failed(self, row, error):
         logger.critical('Sample "%s" already has a passed sequence!' %
@@ -52,20 +53,14 @@ class OutcomeSummary:
     def add_failure(self, row, seqtype):
         nfailed = len(self.data[row['sample']]['failed'])
         self.data[row['sample']]['failed'].append({
-            f'fail_error_{nfailed}':
-            row['error'],
-            f'fail_fwd_err_{nfailed}':
-            row['fwd_error'],
-            f'fail_rev_err_{nfailed}':
-            row['rev_error'],
-            f'fail_seqtype_{nfailed}':
-            seqtype,
-            f'fail_seqlen_{nfailed}':
-            row['seqlen'],
-            f'fail_sequence_{nfailed}':
-            row['sequence'],
-            f'fail_ref_{nfailed}':
-            row['reference']
+            f'fail_error_{nfailed}': row['error'],
+            f'fail_fwd_err_{nfailed}': row['fwd_error'],
+            f'fail_rev_err_{nfailed}': row['rev_error'],
+            f'fail_seqtype_{nfailed}': seqtype,
+            f'fail_is_rev_comp_{nfailed}': row['is_rev_comp'],
+            f'fail_seqlen_{nfailed}': row['seqlen'],
+            f'fail_sequence_{nfailed}': row['sequence'],
+            f'fail_ref_{nfailed}': row['reference']
         })
 
     def handle_edge_cases(self, row):
@@ -162,7 +157,7 @@ class OutcomeSummary:
     def write(self):
         fieldnames = [
             'sample', 'run', 'passed', 'error', 'reference', 'seqtype',
-            'seqlen', 'sequence', 'fwd_err', 'rev_err'
+            'is_rev_comp', 'seqlen', 'sequence', 'fwd_err', 'rev_err'
         ]
 
         # Write the rows
@@ -280,6 +275,7 @@ class OutcomeSummary:
                 error_row = conseq_failures[0]
                 for field_name in ('ref',
                                    'seqtype',
+                                   'is_rev_comp',
                                    'seqlen',
                                    'sequence',
                                    'fwd_err',
