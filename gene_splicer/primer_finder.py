@@ -158,16 +158,12 @@ def find_primers(
             continue
 
         contig_num = 0
-        contig_row_count = 0
+        non_hiv_rows = []
 
         for row in sample_rows:
             contig_num += 1
             seed_name = row.get('ref') or row['region'] or row.get('genotype')
 
-            if 'HIV' not in seed_name:
-                continue
-
-            contig_row_count += 1
             conseq_cutoff = row.get('consensus-percent-cutoff')
             contig_name = f'{contig_num}-{seed_name}'
 
@@ -202,10 +198,11 @@ def find_primers(
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
 
-            # If the sample is non-proviral, skip
-            if not proviral_helper.is_proviral(row.get('sample')):
-                new_row['error'] = errors.non_proviral
-                writer.writerow(new_row)
+            if 'HIV' in seed_name:
+                non_hiv_rows = None
+            elif non_hiv_rows is not None:
+                new_row['error'] = errors.non_hiv
+                non_hiv_rows.append(new_row)
                 continue
 
             # If percent consensus cutoff is not max, skip
@@ -257,11 +254,15 @@ def find_primers(
                                    f'{contig_name} - {seqtype}')
 
             writer.writerow(new_row)
-        if contig_row_count == 0 and all_samples[sample_name] != 0:
-            new_row = dict(run_name=run_name,
-                           error=errors.non_hiv)
-            new_row['sample'] = sample_name
-            writer.writerow(new_row)
+        if non_hiv_rows is not None:
+            if non_hiv_rows:
+                writer.writerows(non_hiv_rows)
+            elif all_samples[sample_name] != 0:
+                new_row = dict(run_name=run_name,
+                               sample=sample_name,
+                               error=errors.no_sequence)
+                writer.writerow(new_row)
+
     outfile.close()
     return outfilepath
 
