@@ -500,14 +500,12 @@ def get_softclipped_region(query, alignment, alignment_path):
         logger.warning('No alignment in %s!', alignment_path)
         return
     if op != 'S':
-        logger.warning('Alignment does not start with softclip in %s.',
-                       alignment_path)
         return
     size = int(size)
     return query[:size]
 
 
-def sequence_to_coords(query, target, alignment_path, annot):
+def sequence_to_coords(query, target, alignment_path, annotations):
     aln = load_samfile(alignment_path)
     softclip = get_softclipped_region(query, aln, alignment_path)
     if softclip is None:
@@ -521,7 +519,7 @@ def sequence_to_coords(query, target, alignment_path, annot):
     matchlen = len(target_match)
     coords = {}
     for pos in range(finder.start, matchlen - 1):
-        genes = get_genes(annot, pos)
+        genes = get_genes(annotations, pos)
         for gene in genes:
             coords.setdefault(gene, [pos, pos])[1] += 1
     return coords
