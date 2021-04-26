@@ -162,14 +162,8 @@ class OutcomeSummary:
     def write(self):
         fieldnames = [
             'sample', 'run', 'passed', 'error', 'reference', 'seqtype',
-            'seqlen', 'sequence'
+            'seqlen', 'sequence', 'fwd_err', 'rev_err'
         ]
-        for i in range(self.max_failed):
-            fieldnames += [
-                f'fail_error_{i}', f'fail_fwd_err_{i}', f'fail_rev_err_{i}',
-                f'fail_seqtype_{i}', f'fail_seqlen_{i}', f'fail_sequence_{i}',
-                f'fail_ref_{i}'
-            ]
 
         # Write the rows
         with open(self.path, 'w', newline='') as csvfile:
@@ -283,16 +277,27 @@ class OutcomeSummary:
                         # Case 4
                         self.data[sample]['error'] = self.errors.low_cov
             elif conseq_failure_count == 1:
+                error_row = conseq_failures[0]
+                for field_name in ('ref',
+                                   'seqtype',
+                                   'seqlen',
+                                   'sequence',
+                                   'fwd_err',
+                                   'rev_err',):
+
+                    target = 'reference' if field_name == 'ref' else field_name
+                    field_name = f'fail_{field_name}_0'
+                    self.data[sample][target] = error_row[field_name]
                 # Case 5
                 primer_errors = (self.errors.no_primer,
                                  self.errors.failed_validation,
                                  self.errors.low_end_cov)
-                if (conseq_failures[0]['fail_fwd_err_0'] in primer_errors or
-                        conseq_failures[0]['fail_rev_err_0'] in primer_errors):
+                if (error_row['fail_fwd_err_0'] in primer_errors or
+                        error_row['fail_rev_err_0'] in primer_errors):
                     self.data[sample]['error'] = self.errors.primer_error
                 # Case 6
-                elif (conseq_failures[0]['fail_fwd_err_0'] == self.errors.low_internal_cov or
-                      conseq_failures[0]['fail_rev_error_0'] == self.errors.low_internal_cov):
+                elif (error_row['fail_fwd_err_0'] == self.errors.low_internal_cov or
+                      error_row['fail_rev_error_0'] == self.errors.low_internal_cov):
                     self.data[sample]['error'] = self.errors.low_internal_cov
             else:
                 # Case 7, 8, 9
