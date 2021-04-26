@@ -257,7 +257,7 @@ def find_primers(
                                    f'{contig_name} - {seqtype}')
 
             writer.writerow(new_row)
-        if contig_row_count == 0:
+        if contig_row_count == 0 and all_samples[sample_name] != 0:
             new_row = dict(run_name=run_name,
                            error=errors.non_hiv)
             new_row['sample'] = sample_name
