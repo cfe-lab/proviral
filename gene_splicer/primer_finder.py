@@ -104,7 +104,7 @@ def find_primers(
         # The sequence type, can be either 'contigs' or 'conseqs'
         seqtype,
         sample_size=50,
-        extended_length=200,
+        extended_length=250,
         force_all_proviral=False):
     proviral_helper = ProviralHelper(force_all_proviral=force_all_proviral)
     errors = PrimerFinderErrors()

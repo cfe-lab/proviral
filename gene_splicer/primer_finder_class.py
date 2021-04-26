@@ -58,17 +58,13 @@ class PrimerFinder:
         else:
             hxb2_start_offset = 0
         hxb2_end_offset = 0
-        # Minus min_primer_length because the smallest primer we want to try looking for is min_primer_length nucleotides
+        # Minus min_primer_length because the smallest primer we want to try
+        # looking for is min_primer_length nucleotides
         for i in range(len(self.primer) - self.min_primer_length):
-            # print('i', i)
-            primer_substring = None
-
-            # If fwd
             if self.direction == 'fwd':
                 primer_substring = self.primer[i:]
                 hxb2_start_offset += 1
 
-            # If rev
             elif self.direction == 'rev':
                 if i == 0:
                     primer_substring = self.primer[:]
@@ -96,9 +92,8 @@ class PrimerFinder:
             return
         elif len(self.sample_primer) >= 7:
             self.is_valid = True
-            if len(self.sample_primer) == self.primer_length:
+            if len(self.sample_primer) >= self.primer_length - 3:
                 self.is_full_length = True
-            # TODO: I should probably check that if the primer is not full length, that the start index is 0 for fwd and is len-1 for rev
             return
         else:
             sample_slice, hxb2_slice = self.get_slices()
