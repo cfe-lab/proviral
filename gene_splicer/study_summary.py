@@ -169,6 +169,7 @@ class StudySummary:
         sample_count = 0
         skipped_sample_count = 0
         skipped_run_count = 0
+        run_name: str
         for run_name, items in groupby(self.unmapped_samples, itemgetter(0)):
             if limit is not None and sample_count > limit:
                 skipped_run_count += 1
@@ -202,10 +203,12 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path):
     short_run_name = '_'.join(full_run_name.split('_')[:2])
     python_path = sys.executable
     launch_path = Path(__file__).parent.parent
+    hivseqinr_path = launch_path / 'hivseqinr'
     log_path = outcome_folder / 'gene_splicer.log'
     pipeline_args = [python_path,
                      '-m', 'gene_splicer.pipeline',
                      '--outpath', str(outcome_folder),
+                     '--hivseqinr', str(hivseqinr_path),
                      contigs_path,
                      conseq_path,
                      cascade_path,
