@@ -40,6 +40,9 @@ def parse_args():
     parser.add_argument('table_precursor_csv',
                         help='Sequence data ready to upload',
                         type=FileType('w'))
+    parser.add_argument('hivseqinr_results_tar',
+                        help="Archive file with HIVSeqinR's final results folder.",
+                        type=FileType('wb'))
     parser.add_argument(
         '-p',
         '--sample_size',
@@ -85,6 +88,7 @@ def main():
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
+                                    hivseqinr_results_tar=args.hivseqinr_results_tar,
                                     name=run_name,
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,

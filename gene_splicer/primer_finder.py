@@ -4,10 +4,14 @@ from csv import DictReader, DictWriter
 from itertools import groupby
 from operator import itemgetter
 import os
+from tarfile import TarFile
+
 import pandas as pd
 from pathlib import Path
 import logging
 import math
+
+import typing
 
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
 from gene_splicer.primer_finder_class import PrimerFinder
@@ -407,6 +411,14 @@ def filter_df(df, nodups=True):
     return filtered
 
 
+def archive_hivseqinr_results(working_path: Path,
+                              hivseqinr_results_tar: typing.IO):
+    final_results_path = working_path / 'Results_Final'
+    archive = TarFile(fileobj=hivseqinr_results_tar, mode='w')
+    for result_path in final_results_path.iterdir():
+        archive.add(result_path, result_path.name)
+
+
 def run(contigs_csv,
         conseqs_csv,
         cascade_csv,
@@ -417,7 +429,8 @@ def run(contigs_csv,
         split=1,
         sample_size=50,
         force_all_proviral=False,
-        default_sample_name: str = None):
+        default_sample_name: str = None,
+        hivseqinr_results_tar: typing.IO = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
 
@@ -493,10 +506,14 @@ def run(contigs_csv,
             o.close()
             o2.close()
             if hivseqinr is not None:
+                working_path = outpath / f'hivseqinr_{i}'
                 hivseqinr_runner = Hivseqinr(hivseqinr,
-                                             outpath / f'hivseqinr_{i}',
+                                             working_path,
                                              synthetic_primers_fasta)
                 hivseqinr_runner.run()
+                if hivseqinr_results_tar is not None:
+                    archive_hivseqinr_results(working_path,
+                                              hivseqinr_results_tar)
             files.append(no_primers_fasta)
     return files
 

@@ -3,14 +3,17 @@ Bootstrap: docker
 From: centos:7
 
 %help
-    Primer finder help.
+    Search proviral consensus sequences for primers, then use HIVSeqinR to
+    decide if the genomes are complete.
+
     This Singularity container can be run on Kive: http://cfe-lab.github.io/Kive
 
 
 %labels
     MAINTAINER BC CfE in HIV/AIDS https://github.com/cfe-lab/
     KIVE_INPUTS sample_info_csv contigs_csv conseqs_csv cascade_csv
-    KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv table_precursor_csv
+    KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv \
+        table_precursor_csv hivseqinr_results_tar
     KIVE_THREADS 1
     KIVE_MEMORY 6000
 
