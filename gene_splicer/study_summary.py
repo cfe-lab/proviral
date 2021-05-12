@@ -224,7 +224,6 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path):
     except CalledProcessError:
         print(log_path.read_text(), file=sys.stderr)
         raise
-    print('.', end='')
 
 
 def main():
@@ -237,15 +236,26 @@ def main():
         summary.load_samples(args.samples_csv, args.runs_root)
 
     outcome_root = Path(args.study_summary_csv.name).parent
-    launch_count = 0
+    dots_printed = False
+    unfinished_count = 0
     for run_path in summary.run_paths:
         run_folder_name = run_path.name
         outcome_path: Path = (outcome_root / run_folder_name /
                               'outcome_summary.csv')
         if not outcome_path.exists():
-            run_gene_splicer(run_path, outcome_path.parent)
-            assert outcome_path.exists(), outcome_path
-            launch_count += 1
+            done_path = (run_path / 'Results' / 'version_7.14' / 'denovo' /
+                         'doneprocessing')
+            if not done_path.exists():
+                unfinished_count += 1
+                if dots_printed:
+                    print()
+                    dots_printed = False
+                print('Missing denovo results:', run_path)
+            else:
+                run_gene_splicer(run_path, outcome_path.parent)
+                assert outcome_path.exists(), outcome_path
+                print('.', end='', flush=True)
+                dots_printed = True
         with outcome_path.open() as outcome_summary_csv:
             try:
                 summary.load_outcome(outcome_summary_csv)
@@ -253,12 +263,14 @@ def main():
                 raise RuntimeError(
                     f'Failed to load outcome from {outcome_path}.') from ex
 
-    if launch_count:
+    if dots_printed:
         print()  # New line after ... progress display.
 
     with args.study_summary_csv:
         summary.write(args.study_summary_csv)
     summary.write_warnings(sys.stdout, limit=100)
+    if unfinished_count:
+        print(f'Warning: denovo results missing from {unfinished_count} runs.')
 
 
 if __name__ == '__main__':
