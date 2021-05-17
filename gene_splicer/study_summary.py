@@ -109,7 +109,13 @@ class StudySummary:
             if participant_id is None:
                 participant_id = participant_id_guess
                 self.unmapped_samples.append(sample_key)
-            participant_counts = self.participant_counts[participant_id]
+            participant_key = participant_id
+            try:
+                # Some participant ids have leading zeroes (sometimes).
+                participant_key = str(int(participant_id))
+            except ValueError:
+                pass
+            participant_counts = self.participant_counts[participant_key]
 
             for counts in (run_counts, participant_counts):
                 counts['samples'] += 1
@@ -251,6 +257,7 @@ def main():
                     print()
                     dots_printed = False
                 print('Missing denovo results:', run_path)
+                continue
             else:
                 run_gene_splicer(run_path, outcome_path.parent)
                 assert outcome_path.exists(), outcome_path
