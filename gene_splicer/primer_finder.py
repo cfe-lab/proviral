@@ -208,6 +208,8 @@ def find_primers(
                 new_row['error'] = errors.non_hiv
                 non_hiv_rows.append(new_row)
                 continue
+            else:
+                continue
 
             # If percent consensus cutoff is not max, skip
             if conseq_cutoff and conseq_cutoff != 'MAX':
