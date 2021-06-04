@@ -179,6 +179,12 @@ def find_primers(
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
 
+            # If percent consensus cutoff is not max, skip
+            if conseq_cutoff and conseq_cutoff != 'MAX':
+                new_row['error'] = errors.not_max
+                writer.writerow(new_row)
+                continue
+
             # Determine if sequence has internal Xs
             x_locations = [i for i, j in enumerate(contig_seq) if j == 'X']
             if any([(sample_size < i < len(contig_seq) - sample_size)
@@ -209,12 +215,6 @@ def find_primers(
                 non_hiv_rows.append(new_row)
                 continue
             else:
-                continue
-
-            # If percent consensus cutoff is not max, skip
-            if conseq_cutoff and conseq_cutoff != 'MAX':
-                new_row['error'] = errors.not_max
-                writer.writerow(new_row)
                 continue
 
             # Determine if sequence has non-tcga characters
