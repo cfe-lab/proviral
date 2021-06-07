@@ -34,11 +34,15 @@ class OutcomeSummary:
         }
 
     def set_passed(self, row):
+        seqtype = row['seqtype']
+        if seqtype.endswith('s'):
+            seqtype = seqtype[:-1]
+        passed_field = seqtype + '_passed'
         self.data[row['sample']]['reference'] = row['reference']
         self.data[row['sample']]['seqlen'] = row['seqlen']
-        self.data[row['sample']]['conseq_passed'] = True
+        self.data[row['sample']][passed_field] = True
         self.data[row['sample']]['sequence'] = row['sequence']
-        self.data[row['sample']]['seqtype'] = row['seqtype']
+        self.data[row['sample']]['seqtype'] = seqtype
         self.data[row['sample']]['is_rev_comp'] = row['is_rev_comp']
 
     def set_failed(self, row, error):
