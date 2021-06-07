@@ -292,8 +292,7 @@ class OutcomeSummary:
                         error_row['fail_rev_err_0'] in primer_errors):
                     self.data[sample]['error'] = self.errors.primer_error
                 # Case 6
-                elif (error_row['fail_fwd_err_0'] == self.errors.low_internal_cov or
-                      error_row['fail_rev_error_0'] == self.errors.low_internal_cov):
+                elif error_row['fail_error_0'] == self.errors.low_internal_cov:
                     self.data[sample]['error'] = self.errors.low_internal_cov
             else:
                 # Case 7, 8, 9

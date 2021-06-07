@@ -179,6 +179,15 @@ def find_primers(
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
 
+            if 'HIV' in seed_name:
+                non_hiv_rows = None
+            elif non_hiv_rows is not None:
+                new_row['error'] = errors.non_hiv
+                non_hiv_rows.append(new_row)
+                continue
+            else:
+                continue
+
             # If percent consensus cutoff is not max, skip
             if conseq_cutoff and conseq_cutoff != 'MAX':
                 new_row['error'] = errors.not_max
@@ -207,15 +216,6 @@ def find_primers(
 
             new_row['seqlen'] = len(contig_seq)
             new_row['sequence'] = contig_seq
-
-            if 'HIV' in seed_name:
-                non_hiv_rows = None
-            elif non_hiv_rows is not None:
-                new_row['error'] = errors.non_hiv
-                non_hiv_rows.append(new_row)
-                continue
-            else:
-                continue
 
             # Determine if sequence has non-tcga characters
             found_non_tcga = re.findall(non_tcga, contig_seq)
