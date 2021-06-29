@@ -2,14 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
     name='gene_splicer',
-    version='v2.3.1',
+    version='v2.3.9',
     packages=find_packages(),
     install_requires=[
         'gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment',
         'numpy==1.18.4',
         'python-Levenshtein==0.12.0',
         'pandas==1.0.5',
-        'requests==2.24.0',
+        'requests==2.25.1',
         'pyyaml'
     ],
     package_data={

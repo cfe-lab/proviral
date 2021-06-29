@@ -385,8 +385,9 @@ def add_primers(row):
 
 def remove_primers(row):
     # Strip the primers out
-    newseq = row.sequence[int(row.fwd_sample_primer_size
-                              ):-int(row.rev_sample_primer_size)]
+    newseq = row.sequence[
+             row.fwd_sample_primer_size + row.fwd_sample_primer_start
+             :-(row.rev_sample_primer_size + row.rev_sample_primer_start)]
     row.sequence = newseq
     return row
 
@@ -395,7 +396,7 @@ def filter_df(df, nodups=True):
     filtered = df[(df['error'].isna()
                    & df['fwd_error'].isna()
                    & df['rev_error'].isna())]
-    filtered = filtered.apply(remove_primers, axis=1)
+    filtered = filtered.apply(remove_primers, axis=1, result_type='broadcast')
     if nodups:
         filtered = filtered.drop_duplicates(subset='sample', keep=False)
     if not filtered.empty:
