@@ -1,4 +1,5 @@
 import re
+import subprocess
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader, DictWriter
 from itertools import groupby
@@ -77,6 +78,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
+    parser.add_argument('--hivintact',
+                        action='store_true',
+                        help="Launch the HIVIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -386,8 +390,8 @@ def add_primers(row):
 def remove_primers(row):
     # Strip the primers out, convert index values from floats.
     newseq = row.sequence[
-             int(row.fwd_sample_primer_size + row.fwd_sample_primer_start)
-             :-int(row.rev_sample_primer_size + row.rev_sample_primer_start)]
+             int(row.fwd_sample_primer_size + row.fwd_sample_primer_start):
+             -int(row.rev_sample_primer_size + row.rev_sample_primer_start)]
     row.sequence = newseq
     return row
 
@@ -422,6 +426,13 @@ def archive_hivseqinr_results(working_path: Path,
         archive.add(result_path, result_path.name)
 
 
+def archive_hivintact_results(working_path: Path,
+                              hivintact_results_tar: typing.IO):
+    archive = TarFile(fileobj=hivintact_results_tar, mode='w')
+    for result_path in working_path.iterdir():
+        archive.add(result_path, result_path.name)
+
+
 def run(contigs_csv,
         conseqs_csv,
         cascade_csv,
@@ -433,7 +444,9 @@ def run(contigs_csv,
         sample_size=50,
         force_all_proviral=False,
         default_sample_name: str = None,
-        hivseqinr_results_tar: typing.IO = None):
+        hivseqinr_results_tar: typing.IO = None,
+        run_hivintact: bool = False,
+        hivintact_results_tar: typing.IO = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
 
@@ -517,6 +530,21 @@ def run(contigs_csv,
                 if hivseqinr_results_tar is not None:
                     archive_hivseqinr_results(working_path,
                                               hivseqinr_results_tar)
+            if run_hivintact:
+                working_path: Path = outpath / f'hivintact_{i}'
+                working_path.mkdir(exist_ok=True)
+                with (working_path / 'hiv-intact.log').open('w') as log_file:
+                    subprocess.run(['proviral',
+                                    'intact',
+                                    '--subtype=B',
+                                    str(no_primers_fasta)],
+                                   check=True,
+                                   stdout=log_file,
+                                   stderr=subprocess.STDOUT,
+                                   cwd=working_path)
+                if hivintact_results_tar is not None:
+                    archive_hivintact_results(working_path,
+                                              hivintact_results_tar)
             files.append(no_primers_fasta)
     return files
 
@@ -531,7 +559,8 @@ def main():
                       hivseqinr=args.hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      sample_size=args.sample_size)
+                      sample_size=args.sample_size,
+                      run_hivintact=args.hivintact)
     return {'fasta_files': fasta_files, 'args': args}
 
 

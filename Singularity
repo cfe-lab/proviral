@@ -28,6 +28,9 @@ From: ubuntu:22.04
         fontconfig libbz2-dev liblzma-dev libssl-dev \
         libffi-dev libsqlite3-dev
 
+    echo ===== Installing MAFFT ===== >/dev/null
+    apt-get install -y mafft
+
     echo ===== Installing Python ===== >/dev/null
     apt-get install -y python3 python3-pip
 
@@ -35,6 +38,8 @@ From: ubuntu:22.04
     apt-get install -y ncbi-blast+
 
     echo ===== Installing Python packages ===== >/dev/null
+    pip3 install git+https://github.com/cfe-lab/HIVIntact@cfe-1.2
+
     cd /opt/primer_finder
     pip3 install .
 
@@ -55,3 +60,17 @@ From: ubuntu:22.04
 
 %runscript
     gene_splicer_sample --hivseqinr /opt/hivseqinr "$@"
+
+%apprun hivintact
+    gene_splicer_sample --hivintact "$@"
+
+%apphelp hivintact
+    Search proviral consensus sequences for primers, then use HIVIntact to
+    decide if the genomes are complete.
+
+%applabels hivintact
+    KIVE_INPUTS sample_info_csv contigs_csv conseqs_csv cascade_csv
+    KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv \
+        table_precursor_csv hivseqinr_results_tar
+    KIVE_THREADS 1
+    KIVE_MEMORY 200
