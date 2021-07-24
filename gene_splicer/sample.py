@@ -40,8 +40,9 @@ def parse_args():
     parser.add_argument('table_precursor_csv',
                         help='Sequence data ready to upload',
                         type=FileType('w'))
-    parser.add_argument('hivseqinr_results_tar',
-                        help="Archive file with HIVSeqinR's final results folder.",
+    parser.add_argument('intact_results_tar',
+                        help="Archive file with HIVSeqinR's final results "
+                             "folder, or HIVIntact's results.",
                         type=FileType('wb'))
     parser.add_argument(
         '-p',
@@ -54,6 +55,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
+    parser.add_argument('--hivintact',
+                        action='store_true',
+                        help="Launch the HIVIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -85,10 +89,16 @@ def main():
         info_reader = DictReader(args.sample_info_csv)
         sample_info: dict = next(info_reader)
     run_name = sample_info.get('run_name', 'kive_run')
+    if args.hivintact:
+        hivseqinr_results_tar = None
+        hivintact_results_tar = args.intact_results_tar
+    else:
+        hivseqinr_results_tar = args.intact_results_tar
+        hivintact_results_tar = None
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
-                                    hivseqinr_results_tar=args.hivseqinr_results_tar,
+                                    hivseqinr_results_tar=hivseqinr_results_tar,
                                     name=run_name,
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,
@@ -96,7 +106,9 @@ def main():
                                     split=args.split,
                                     sample_size=args.sample_size,
                                     force_all_proviral=True,
-                                    default_sample_name=sample_info['sample'])
+                                    default_sample_name=sample_info['sample'],
+                                    run_hivintact=args.hivintact,
+                                    hivintact_results_tar=hivintact_results_tar)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)

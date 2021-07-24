@@ -29,6 +29,11 @@ From: centos:7
     yum install -q -y epel-release
     yum install -q -y unzip wget fontconfig bzip2-devel xz-devel openssl-devel libffi-devel
 
+    echo ===== Installing MAFFT ===== >/dev/null
+    wget -q https://mafft.cbrc.jp/alignment/software/mafft-7.486-gcc_fc6.x86_64.rpm
+    rpm -Uvh mafft*.rpm
+    rm mafft*.rpm
+
     echo ===== Installing Python ===== >/dev/null
     wget -q https://www.python.org/ftp/python/3.8.3/Python-3.8.3.tar.xz
     tar xJf Python*
@@ -51,6 +56,7 @@ From: centos:7
     wget -q https://bootstrap.pypa.io/get-pip.py
     python3 get-pip.py
     rm get-pip.py
+    pip install git+git://github.com/ramics/HIVIntact.git@f5abe2834b72458ccb1a7ce5dbf52dcf108cb518
     cd /opt/primer_finder
     pip install .
 
@@ -90,3 +96,17 @@ From: centos:7
 
 %runscript
     gene_splicer_sample --hivseqinr /opt/hivseqinr "$@"
+
+%apprun hivintact
+    gene_splicer_sample --hivintact "$@"
+
+%apphelp hivintact
+    Search proviral consensus sequences for primers, then use HIVIntact to
+    decide if the genomes are complete.
+
+%applabels hivintact
+    KIVE_INPUTS sample_info_csv contigs_csv conseqs_csv cascade_csv
+    KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv \
+        table_precursor_csv hivintact_results_tar
+    KIVE_THREADS 1
+    KIVE_MEMORY 200
