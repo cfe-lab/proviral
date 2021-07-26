@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5c83876faad2a2ba441f6d5c8ad46c463d27a3de1f904444a4e29c596ee68d5e"
+            "sha256": "e08a5a546a01dc706e351f2a91570007480408d0952839daa29843d9a497515c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -91,7 +91,7 @@
             "version": "==2.10"
         },
         "intactness-pipeline": {
-            "git": "ssh://git@github.com/ramics/HIVIntact.git",
+            "git": "git://github.com/ramics/HIVIntact.git",
             "ref": "f5abe2834b72458ccb1a7ce5dbf52dcf108cb518"
         },
         "numpy": {

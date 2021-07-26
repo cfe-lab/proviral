@@ -10,7 +10,7 @@ python-levenshtein = "==0.12.0"
 pandas = "==1.2.5"
 requests = "==2.25.1"
 pyyaml = "*"
-intactness-pipeline = {ref = "f5abe2834b72458ccb1a7ce5dbf52dcf108cb518", git = "ssh://git@github.com/ramics/HIVIntact.git"}
+intactness-pipeline = {ref = "f5abe2834b72458ccb1a7ce5dbf52dcf108cb518", git = "git://github.com/ramics/HIVIntact.git"}
 
 [dev-packages]
 pytest = "*"
