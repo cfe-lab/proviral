@@ -1,3 +1,4 @@
+import csv
 import logging
 import os
 import re
@@ -452,6 +453,33 @@ def generate_table_precursor(name, outpath, add_columns=None):
         merged[['sample', 'sequence'] + genes_of_interest].to_csv(precursor_path,
                                                                   index=False)
     return precursor_path
+
+
+def generate_table_regions(outpath):
+    # Output csv
+    precursor_path: Path = outpath / 'table_precursor.csv'
+    with open(precursor_path) as precursor_file:
+        columns = ['sample'] + genes_of_interest
+        writer = csv.DictWriter(precursor_file, columns)
+        writer.writeheader()
+
+        folders = next(os.walk(outpath))[1]
+        for folder in folders:
+            row = dict(sample=folder)
+            genes_fasta_path = outpath / folder / 'genes.fasta'
+            if not os.path.isfile(genes_fasta_path):
+                print(f'No genes for {folder}')
+                continue
+            genes_fasta = read_fasta(genes_fasta_path)
+            genes = dict([x for x in genes_fasta])
+            for gene in genes_of_interest:
+                try:
+                    seq = genes[f'>{gene}']
+                except KeyError:
+                    seq = None
+                row[gene] = seq
+            writer.writerow(row)
+    print("Done!")
 
 
 def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
