@@ -364,6 +364,7 @@ def align(target_seq,
         raise FileNotFoundError(f'Aligner {aligner_path} not found.')
     outdir = outdir / query_name
     if os.path.isdir(outdir):
+        print(f"Path already exists: {query_name}")
         shutil.rmtree(outdir)
     os.makedirs(outdir)
     # Write the query fasta

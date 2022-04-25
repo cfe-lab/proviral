@@ -28,7 +28,10 @@ def run(query_fasta, outdir):
         try:
             qname = query_name[1:].split('::')[1]
         except IndexError:  # Zabrina's data is named differently
-            qname = query_name[1:].split('.')[2]
+            try:
+                qname = query_name[1:].split('.')[2]
+            except IndexError:
+                qname = query_name[1:].split('.')[1]
         alignment_path = utils.align(target,
                                      query_seq,
                                      qname,
