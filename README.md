@@ -10,7 +10,7 @@
 
 ### Filtering
 * At the core of the proviral pipeline, data is read from `contigs.csv` and `conseqs.csv` files produced by MiCall
-* First the pipeline reads through all of the contigs, then the contigs
+* First the pipeline reads through all of the contigs, then the conseqs
 * When it does this (see the `find_primers()` function) it applies the following logic in this order for filtering/tagging:
   1. If a sample is not proviral, skip it. Do not attempt to find primers or anything, just log a message saying `sample X was skipped because it was non-proviral`
   2. If a sample has 0 in the remap column of the `cascade.csv` file, tag that sequence with an error: `No contig/conseq constructed`, do not analyze it or try to find primers, and write it to the `*primer_analysis.csv` file (which records all failures)
