@@ -458,12 +458,13 @@ def generate_table_precursor(name, outpath, add_columns=None):
 def generate_table_regions(outpath):
     # Output csv
     precursor_path: Path = outpath / 'table_precursor.csv'
-    with open(precursor_path) as precursor_file:
+    with open(precursor_path, 'w') as precursor_file:
         columns = ['sample'] + genes_of_interest
         writer = csv.DictWriter(precursor_file, columns)
         writer.writeheader()
 
         folders = next(os.walk(outpath))[1]
+        folders.sort()
         for folder in folders:
             row = dict(sample=folder)
             genes_fasta_path = outpath / folder / 'genes.fasta'
