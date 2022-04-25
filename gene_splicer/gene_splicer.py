@@ -25,9 +25,13 @@ def run(query_fasta, outdir):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
+        try:
+            qname = query_name[1:].split('::')[1]
+        except IndexError:  # Zabrina's data is named differently
+            qname = query_name[1:].split('.')[2]
         alignment_path = utils.align(target,
                                      query_seq,
-                                     query_name[1:].split('::')[1],
+                                     qname,
                                      outdir=outdir)
         if not alignment_path:
             print(f'Could not align {query_name}, aligner not available')
