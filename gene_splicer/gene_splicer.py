@@ -1,6 +1,9 @@
 import argparse
 import os
 from pathlib import Path
+
+import pandas.errors
+
 import gene_splicer.utils as utils
 
 
@@ -39,7 +42,11 @@ def run(query_fasta, outdir):
         if not alignment_path:
             print(f'Could not align {query_name}, aligner not available')
             continue
-        samfile = utils.load_samfile(alignment_path)
+        try:
+            samfile = utils.load_samfile(alignment_path)
+        except pandas.errors.ParserError:
+            print(f"Parsing problem with {qname}")
+            continue
         coords = utils.splice_genes(query_seq, target, samfile,
                                     utils.mod_annot)
         # Try to get softclipped region if there is one
