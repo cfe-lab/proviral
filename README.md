@@ -29,3 +29,17 @@
      3. Remove rows where sample name appears twice (duplicates)
      4. Remove rows where the reference contains `unknown` or `reverse`
   10. Finally merge the filtered contigs and conseqs and write the final `*filtered.csv` file with conseqs taking precedence over contigs
+
+### Creating `table_precursor.csv` from a fasta file
+We got a request to create `table_precursor.csv`, containing only the gene regions trimmed out from the whole
+sequence, based on a fasta file of sequences. I made a few modifications to allow for this. Specifically, follow 
+these steps to do the same thing:
+1. Run `gene_splicer.gene_splicer.py` on the input fasta. You may have to modify the sample name parsing [here][1] 
+   to accommodate for the naming conventions in your input file. This should create folders for each sample within the
+   specified results directory, each containing a file named `genes.fasta`, containing the sequences for all genes for 
+   that sample.
+2. To collate the information from the individual folders, run `generate_table_regions` from `gene_splicer.utils`,
+   with your results folder as input argument. This is a modified version of `generate_table_precursor` and only 
+   collates the gene region sequences. It should create a file named `table_precursor.csv` in your results folder!
+
+[1]: https://github.com/cfe-lab/proviral/blob/46116021b4e70411cf6f0f0492e30292af83bd6e/gene_splicer/gene_splicer.py#L32
