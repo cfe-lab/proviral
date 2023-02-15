@@ -526,13 +526,14 @@ def generate_proviral_landscape_csv(outpath):
                       'stitle',
                       'sstrand']
     with open(blastn_csv, 'r') as blastn_file:
-        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns)
+        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
         for row in blastn_reader:
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
                 continue
             # TODO: have to skip weird entries at start and end
-            [run_name, sample_name, reference, seqtype] = row['seqid'].split('::', expand=True)
+            print(row['qseqid'])
+            [run_name, sample_name, reference, seqtype] = row['qseqid'].split('::')
             landscape_entry = {'ref_start': row['sstart'],
                                'ref_end': row['send'],
                                'samp_name': sample_name,

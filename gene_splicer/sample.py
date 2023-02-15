@@ -103,7 +103,7 @@ def main():
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
-    utils.generate_proviral_landscape_csv(name=run_name, outpath=outpath)
+    utils.generate_proviral_landscape_csv(outpath)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)
