@@ -549,6 +549,9 @@ def generate_proviral_landscape_csv(outpath):
                 if entry['samp_name'] == samp_name:
                     entry['defect'] = verdict
 
+    for entry in landscape_rows:
+        del entry['samp_name']
+
     landscape_columns = ['samp_id', 'ref_start', 'ref_end', 'defect']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
