@@ -1,3 +1,4 @@
+import csv
 import logging
 import os
 import re
@@ -491,6 +492,65 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
         table_precursorfile, index=False)
     return table_precursorfile
+
+
+def generate_proviral_landscape_csv(outpath):
+    proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
+    landscape_rows = []
+
+    table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
+    blastn_csv = glob.glob(
+        os.path.join(
+            outpath,
+            'hivseqinr*',
+            'Results_Intermediate',
+            'Output_Blastn_HXB2MEGA28_tabdelim.txt'
+        )
+    )[0]
+
+    blastn_columns = ['qseqid',
+                      'qlen',
+                      'sseqid',
+                      'sgi',
+                      'slen',
+                      'qstart',
+                      'qend',
+                      'sstart',
+                      'send',
+                      'evalue',
+                      'bitscore',
+                      'length',
+                      'pident',
+                      'nident',
+                      'btop',
+                      'stitle',
+                      'sstrand']
+    with open(blastn_csv, 'r') as blastn_file:
+        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns)
+        for row in blastn_reader:
+            if row['qseqid'] in ['8E5LAV', 'HXB2']:
+                # skip the positive control rows
+                continue
+            # TODO: have to skip weird entries at start and end
+            [run_name, sample_name, reference, seqtype] = row['seqid'].split('::', expand=True)
+            landscape_entry = {'ref_start': row['sstart'],
+                               'ref_end': row['send'],
+                               'samp_name': sample_name,
+                               'samp_id': f"{run_name}::{sample_name}"}
+            landscape_rows.append(landscape_entry)
+
+    with open(table_precursor_csv, 'r') as tab_prec:
+        tab_prec_reader = DictReader(tab_prec)
+        for row in tab_prec_reader:
+            samp_name = row['sample']
+            verdict = row['MyVerdict']
+            for entry in landscape_rows:
+                if entry['samp_name'] == samp_name:
+                    entry['defect'] = verdict
+
+    landscape_columns = ['samp_id', 'ref_start', 'ref_end', 'defect']
+    with open(proviral_landscape_csv, 'w') as landscape_file:
+        landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
 
 
 def get_softclipped_region(query, alignment, alignment_path):
