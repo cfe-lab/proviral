@@ -538,7 +538,9 @@ def generate_proviral_landscape_csv(outpath):
             landscape_entry = {'ref_start': row['sstart'],
                                'ref_end': row['send'],
                                'samp_name': sample_name,
-                               'samp_id': f"{run_name}::{sample_name}"}
+                               'run_name': run_name,
+                               'highlighted': ''}
+            # highlighted is empty for now: can be filled manually
             landscape_rows.append(landscape_entry)
 
     with open(table_precursor_csv, 'r') as tab_prec:
@@ -550,10 +552,7 @@ def generate_proviral_landscape_csv(outpath):
                 if entry['samp_name'] == samp_name:
                     entry['defect'] = verdict
 
-    for entry in landscape_rows:
-        del entry['samp_name']
-
-    landscape_columns = ['samp_id', 'ref_start', 'ref_end', 'defect']
+    landscape_columns = ['samp_id', 'run_name', 'ref_start', 'ref_end', 'defect', 'highlighted']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
         landscape_writer.writerows(landscape_rows)
