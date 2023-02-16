@@ -555,6 +555,7 @@ def generate_proviral_landscape_csv(outpath):
     landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'highlighted']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
+        landscape_writer.writeheader()
         landscape_writer.writerows(landscape_rows)
 
 
