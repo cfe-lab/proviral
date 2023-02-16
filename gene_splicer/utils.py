@@ -531,9 +531,10 @@ def generate_proviral_landscape_csv(outpath):
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
                 continue
-            # TODO: have to skip weird entries at start and end
-            print(row['qseqid'])
-            [run_name, sample_name, reference, seqtype] = row['qseqid'].split('::')
+            if row['send'] < 638 or row['sstart'] > 9632:
+                # skip unspecific matches of LTR at start and end
+                continue
+            [run_name, sample_name, _, _] = row['qseqid'].split('::')
             landscape_entry = {'ref_start': row['sstart'],
                                'ref_end': row['send'],
                                'samp_name': sample_name,
