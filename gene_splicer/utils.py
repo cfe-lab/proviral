@@ -531,7 +531,7 @@ def generate_proviral_landscape_csv(outpath):
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
                 continue
-            if row['send'] < 638 or row['sstart'] > 9632:
+            if int(row['send']) < 638 or int(row['sstart']) > 9632:
                 # skip unspecific matches of LTR at start and end
                 continue
             [run_name, sample_name, _, _] = row['qseqid'].split('::')
