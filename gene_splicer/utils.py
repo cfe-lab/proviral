@@ -565,7 +565,7 @@ def generate_proviral_landscape_csv(outpath):
                 if entry['samp_name'] == samp_name:
                     entry['defect'] = verdict
 
-    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'highlighted']
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
         landscape_writer.writeheader()
