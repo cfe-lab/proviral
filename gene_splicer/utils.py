@@ -14,6 +14,9 @@ from csv import DictWriter, DictReader
 
 logger = logging.getLogger(__name__)
 
+LEFT_PRIMER_END = 666
+RIGHT_PRIMER_START = 9604
+
 
 def load_yaml(afile):
     with open(afile) as f:
@@ -531,16 +534,26 @@ def generate_proviral_landscape_csv(outpath):
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
                 continue
-            if int(row['send']) < 638 or int(row['sstart']) > 9632:
+            ref_start = int(row['sstart'])
+            ref_end = int(row['send'])
+            if ref_end <= LEFT_PRIMER_END or ref_start >= RIGHT_PRIMER_START:
                 # skip unspecific matches of LTR at start and end
                 continue
             [run_name, sample_name, _, _] = row['qseqid'].split('::')
-            landscape_entry = {'ref_start': row['sstart'],
-                               'ref_end': row['send'],
+            is_inverted = ''
+            if ref_end < ref_start:
+                # automatically recognize inverted regions
+                new_end = ref_start
+                ref_start = ref_end
+                ref_end = new_end
+                is_inverted = 'yes'
+            landscape_entry = {'ref_start': ref_start,
+                               'ref_end': ref_end,
                                'samp_name': sample_name,
                                'run_name': run_name,
-                               'highlighted': ''}
-            # highlighted is empty for now: can be filled manually
+                               'is_inverted': is_inverted,
+                               'is_defective': ''}
+            # is_defective is empty for now, will be filled manually
             landscape_rows.append(landscape_entry)
 
     with open(table_precursor_csv, 'r') as tab_prec:
