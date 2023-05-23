@@ -9,7 +9,7 @@ setup(
         'numpy==1.22.0',
         'python-Levenshtein==0.12.0',
         'pandas==1.0.5',
-        'requests==2.25.1',
+        'requests==2.31.0',
         'pyyaml'
     ],
     package_data={
