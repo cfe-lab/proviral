@@ -10,6 +10,7 @@ python-levenshtein = "==0.12.0"
 pandas = "==2.0.2"
 requests = "==2.31.0"
 pyyaml = "*"
+intactness-pipeline = {ref = "cfe-1.2", git = "https://github.com/cfe-lab/HIVIntact"}
 
 [dev-packages]
 pytest = "*"
