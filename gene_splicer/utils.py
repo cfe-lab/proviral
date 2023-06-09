@@ -5,6 +5,7 @@ import re
 import typing
 
 import yaml
+import json
 import shutil
 import subprocess as sp
 import pandas as pd
@@ -391,14 +392,54 @@ def align(target_seq,
         return alignment_path
 
 
-def generate_table_precursor(name, outpath, add_columns=None):
-    # Output csv
-    precursor_path: Path = outpath / 'table_precursor.csv'
+HIVINTACT_TRANSLATION_TABLE = {
+    'APOBECHypermutationDetected': 'Hypermut',
+    'LongDeletion': 'LargeDeletion',
+    'PackagingSignalDeletion': '5DEFECT',
+    'WrongORFNumber': 'PrematureStop_OR_AAtooLong_OR_AAtooShort',
+    }
 
-    # Load filtered sequences
-    filtered_path = outpath / (name + '_filtered.csv')
-    filtered = pd.read_csv(filtered_path)
-    # Load hivseqinr data
+def translate_hivintact_error(error):
+    return HIVINTACT_TRANSLATION_TABLE.get(error, error)
+
+HIVINTACT_ERRORS_TABLE = [
+    'NonHIV',
+    'LongDeletion',
+    'Scramble',
+    'InternalInversion',
+    'APOBECHypermutationDetected',
+    'MisplacedORF',
+    'WrongORFNumber',
+    'DeletionInOrf',
+    'FrameshiftInOrf',
+    'MajorSpliceDonorSiteMutated',
+    'PackagingSignalDeletion',
+    'PackagingSignalNotComplete',
+    'RevResponseElementDeletion',
+    ]
+
+def iterate_hivintact_data(name, outpath):
+    for d in glob.glob(str(outpath / 'hivintact*')):
+        for (SEQID, sequence) in read_fasta(os.path.join(d, 'intact.fasta')):
+            row = [SEQID, 'Intact']
+            yield row
+
+        with open(os.path.join(d, 'errors.json'), 'r') as f:
+            js = json.load(f)
+            for SEQID in js:
+                all_errors = [obj.get('error') for obj in js[SEQID] if 'error' in obj]
+                if all_errors:
+                    ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
+                    verdict = translate_hivintact_error(ordered[0])
+                    row = [SEQID, verdict]
+                    yield row
+
+def get_hivintact_data(name, outpath):
+    column_names = ['SEQID', 'MyVerdict']
+    data = iterate_hivintact_data(name, outpath)
+    return pd.DataFrame(data, columns=column_names)
+
+def get_hivseqinr_data(name, outpath):
     seqinr_paths = glob.glob(
         str(outpath / 'hivseqinr*' / 'Results_Final' /
             'Output_MyBigSummary_DF_FINAL.csv'))
@@ -409,13 +450,26 @@ def generate_table_precursor(name, outpath, add_columns=None):
         part = pd.read_csv(path)
         parts.append(part)
     # seqinr = pd.read_csv(seqinr_path)
+    return pd.concat(parts)
+
+def generate_table_precursor(name, outpath, add_columns=None):
+    # Output csv
+    precursor_path: Path = outpath / 'table_precursor.csv'
+
+    # Load filtered sequences
+    filtered_path = outpath / (name + '_filtered.csv')
+    filtered = pd.read_csv(filtered_path)
+    # Load hivseqinr data or HIVIntact results
+    results = get_hivintact_data(name, outpath)
+    if results.empty:
+        results = get_hivseqinr_data(name, outpath)
+
     try:
-        seqinr = pd.concat(parts)
         # Assign new columns based on split
-        seqinr[['name', 'sample', 'reference',
-                'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+        results[['name', 'sample', 'reference',
+                'seqtype']] = results['SEQID'].str.split('::', expand=True)
         # Merge
-        merged = seqinr.merge(filtered, on='sample')
+        merged = results.merge(filtered, on='sample')
     except ValueError:
         with precursor_path.open('w') as output_file:
             writer = DictWriter(output_file,
@@ -448,7 +502,7 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
-    if parts:
+    if not results.empty:
         merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
             precursor_path, index=False)
     else:
