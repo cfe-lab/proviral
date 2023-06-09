@@ -419,14 +419,17 @@ HIVINTACT_ERRORS_TABLE = [
     ]
 
 def iterate_hivintact_data(name, outpath):
+    intact = {}
     for d in glob.glob(str(outpath / 'hivintact*')):
         for (SEQID, sequence) in read_fasta(os.path.join(d, 'intact.fasta')):
             row = [SEQID, 'Intact']
+            intact[SEQID] = True
             yield row
 
         with open(os.path.join(d, 'errors.json'), 'r') as f:
             js = json.load(f)
             for SEQID in js:
+                if SEQID in intact: continue
                 all_errors = [obj.get('error') for obj in js[SEQID] if 'error' in obj]
                 if all_errors:
                     ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
