@@ -1,3 +1,4 @@
+import csv
 import logging
 import os
 import re
@@ -12,6 +13,9 @@ from pathlib import Path
 from csv import DictWriter, DictReader
 
 logger = logging.getLogger(__name__)
+
+LEFT_PRIMER_END = 666
+RIGHT_PRIMER_START = 9604
 
 
 def load_yaml(afile):
@@ -491,6 +495,81 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
         table_precursorfile, index=False)
     return table_precursorfile
+
+
+def generate_proviral_landscape_csv(outpath):
+    proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
+    landscape_rows = []
+
+    table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
+    blastn_csv = glob.glob(
+        os.path.join(
+            outpath,
+            'hivseqinr*',
+            'Results_Intermediate',
+            'Output_Blastn_HXB2MEGA28_tabdelim.txt'
+        )
+    )[0]
+
+    blastn_columns = ['qseqid',
+                      'qlen',
+                      'sseqid',
+                      'sgi',
+                      'slen',
+                      'qstart',
+                      'qend',
+                      'sstart',
+                      'send',
+                      'evalue',
+                      'bitscore',
+                      'length',
+                      'pident',
+                      'nident',
+                      'btop',
+                      'stitle',
+                      'sstrand']
+    with open(blastn_csv, 'r') as blastn_file:
+        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
+        for row in blastn_reader:
+            if row['qseqid'] in ['8E5LAV', 'HXB2']:
+                # skip the positive control rows
+                continue
+            ref_start = int(row['sstart'])
+            ref_end = int(row['send'])
+            if ref_end <= LEFT_PRIMER_END or ref_start >= RIGHT_PRIMER_START:
+                # skip unspecific matches of LTR at start and end
+                continue
+            [run_name, sample_name, _, _] = row['qseqid'].split('::')
+            is_inverted = ''
+            if ref_end < ref_start:
+                # automatically recognize inverted regions
+                new_end = ref_start
+                ref_start = ref_end
+                ref_end = new_end
+                is_inverted = 'yes'
+            landscape_entry = {'ref_start': ref_start,
+                               'ref_end': ref_end,
+                               'samp_name': sample_name,
+                               'run_name': run_name,
+                               'is_inverted': is_inverted,
+                               'is_defective': ''}
+            # is_defective is empty for now, will be filled manually
+            landscape_rows.append(landscape_entry)
+
+    with open(table_precursor_csv, 'r') as tab_prec:
+        tab_prec_reader = DictReader(tab_prec)
+        for row in tab_prec_reader:
+            samp_name = row['sample']
+            verdict = row['MyVerdict']
+            for entry in landscape_rows:
+                if entry['samp_name'] == samp_name:
+                    entry['defect'] = verdict
+
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
+    with open(proviral_landscape_csv, 'w') as landscape_file:
+        landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
+        landscape_writer.writeheader()
+        landscape_writer.writerows(landscape_rows)
 
 
 def get_softclipped_region(query, alignment, alignment_path):

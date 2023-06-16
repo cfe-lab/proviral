@@ -40,6 +40,9 @@ def parse_args():
     parser.add_argument('table_precursor_csv',
                         help='Sequence data ready to upload',
                         type=FileType('w'))
+    parser.add_argument('proviral_landscape_csv',
+                        help='Data for proviral landscape plot',
+                        type=FileType('w'))
     parser.add_argument('hivseqinr_results_tar',
                         help="Archive file with HIVSeqinR's final results folder.",
                         type=FileType('wb'))
@@ -100,12 +103,14 @@ def main():
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
+    utils.generate_proviral_landscape_csv(outpath)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)
     copy_output(outpath / (run_name + '_contigs_primer_analysis.csv'),
                 args.contigs_primers_csv)
     copy_output(outpath / 'table_precursor.csv', args.table_precursor_csv)
+    copy_output(outpath / 'proviral_landscape.csv', args.proviral_landscape_csv)
 
 
 if __name__ == '__main__':
