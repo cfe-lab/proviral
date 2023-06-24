@@ -411,6 +411,8 @@ HIVINTACT_ERRORS_TABLE = [
     'MisplacedORF',
     'WrongORFNumber',
     'DeletionInOrf',
+    'InsertionInOrf',
+    'InternalStopInOrf',
     'FrameshiftInOrf',
     'MajorSpliceDonorSiteMutated',
     'PackagingSignalDeletion',
