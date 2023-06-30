@@ -396,6 +396,8 @@ HIVINTACT_TRANSLATION_TABLE = {
     'APOBECHypermutationDetected': 'Hypermut',
     'LongDeletion': 'LargeDeletion',
     'PackagingSignalDeletion': '5DEFECT',
+    'PackagingSignalNotComplete': '5DEFECT',
+    'MajorSpliceDonorSiteMutated': '5DEFECT',
     'WrongORFNumber': 'PrematureStop_OR_AAtooLong_OR_AAtooShort',
     }
 
@@ -405,19 +407,19 @@ def translate_hivintact_error(error):
 HIVINTACT_ERRORS_TABLE = [
     'NonHIV',
     'LongDeletion',
-    'Scramble',
     'InternalInversion',
+    'Scramble',
     'APOBECHypermutationDetected',
+    'MajorSpliceDonorSiteMutated',
+    'PackagingSignalDeletion',
+    'PackagingSignalNotComplete',
+    'RevResponseElementDeletion',
     'MisplacedORF',
     'WrongORFNumber',
     'DeletionInOrf',
     'InsertionInOrf',
     'InternalStopInOrf',
     'FrameshiftInOrf',
-    'MajorSpliceDonorSiteMutated',
-    'PackagingSignalDeletion',
-    'PackagingSignalNotComplete',
-    'RevResponseElementDeletion',
     ]
 
 def iterate_hivintact_data(name, outpath):
