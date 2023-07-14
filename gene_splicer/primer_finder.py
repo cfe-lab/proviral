@@ -536,6 +536,7 @@ def run(contigs_csv,
                 with (working_path / 'hiv-intact.log').open('w') as log_file:
                     subprocess.run(['proviral',
                                     'intact',
+                                    '--working-folder', working_path,
                                     '--subtype=B',
                                     '--run-hypermut',
                                     '--check-long-deletion',
