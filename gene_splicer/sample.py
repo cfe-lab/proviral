@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument('proviral_landscape_csv',
                         help='Data for proviral landscape plot',
                         type=FileType('w'))
-    parser.add_argument('hivseqinr_results_tar',
+    parser.add_argument('detailed_results_tar',
                         help="Archive file with HIVSeqinR's final results "
                              "folder, or HIVIntact's results.",
                         type=FileType('wb'))
@@ -73,7 +73,7 @@ def parse_args():
         help='To avoid memory issues in hivseqinr, split the resulting '
              'qc-passed sequences into this number of fastas, each will be '
              'processed sequentially and then all will be merged into the '
-             'final result')
+             'final result. Obsolete for HIVIntact.')
     return parser.parse_args()
 
 
@@ -94,9 +94,9 @@ def main():
     run_name = sample_info.get('run_name', 'kive_run')
     if args.hivintact:
         hivseqinr_results_tar = None
-        hivintact_results_tar = args.hivseqinr_results_tar
+        hivintact_results_tar = args.detailed_results_tar
     else:
-        hivseqinr_results_tar = args.hivseqinr_results_tar
+        hivseqinr_results_tar = args.detailed_results_tar
         hivintact_results_tar = None
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
