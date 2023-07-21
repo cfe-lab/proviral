@@ -558,12 +558,14 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def generate_proviral_landscape_csv(outpath):
+def generate_proviral_landscape_csv(outpath, is_hivintact):
     proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
     landscape_rows = []
 
     table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
     blastn_csv = glob.glob(
+        os.path.join(outpath, 'hivintact*', 'blast.tsv') \
+        if is_hivintact else \
         os.path.join(
             outpath,
             'hivseqinr*',
