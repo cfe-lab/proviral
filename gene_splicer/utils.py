@@ -424,22 +424,38 @@ HIVINTACT_ERRORS_TABLE = [
 
 def iterate_hivintact_data(name, outpath):
     intact = {}
+
+    def get_verdict(SEQID, all_errors):
+        ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
+        verdict = translate_hivintact_error(ordered[0])
+        return [SEQID, verdict]
+
     for d in glob.glob(str(outpath / 'hivintact*')):
         for (SEQID, sequence) in read_fasta(os.path.join(d, 'intact.fasta')):
             row = [SEQID, 'Intact']
             intact[SEQID] = True
             yield row
 
-        with open(os.path.join(d, 'errors.json'), 'r') as f:
-            js = json.load(f)
-            for SEQID in js:
-                if SEQID in intact: continue
-                all_errors = [obj.get('error') for obj in js[SEQID] if 'error' in obj]
-                if all_errors:
-                    ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
-                    verdict = translate_hivintact_error(ordered[0])
-                    row = [SEQID, verdict]
-                    yield row
+        sequence_name = None
+        with open(os.path.join(d, 'errors.csv'), 'r') as f:
+            reader = csv.DictReader(f)
+
+            last_name = None
+            all_errors = []
+            for row in reader:
+                sequence_name = row['sequence_name']
+                if sequence_name in intact: continue
+
+                if last_name != sequence_name and last_name is not None:
+                    if all_errors:
+                        yield get_verdict(sequence_name, all_errors)
+                        all_errors = []
+
+                all_errors.append(row['error'])
+                last_name = sequence_name
+
+        if all_errors:
+            yield get_verdict(sequence_name, all_errors)
 
 def get_hivintact_data(name, outpath):
     column_names = ['SEQID', 'MyVerdict']
