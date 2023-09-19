@@ -391,19 +391,6 @@ def align(target_seq,
     else:
         return alignment_path
 
-
-HIVINTACT_TRANSLATION_TABLE = {
-    'APOBECHypermutationDetected': 'Hypermut',
-    'LongDeletion': 'LargeDeletion',
-    'PackagingSignalDeletion': '5DEFECT',
-    'PackagingSignalNotComplete': '5DEFECT',
-    'MajorSpliceDonorSiteMutated': '5DEFECT',
-    'WrongORFNumber': 'PrematureStop_OR_AAtooLong_OR_AAtooShort',
-    }
-
-def translate_hivintact_error(error):
-    return HIVINTACT_TRANSLATION_TABLE.get(error, error)
-
 HIVINTACT_ERRORS_TABLE = [
     'NonHIV',
     'LongDeletion',
@@ -427,7 +414,7 @@ def iterate_hivintact_data(name, outpath):
 
     def get_verdict(SEQID, all_errors):
         ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
-        verdict = translate_hivintact_error(ordered[0])
+        verdict = ordered[0]
         return [SEQID, verdict]
 
     for d in glob.glob(str(outpath / 'hivintact*')):
