@@ -38,7 +38,7 @@ From: ubuntu:22.04
     apt-get install -y ncbi-blast+
 
     echo ===== Installing Python packages ===== >/dev/null
-    pip3 install git+https://github.com/cfe-lab/HIVIntact@cfe-1.3
+    pip3 install git+https://github.com/cfe-lab/HIVIntact@cfe-1.4
 
     cd /opt/primer_finder
     pip3 install .

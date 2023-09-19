@@ -580,7 +580,7 @@ def generate_proviral_landscape_csv(outpath, is_hivintact):
 
     table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
     blastn_csv = glob.glob(
-        os.path.join(outpath, 'hivintact*', 'blast.tsv') \
+        os.path.join(outpath, 'hivintact*', 'blast.csv') \
         if is_hivintact else \
         os.path.join(
             outpath,
@@ -590,25 +590,29 @@ def generate_proviral_landscape_csv(outpath, is_hivintact):
         )
     )[0]
 
-    blastn_columns = ['qseqid',
-                      'qlen',
-                      'sseqid',
-                      'sgi',
-                      'slen',
-                      'qstart',
-                      'qend',
-                      'sstart',
-                      'send',
-                      'evalue',
-                      'bitscore',
-                      'length',
-                      'pident',
-                      'nident',
-                      'btop',
-                      'stitle',
-                      'sstrand']
     with open(blastn_csv, 'r') as blastn_file:
-        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
+        if is_hivintact:
+            blastn_reader = DictReader(blastn_file)
+        else:
+            blastn_columns = ['qseqid',
+                              'qlen',
+                              'sseqid',
+                              'sgi',
+                              'slen',
+                              'qstart',
+                              'qend',
+                              'sstart',
+                              'send',
+                              'evalue',
+                              'bitscore',
+                              'length',
+                              'pident',
+                              'nident',
+                              'btop',
+                              'stitle',
+                              'sstrand']
+            blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
+
         for row in blastn_reader:
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
