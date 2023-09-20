@@ -392,6 +392,8 @@ def align(target_seq,
         return alignment_path
 
 HIVINTACT_ERRORS_TABLE = [
+    'AlignmentFailed',
+    'InvalidCodon',
     'NonHIV',
     'LongDeletion',
     'InternalInversion',
