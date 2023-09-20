@@ -435,7 +435,7 @@ def iterate_hivintact_data(name, outpath):
 
                 if last_name != sequence_name and last_name is not None:
                     if all_errors:
-                        yield get_verdict(sequence_name, all_errors)
+                        yield get_verdict(last_name, all_errors)
                         all_errors = []
 
                 all_errors.append(row['error'])
