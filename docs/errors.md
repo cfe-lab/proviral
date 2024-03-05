@@ -53,8 +53,8 @@ summarize the errors:
   coverage". The contigs didn't pass, either.
 * low coverage - either the HIV contigs didn't have coverage above 100 reads, or
   there was one HIV contig that generated one of the low coverage errors.
-* multiple contigs - multiple HIV conseqs failed for some combination of primer
-  errors and low coverage.
+* multiple contigs - there were multiple contigs, and **all of them failed**
+  due to some combination of primer errors and low coverage.
 * hiv but failed - unexpected failure, such as non TCGA.
 
 ### study_summary.csv
