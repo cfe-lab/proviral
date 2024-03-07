@@ -5,12 +5,15 @@ import re
 import typing
 
 import yaml
+import json
 import shutil
 import subprocess as sp
 import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
+from itertools import groupby
+from operator import itemgetter
 
 logger = logging.getLogger(__name__)
 
@@ -390,15 +393,54 @@ def align(target_seq,
     else:
         return alignment_path
 
+HIVINTACT_ERRORS_TABLE = [
+    'AlignmentFailed',
+    'InvalidCodon',
+    'NonHIV',
+    'LongDeletion',
+    'InternalInversion',
+    'Scramble',
+    'APOBECHypermutationDetected',
+    'MajorSpliceDonorSiteMutated',
+    'PackagingSignalDeletion',
+    'PackagingSignalNotComplete',
+    'RevResponseElementDeletion',
+    'MisplacedORF',
+    'WrongORFNumber',
+    'DeletionInOrf',
+    'InsertionInOrf',
+    'InternalStopInOrf',
+    'FrameshiftInOrf',
+    ]
 
-def generate_table_precursor(name, outpath, add_columns=None):
-    # Output csv
-    precursor_path: Path = outpath / 'table_precursor.csv'
+def iterate_hivintact_data(name, outpath):
+    intact = set()
 
-    # Load filtered sequences
-    filtered_path = outpath / (name + '_filtered.csv')
-    filtered = pd.read_csv(filtered_path)
-    # Load hivseqinr data
+    def get_verdict(SEQID, all_errors):
+        ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
+        verdict = ordered[0]
+        return [SEQID, verdict]
+
+    for d in outpath.glob('hivintact*'):
+        for (SEQID, sequence) in read_fasta(os.path.join(d, 'intact.fasta')):
+            yield [SEQID, 'Intact']
+            intact.add(SEQID)
+
+        with open(os.path.join(d, 'errors.csv'), 'r') as f:
+            reader = csv.DictReader(f)
+            grouped = groupby(reader, key=itemgetter('sequence_name'))
+            for sequence_name, errors in grouped:
+                if sequence_name not in intact:
+                    all_errors = [error['error'] for error in errors]
+                    yield get_verdict(sequence_name, all_errors)
+
+
+def get_hivintact_data(name, outpath):
+    column_names = ['SEQID', 'MyVerdict']
+    data = iterate_hivintact_data(name, outpath)
+    return pd.DataFrame(data, columns=column_names)
+
+def get_hivseqinr_data(name, outpath):
     seqinr_paths = glob.glob(
         str(outpath / 'hivseqinr*' / 'Results_Final' /
             'Output_MyBigSummary_DF_FINAL.csv'))
@@ -409,13 +451,30 @@ def generate_table_precursor(name, outpath, add_columns=None):
         part = pd.read_csv(path)
         parts.append(part)
     # seqinr = pd.read_csv(seqinr_path)
+    return pd.concat(parts)
+
+def generate_table_precursor(name, outpath, add_columns=None):
+    # Output csv
+    precursor_path: Path = outpath / 'table_precursor.csv'
+
+    # Load filtered sequences
+    filtered_path = outpath / (name + '_filtered.csv')
+    filtered = pd.read_csv(filtered_path)
+    # Load hivseqinr data or HIVIntact results
+
+    if any(outpath.glob('hivintact*')):
+        results = get_hivintact_data(name, outpath)
+    elif any(outpath.glob('hivseqinr*')):
+        results = get_hivseqinr_data(name, outpath)
+    else:
+        raise RuntimeError("Neither HIVIntact nor HIVSeqinR directory exists.")
+
     try:
-        seqinr = pd.concat(parts)
         # Assign new columns based on split
-        seqinr[['name', 'sample', 'reference',
-                'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+        results[['name', 'sample', 'reference',
+                'seqtype']] = results['SEQID'].str.split('::', expand=True)
         # Merge
-        merged = seqinr.merge(filtered, on='sample')
+        merged = results.merge(filtered, on='sample')
     except ValueError:
         with precursor_path.open('w') as output_file:
             writer = DictWriter(output_file,
@@ -448,7 +507,7 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
-    if parts:
+    if not results.empty:
         merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
             precursor_path, index=False)
     else:
@@ -497,39 +556,43 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def generate_proviral_landscape_csv(outpath):
+def generate_proviral_landscape_csv(outpath, is_hivintact):
     proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
     landscape_rows = []
 
     table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
-    blastn_csv = glob.glob(
-        os.path.join(
-            outpath,
-            'hivseqinr*',
-            'Results_Intermediate',
-            'Output_Blastn_HXB2MEGA28_tabdelim.txt'
-        )
-    )[0]
 
-    blastn_columns = ['qseqid',
-                      'qlen',
-                      'sseqid',
-                      'sgi',
-                      'slen',
-                      'qstart',
-                      'qend',
-                      'sstart',
-                      'send',
-                      'evalue',
-                      'bitscore',
-                      'length',
-                      'pident',
-                      'nident',
-                      'btop',
-                      'stitle',
-                      'sstrand']
+    if is_hivintact:
+        subpath = os.path.join(outpath, 'hivintact*', 'blast.csv')
+    else:
+        subpath = os.path.join(outpath, 'hivseqinr*', 'Results_Intermediate', 'Output_Blastn_HXB2MEGA28_tabdelim.txt')
+
+    blastn_csvs = glob.glob(subpath)
+    blastn_csv = blastn_csvs[0]
+
     with open(blastn_csv, 'r') as blastn_file:
-        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
+        if is_hivintact:
+            blastn_reader = DictReader(blastn_file)
+        else:
+            blastn_columns = ['qseqid',
+                              'qlen',
+                              'sseqid',
+                              'sgi',
+                              'slen',
+                              'qstart',
+                              'qend',
+                              'sstart',
+                              'send',
+                              'evalue',
+                              'bitscore',
+                              'length',
+                              'pident',
+                              'nident',
+                              'btop',
+                              'stitle',
+                              'sstrand']
+            blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
+
         for row in blastn_reader:
             if row['qseqid'] in ['8E5LAV', 'HXB2']:
                 # skip the positive control rows
