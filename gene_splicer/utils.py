@@ -472,9 +472,13 @@ def generate_table_precursor(name, outpath, add_columns=None):
     filtered_path = outpath / (name + '_filtered.csv')
     filtered = pd.read_csv(filtered_path)
     # Load hivseqinr data or HIVIntact results
-    results = get_hivintact_data(name, outpath)
-    if results.empty:
+
+    if any(outpath.glob('hivintact*')):
+        results = get_hivintact_data(name, outpath)
+    elif any(outpath.glob('hivseqinr*')):
         results = get_hivseqinr_data(name, outpath)
+    else:
+        raise RuntimeError("Neither HIVIntact nor HIVSeqinR directory exists.")
 
     try:
         # Assign new columns based on split
