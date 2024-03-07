@@ -49,6 +49,8 @@ From: ubuntu:22.04
 
     # Clean up
     apt-get remove -y wget git build-essential
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
 
 %environment
     export LANG=en_US.UTF-8
