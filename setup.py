@@ -6,9 +6,9 @@ setup(
     packages=find_packages(),
     install_requires=[
         'gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment',
-        'numpy==1.22.0',
+        'numpy==1.25.1',
         'python-Levenshtein==0.12.0',
-        'pandas==1.0.5',
+        'pandas==2.0.2',
         'requests==2.31.0',
         'pyyaml'
     ],

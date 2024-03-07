@@ -5,9 +5,9 @@ name = "pypi"
 
 [packages]
 gotoh = {subdirectory = "micall/alignment", ref = "v7.7.0", git = "https://github.com/cfe-lab/MiCall.git"}
-numpy = "==1.22.0"
+numpy = "==1.25.1"
 python-levenshtein = "==0.12.0"
-pandas = "==1.0.5"
+pandas = "==2.0.2"
 requests = "==2.31.0"
 pyyaml = "*"
 
@@ -16,4 +16,4 @@ pytest = "*"
 coverage = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"
