@@ -6,6 +6,7 @@ from itertools import groupby
 from operator import itemgetter
 import os
 from tarfile import TarFile
+import cfeintact
 
 import pandas as pd
 from pathlib import Path
@@ -531,19 +532,32 @@ def run(contigs_csv,
                     archive_hivseqinr_results(working_path,
                                               hivseqinr_results_tar)
             if run_hivintact:
-                working_path: Path = outpath / f'hivintact_{i}'
-                working_path.mkdir(exist_ok=True)
-                with (working_path / 'hiv-intact.log').open('w') as log_file:
-                    subprocess.run(['cfeintact',
-                                    'check',
-                                    '--working-folder', working_path,
-                                    '--subtype=B',
-                                    '--ignore-distance',
-                                    str(no_primers_fasta)],
-                                   check=True,
-                                   stdout=log_file,
-                                   stderr=subprocess.STDOUT,
-                                   cwd=working_path)
+                working_path = outpath / f'hivintact_{i}'
+                log_file_path = working_path / 'hiv-intact.log'
+                os.makedirs(working_path, exist_ok=True)
+
+                logger = cfeintact.logger
+                file_handler = logging.FileHandler(log_file_path)
+                logger.addHandler(file_handler)
+
+                cfeintact.check(
+                    working_dir=working_path,
+                    input_file=str(no_primers_fasta),
+                    subtype="B",
+                    check_packaging_signal=True,
+                    check_rre=True,
+                    check_major_splice_donor_site=True,
+                    check_hypermut=True,
+                    check_long_deletion=True,
+                    check_nonhiv=True,
+                    check_scramble=True,
+                    check_internal_inversion=True,
+                    check_unknown_nucleotides=True,
+                    check_small_orfs=True,
+                    check_distance=False,
+                    output_csv=True,
+                )
+
                 if hivintact_results_tar is not None:
                     archive_hivintact_results(working_path,
                                               hivintact_results_tar)
