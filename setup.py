@@ -10,7 +10,7 @@ setup(
         'python-Levenshtein==0.12.0',
         'pandas==2.0.2',
         'requests==2.31.0',
-        'intactness-pipeline @ git+https://github.com/cfe-lab/HIVIntact.git@cfe-1.4',
+        'cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.18.4',
         'pyyaml'
     ],
     package_data={

@@ -163,10 +163,6 @@
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
         },
-        "intactness-pipeline": {
-            "git": "https://github.com/cfe-lab/HIVIntact",
-            "ref": "739478485deef5fecae47e89d2baaaa16b763aef"
-        },
         "jarowinkler": {
             "hashes": [
                 "sha256:07df473a812772794181885fc8e9950b629809297c8a1c00e06d0376cb6f5611",
