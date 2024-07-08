@@ -38,8 +38,6 @@ From: ubuntu:22.04
     apt-get install -y ncbi-blast+
 
     echo ===== Installing Python packages ===== >/dev/null
-    pip3 install git+https://github.com/cfe-lab/CFEIntact@v1.18.7
-
     cd /opt/primer_finder
     pip3 install .
 
