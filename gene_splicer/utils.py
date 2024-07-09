@@ -428,7 +428,7 @@ def iterate_hivintact_data(name, outpath):
 
         with open(os.path.join(d, 'errors.csv'), 'r') as f:
             reader = csv.DictReader(f)
-            grouped = groupby(reader, key=itemgetter('sequence_name'))
+            grouped = groupby(reader, key=itemgetter('qseqid'))
             for sequence_name, errors in grouped:
                 if sequence_name not in intact:
                     all_errors = [error['error'] for error in errors]
