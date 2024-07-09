@@ -334,7 +334,17 @@ def splice_aligned_genes(query, target, samfile, annotation):
 
 
 def load_samfile(samfile_path):
-    result = pd.read_table(samfile_path, skiprows=2, header=None)
+    # Open the SAM file and find the starting point for data
+    with open(samfile_path, 'r') as file:
+        # Skip meta fields
+        lines = file.readlines()
+        data_start_index = 0
+        for i, line in enumerate(lines):
+            if not line.startswith('@'):
+                data_start_index = i
+                break
+
+    result = pd.read_table(samfile_path, skiprows=data_start_index, header=None)
     result['cigar'] = result.apply(split_cigar, axis=1)
     return result
 
