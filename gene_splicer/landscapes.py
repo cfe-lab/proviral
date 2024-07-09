@@ -128,6 +128,22 @@ def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
         )
 
 
+def generate_proviral_landscape_csv(outpath: Path, is_hivintact: bool):
+    proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
+
+    if is_hivintact:
+        subpath = 'hivintact*'
+    else:
+        subpath = 'hivseqinr*'
+
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
+    with open(proviral_landscape_csv, 'w') as landscape_file:
+        landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
+        landscape_writer.writeheader()
+
+        for details_dir in outpath.glob(subpath):
+            generate_proviral_landscape_csv_1(landscape_writer, details_dir)
+
 
 class UserError(RuntimeError):
     def __init__(self, fmt: str, *fmt_args: object):

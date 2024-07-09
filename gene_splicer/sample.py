@@ -7,6 +7,7 @@ from pathlib import Path
 import gene_splicer.gene_splicer as gene_splicer
 import gene_splicer.primer_finder as primer_finder
 import gene_splicer.utils as utils
+import gene_splicer.landscapes as landscapes
 
 
 def parse_args():
@@ -115,7 +116,7 @@ def main():
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
-    utils.generate_proviral_landscape_csv(outpath, is_hivintact=args.hivintact)
+    landscapes.generate_proviral_landscape_csv(outpath, is_hivintact=args.hivintact)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)
