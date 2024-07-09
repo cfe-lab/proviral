@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import typing
+from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple
 
 import yaml
 import json
@@ -423,45 +424,62 @@ HIVINTACT_ERRORS_TABLE = [
     'FrameshiftInOrf',
     ]
 
-def iterate_hivintact_data(name, outpath):
+def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
     intact = set()
 
-    def get_verdict(SEQID, all_errors):
+    def get_verdict(SEQID: str, all_errors) -> Tuple[str, str]:
         ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
         verdict = ordered[0]
-        return [SEQID, verdict]
+        return (SEQID, verdict)
 
-    for d in outpath.glob('hivintact*'):
-        for (SEQID, sequence) in read_fasta(os.path.join(d, 'intact.fasta')):
-            yield [SEQID, 'Intact']
-            intact.add(SEQID)
+    for (SEQID, sequence) in read_fasta(os.path.join(directory, 'intact.fasta')):
+        yield (SEQID, 'Intact')
+        intact.add(SEQID)
 
-        with open(os.path.join(d, 'errors.csv'), 'r') as f:
-            reader = csv.DictReader(f)
-            grouped = groupby(reader, key=itemgetter('qseqid'))
-            for sequence_name, errors in grouped:
-                if sequence_name not in intact:
-                    all_errors = [error['error'] for error in errors]
-                    yield get_verdict(sequence_name, all_errors)
+    with open(os.path.join(directory, 'errors.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        grouped = groupby(reader, key=itemgetter('qseqid'))
+        for sequence_name, errors in grouped:
+            if sequence_name not in intact:
+                all_errors = [error['error'] for error in errors]
+                yield get_verdict(sequence_name, all_errors)
 
 
-def get_hivintact_data(name, outpath):
+def iterate_hivintact_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
+    intact: Set[str] = set()
+
+    for directory in outpath.glob('hivintact*'):
+        yield from iterate_hivintact_verdicts_1(directory, intact)
+
+
+def get_hivintact_verdicts(name, outpath):
     column_names = ['SEQID', 'MyVerdict']
-    data = iterate_hivintact_data(name, outpath)
+    data = iterate_hivintact_verdicts(outpath)
     return pd.DataFrame(data, columns=column_names)
 
-def get_hivseqinr_data(name, outpath):
-    seqinr_paths = glob.glob(
-        str(outpath / 'hivseqinr*' / 'Results_Final' /
-            'Output_MyBigSummary_DF_FINAL.csv'))
-    parts = []
+
+def iterate_hivseqinr_verdicts_1(directory: Path) -> Iterable[Tuple[str, str]]:
+    path = directory / 'Output_MyBigSummary_DF_FINAL.csv'
+    if not path.is_file():
+        return
+
+    with path.open() as fd:
+        reader = csv.DictReader(fd)
+        for row in reader:
+            yield (row["SEQID"], row["MyVerdict"])
+
+
+def iterate_hivseqinr_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
+    seqinr_paths = outpath.glob('hivseqinr*/Results_Final/Output_MyBigSummary_DF_FINAL.csv')
     for path in seqinr_paths:
-        if not os.path.isfile(path):
-            continue
-        part = pd.read_csv(path)
-        parts.append(part)
-    # seqinr = pd.read_csv(seqinr_path)
-    return pd.concat(parts)
+        yield from iterate_hivseqinr_verdicts_1(path)
+
+
+def get_hivseqinr_verdicts(name, outpath):
+    column_names = ['SEQID', 'MyVerdict']
+    data = iterate_hivseqinr_verdicts(outpath)
+    return pd.DataFrame(data, columns=column_names)
+
 
 def generate_table_precursor(name, outpath, add_columns=None):
     # Output csv
@@ -473,9 +491,9 @@ def generate_table_precursor(name, outpath, add_columns=None):
     # Load hivseqinr data or HIVIntact results
 
     if any(outpath.glob('hivintact*')):
-        results = get_hivintact_data(name, outpath)
+        results = get_hivintact_verdicts(name, outpath)
     elif any(outpath.glob('hivseqinr*')):
-        results = get_hivseqinr_data(name, outpath)
+        results = get_hivseqinr_verdicts(name, outpath)
     else:
         raise RuntimeError("Neither HIVIntact nor HIVSeqinR directory exists.")
 
