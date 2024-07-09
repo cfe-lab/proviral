@@ -63,7 +63,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                            'run_name': run_name,
                            'is_inverted': is_inverted,
                            'is_defective': verdict is not None,
-                           'defect': verdict,
+                           'defect': verdict or 'Intact',
                            }
 
         landscape_writer.writerow(landscape_entry)
