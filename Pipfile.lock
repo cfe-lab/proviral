@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9c092e800c5352454e25bd0df1a17c2ff2722892d620bb4869c7da671a1df741"
+            "sha256": "ac639c5687670e64465782b1d6c4d508b3ba6c84f1b22f1225c3c3efffdbac4c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -61,7 +61,7 @@
         },
         "cfeintact": {
             "git": "https://github.com/cfe-lab/CFEIntact",
-            "ref": "7c67d4ba867ccb3d5469bb34e39d3a4a9c2b293d"
+            "ref": "513b7ce5b332df7601f3a2ac723506ea5ec755a6"
         },
         "charset-normalizer": {
             "hashes": [
@@ -460,11 +460,11 @@
         },
         "exceptiongroup": {
             "hashes": [
-                "sha256:5258b9ed329c5bbdd31a309f53cbfb0b155341807f6ff7606a1e801a891b29ad",
-                "sha256:a4785e48b045528f5bfe627b6ad554ff32def154f42372786903b7abcfe1aa16"
+                "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b",
+                "sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc"
             ],
             "markers": "python_version < '3.11'",
-            "version": "==1.2.1"
+            "version": "==1.2.2"
         },
         "iniconfig": {
             "hashes": [
