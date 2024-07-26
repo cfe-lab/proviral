@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ac639c5687670e64465782b1d6c4d508b3ba6c84f1b22f1225c3c3efffdbac4c"
+            "sha256": "242d7f1c41b5fee2859daea64f75c76bbb03977c462f29e9920e9ca16f4dff82"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -61,7 +61,7 @@
         },
         "cfeintact": {
             "git": "https://github.com/cfe-lab/CFEIntact",
-            "ref": "513b7ce5b332df7601f3a2ac723506ea5ec755a6"
+            "ref": "6e1a09b878ca1e8ac851b4e7ddcf58e813f69628"
         },
         "charset-normalizer": {
             "hashes": [
@@ -367,11 +367,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:f171bab1dfbc86b132997f26a119f6056a57950d058587841a0082e8830f9dc5",
-                "sha256:fe384da74336c398e0d956d1cae0669bc02eed936cdb1d49b57de1990dc11ffc"
+                "sha256:032d42ee9fb536e33087fb66cac5f840eb9391ed05637b3f2a76a7c8fb477936",
+                "sha256:33874fdc59b3188304b2e7c80d9029097ea31627180896fb549c578ceb8a0855"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==70.3.0"
+            "version": "==71.1.0"
         },
         "six": {
             "hashes": [
@@ -492,12 +492,12 @@
         },
         "pytest": {
             "hashes": [
-                "sha256:c434598117762e2bd304e526244f67bf66bbd7b5d6cf22138be51ff661980343",
-                "sha256:de4bb8104e201939ccdc688b27a89a7be2079b22e2bd2b07f806b6ba71117977"
+                "sha256:4ba08f9ae7dcf84ded419494d229b48d0903ea6407b030eaec46df5e6a73bba5",
+                "sha256:c132345d12ce551242c87269de812483f5bcc87cdbb4722e48487ba194f9fdce"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==8.2.2"
+            "version": "==8.3.2"
         },
         "tomli": {
             "hashes": [
