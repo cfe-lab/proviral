@@ -422,6 +422,8 @@ HIVINTACT_ERRORS_TABLE = [
     'InsertionInOrf',
     'InternalStopInOrf',
     'FrameshiftInOrf',
+    'MutatedStopCodon',
+    'MutatedStartCodon',
     ]
 
 def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
