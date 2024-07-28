@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "95e509a36a7c664fbc0a32dc26e768b6549de116d55171959a711fd3efc00091"
+            "sha256": "56b5477cba506a2df408fcad36d4fc357ecbfd0bedccf9d90ecb7b8e615cb43e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -61,7 +61,7 @@
         },
         "cfeintact": {
             "git": "https://github.com/cfe-lab/CFEIntact",
-            "ref": "b1a6156c70ba76d5f911bb72b0f425b6d4358440"
+            "ref": "a8387e08d08ab8db2ed5dc70cbe765d74a353e12"
         },
         "charset-normalizer": {
             "hashes": [

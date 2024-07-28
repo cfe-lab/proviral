@@ -405,23 +405,21 @@ def align(target_seq,
         return alignment_path
 
 HIVINTACT_ERRORS_TABLE = [
-    'AlignmentFailed',
-    'InvalidCodon',
     'NonHIV',
     'LongDeletion',
     'InternalInversion',
     'Scramble',
-    'APOBECHypermutationDetected',
+    'APOBECHypermutation',
     'MajorSpliceDonorSiteMutated',
     'PackagingSignalDeletion',
     'PackagingSignalNotComplete',
     'RevResponseElementDeletion',
     'MisplacedORF',
     'WrongORFNumber',
-    'DeletionInOrf',
-    'InsertionInOrf',
-    'InternalStopInOrf',
-    'FrameshiftInOrf',
+    'Deletion',
+    'Insertion',
+    'InternalStop',
+    'Frameshift',
     'MutatedStopCodon',
     'MutatedStartCodon',
     ]
@@ -434,11 +432,13 @@ def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> I
         verdict = ordered[0]
         return (SEQID, verdict)
 
-    for (SEQID, sequence) in read_fasta(os.path.join(directory, 'intact.fasta')):
-        yield (SEQID, 'Intact')
-        intact.add(SEQID)
+    with open(os.path.join(directory, 'holistic.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["intact"] == "True":
+                intact.add(row["qseqid"])
 
-    with open(os.path.join(directory, 'errors.csv'), 'r') as f:
+    with open(os.path.join(directory, 'defects.csv'), 'r') as f:
         reader = csv.DictReader(f)
         grouped = groupby(reader, key=itemgetter('qseqid'))
         for sequence_name, errors in grouped:
