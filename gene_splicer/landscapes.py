@@ -56,14 +56,15 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
             ref_end = new_end
             is_inverted = 'yes'
 
-        verdict = verdicts.get(qseqid)
+        verdict = verdicts[qseqid]
+        is_defective = verdict != 'Intact'
         landscape_entry = {'ref_start': ref_start,
                            'ref_end': ref_end,
                            'samp_name': sample_name,
                            'run_name': run_name,
                            'is_inverted': is_inverted,
-                           'is_defective': verdict is not None,
-                           'defect': verdict or 'Intact',
+                           'is_defective': is_defective,
+                           'defect': verdict,
                            }
 
         landscape_writer.writerow(landscape_entry)

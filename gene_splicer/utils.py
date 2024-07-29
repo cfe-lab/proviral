@@ -428,8 +428,12 @@ def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> I
     intact = set()
 
     def get_verdict(SEQID: str, all_errors) -> Tuple[str, str]:
-        ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
-        verdict = ordered[0]
+        if all_errors:
+            ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
+            verdict = ordered[0]
+        else:
+            verdict = "Intact"
+
         return (SEQID, verdict)
 
     with open(os.path.join(directory, 'holistic.csv'), 'r') as f:
@@ -437,6 +441,8 @@ def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> I
         for row in reader:
             if row["intact"] == "True":
                 intact.add(row["qseqid"])
+                SEQID = row["qseqid"]
+                yield get_verdict(SEQID, all_errors=[])
 
     with open(os.path.join(directory, 'defects.csv'), 'r') as f:
         reader = csv.DictReader(f)
