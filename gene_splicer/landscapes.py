@@ -56,7 +56,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
             ref_end = new_end
             is_inverted = 'yes'
 
-        verdict = verdicts.get(sample_name)
+        verdict = verdicts.get(qseqid)
         landscape_entry = {'ref_start': ref_start,
                            'ref_end': ref_end,
                            'samp_name': sample_name,
