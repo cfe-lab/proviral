@@ -427,9 +427,9 @@ HIVINTACT_ERRORS_TABLE = [
 def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
     intact = set()
 
-    def get_verdict(SEQID: str, all_errors) -> Tuple[str, str]:
-        if all_errors:
-            ordered = sorted(all_errors, key=HIVINTACT_ERRORS_TABLE.index)
+    def get_verdict(SEQID: str, all_defects) -> Tuple[str, str]:
+        if all_defects:
+            ordered = sorted(all_defects, key=HIVINTACT_ERRORS_TABLE.index)
             verdict = ordered[0]
         else:
             verdict = "Intact"
@@ -442,15 +442,15 @@ def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> I
             if row["intact"] == "True":
                 intact.add(row["qseqid"])
                 SEQID = row["qseqid"]
-                yield get_verdict(SEQID, all_errors=[])
+                yield get_verdict(SEQID, all_defects=[])
 
     with open(os.path.join(directory, 'defects.csv'), 'r') as f:
         reader = csv.DictReader(f)
         grouped = groupby(reader, key=itemgetter('qseqid'))
-        for sequence_name, errors in grouped:
+        for sequence_name, defects in grouped:
             if sequence_name not in intact:
-                all_errors = [error['error'] for error in errors]
-                yield get_verdict(sequence_name, all_errors)
+                all_defects = [defect['code'] for defect in defects]
+                yield get_verdict(sequence_name, all_defects)
 
 
 def iterate_hivintact_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
