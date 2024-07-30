@@ -101,9 +101,9 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
                 })
 
 
-def split_cigar(row):
+def split_cigar(string):
     pattern = re.compile(r'(\d+)([A-Z])')
-    cigar = re.findall(pattern, row[5])
+    cigar = re.findall(pattern, string)
     return cigar
 
 
@@ -214,11 +214,12 @@ def modify_annot(annot):
 
 def splice_genes(query, target, samfile, annotation):
     results = {}
-    for i, row in samfile.iterrows():
+    for i, row in enumerate(samfile):
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
         query_pos = None
-        for size, op in row['cigar']:
+        cigar = row[5]
+        for size, op in split_cigar(cigar):
             size = int(size)
             # logger.debug(f'size: {size}, op: {op}')
             # logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
@@ -277,11 +278,12 @@ def coords_to_genes(coords, query):
 def splice_aligned_genes(query, target, samfile, annotation):
     results = {}
     sequences = {}
-    for i, row in samfile.iterrows():
+    for i, row in enumerate(samfile):
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
         query_pos = None
-        for size, op in row['cigar']:
+        cigar = row[5]
+        for size, op in split_cigar(cigar):
             # print(f'size: {size}, op: {op}')
             # print(f'target_pos: {target_pos}, query_pos: {query_pos}')
             size = int(size)
@@ -334,19 +336,17 @@ def splice_aligned_genes(query, target, samfile, annotation):
     return results, sequences
 
 
-def load_samfile(samfile_path):
-    # Open the SAM file and find the starting point for data
+def load_samfile(samfile_path: Path) -> List[List[str]]:
     with open(samfile_path, 'r') as file:
-        # Skip meta fields
-        lines = file.readlines()
-        data_start_index = 0
-        for i, line in enumerate(lines):
-            if not line.startswith('@'):
-                data_start_index = i
-                break
+        reader = csv.reader(file, delimiter='\t')
 
-    result = pd.read_table(samfile_path, skiprows=data_start_index, header=None)
-    result['cigar'] = result.apply(split_cigar, axis=1)
+        result = []
+        for row in reader:
+            # Skip header lines (lines starting with '@')
+            if row[0].startswith('@'):
+                continue
+            result.append(row)
+
     return result
 
 
@@ -594,12 +594,16 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
 
 def get_softclipped_region(query, alignment, alignment_path):
     try:
-        size, op = alignment.iloc[0]['cigar'][0]
+        first_match = alignment[0]
     except IndexError:
         logger.warning('No alignment in %s!', alignment_path)
         return
+
+    cigar = first_match[5]
+    size, op = split_cigar(cigar)[0]
     if op != 'S':
         return
+
     size = int(size)
     return query[:size]
 
