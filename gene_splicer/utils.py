@@ -423,6 +423,7 @@ HIVINTACT_ERRORS_TABLE = [
     'Frameshift',
     'MutatedStopCodon',
     'MutatedStartCodon',
+    'SequenceDivergence',
     ]
 
 def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
