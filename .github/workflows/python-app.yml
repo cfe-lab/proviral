@@ -29,3 +29,14 @@ jobs:
     - name: Test with pytest
       run: |
         pipenv run python -m pytest
+
+  docker-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build docker image
+      run: docker build -t proviral .
+    - name: Run the image
+      run: docker run --rm proviral --help
