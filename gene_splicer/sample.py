@@ -46,7 +46,7 @@ def parse_args():
                         type=FileType('w'))
     parser.add_argument('detailed_results_tar',
                         help="Archive file with HIVSeqinR's final results "
-                             "folder, or HIVIntact's results.",
+                             "folder, or CFEIntact's results.",
                         type=FileType('wb'))
     parser.add_argument(
         '-p',
@@ -59,9 +59,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
-    parser.add_argument('--hivintact',
+    parser.add_argument('--cfeintact',
                         action='store_true',
-                        help="Launch the HIVIntact analysis.")
+                        help="Launch the CFEIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -74,7 +74,7 @@ def parse_args():
         help='To avoid memory issues in hivseqinr, split the resulting '
              'qc-passed sequences into this number of fastas, each will be '
              'processed sequentially and then all will be merged into the '
-             'final result. Obsolete for HIVIntact.')
+             'final result. Obsolete for CFEIntact.')
     return parser.parse_args()
 
 
@@ -93,12 +93,12 @@ def main():
         info_reader = DictReader(args.sample_info_csv)
         sample_info: dict = next(info_reader)
     run_name = sample_info.get('run_name', 'kive_run')
-    if args.hivintact:
+    if args.cfeintact:
         hivseqinr_results_tar = None
-        hivintact_results_tar = args.detailed_results_tar
+        cfeintact_results_tar = args.detailed_results_tar
     else:
         hivseqinr_results_tar = args.detailed_results_tar
-        hivintact_results_tar = None
+        cfeintact_results_tar = None
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
@@ -111,12 +111,12 @@ def main():
                                     sample_size=args.sample_size,
                                     force_all_proviral=True,
                                     default_sample_name=sample_info['sample'],
-                                    run_hivintact=args.hivintact,
-                                    hivintact_results_tar=hivintact_results_tar)
+                                    run_cfeintact=args.cfeintact,
+                                    cfeintact_results_tar=cfeintact_results_tar)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
-    landscapes.generate_proviral_landscape_csv(outpath, is_hivintact=args.hivintact)
+    landscapes.generate_proviral_landscape_csv(outpath, is_cfeintact=args.cfeintact)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)

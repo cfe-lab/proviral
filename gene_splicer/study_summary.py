@@ -43,9 +43,9 @@ def parse_args():
                              'the runs in samples_csv. Any samples not found '
                              'in samples.csv will guess the participant id '
                              'from the first part of the sample name.')
-    parser.add_argument('--hivintact',
+    parser.add_argument('--cfeintact',
                         action='store_true',
-                        help="Launch the HIVIntact analysis instead of "
+                        help="Launch the CFEIntact analysis instead of "
                              "HIVSeqinR.")
     return parser.parse_args()
 
@@ -201,7 +201,7 @@ class StudySummary:
                   file=report_file)
 
 
-def run_gene_splicer(run_path: Path, outcome_folder: Path, run_hivintact: bool):
+def run_gene_splicer(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
     version_results_path = run_path / 'Results' / 'version_7.14'
     assert version_results_path.exists(), version_results_path
     denovo_path = version_results_path / 'denovo'
@@ -222,8 +222,8 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path, run_hivintact: bool):
                      conseq_path,
                      cascade_path,
                      short_run_name]
-    if run_hivintact:
-        pipeline_args.append('--hivintact')
+    if run_cfeintact:
+        pipeline_args.append('--cfeintact')
     else:
         pipeline_args.append(f'--hivseqinr={hivseqinr_path}')
     try:
@@ -266,7 +266,7 @@ def main():
                 print('Missing denovo results:', run_path)
                 continue
             else:
-                run_gene_splicer(run_path, outcome_path.parent, args.hivintact)
+                run_gene_splicer(run_path, outcome_path.parent, args.cfeintact)
                 assert outcome_path.exists(), outcome_path
                 print('.', end='', flush=True)
                 dots_printed = True

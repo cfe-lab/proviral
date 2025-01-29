@@ -17,7 +17,7 @@ from itertools import groupby
 from operator import itemgetter
 
 from gene_splicer.utils import (
-    iterate_hivintact_verdicts_1,
+    iterate_cfeintact_verdicts_1,
     iterate_hivseqinr_verdicts_1,
     LEFT_PRIMER_END, RIGHT_PRIMER_START,
 )
@@ -70,10 +70,10 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
         landscape_writer.writerow(landscape_entry)
 
 
-def get_hivintact_verdicts_1_map(details_dir: Path) -> Mapping[str, str]:
+def get_cfeintact_verdicts_1_map(details_dir: Path) -> Mapping[str, str]:
     ret: Dict[str, str] = {}
 
-    for [qseqid, verdict] in iterate_hivintact_verdicts_1(details_dir):
+    for [qseqid, verdict] in iterate_cfeintact_verdicts_1(details_dir):
         ret[qseqid] = verdict
 
     return ret
@@ -91,16 +91,16 @@ def get_hivseqinr_verdicts_1_map(details_dir: Path) -> Mapping[str, str]:
 def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
                                       details_dir: Path,
                                       ) -> None:
-    is_hivintact = (details_dir / "holistic.csv").exists()
-    if is_hivintact:
-        verdicts = get_hivintact_verdicts_1_map(details_dir)
+    is_cfeintact = (details_dir / "holistic.csv").exists()
+    if is_cfeintact:
+        verdicts = get_cfeintact_verdicts_1_map(details_dir)
         blastn_path = details_dir / "blast.csv"
     else:
         verdicts = get_hivseqinr_verdicts_1_map(details_dir)
         blastn_path = details_dir / "Results_Intermediate" / "Output_Blastn_HXB2MEGA28_tabdelim.txt"
 
     with blastn_path.open() as blastn_file:
-        if is_hivintact:
+        if is_cfeintact:
             blastn_reader = DictReader(blastn_file)
         else:
             blastn_columns = ['qseqid',
@@ -129,11 +129,11 @@ def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
         )
 
 
-def generate_proviral_landscape_csv(outpath: Path, is_hivintact: bool):
+def generate_proviral_landscape_csv(outpath: Path, is_cfeintact: bool):
     proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
 
-    if is_hivintact:
-        subpath = 'hivintact*'
+    if is_cfeintact:
+        subpath = 'cfeintact*'
     else:
         subpath = 'hivseqinr*'
 

@@ -79,9 +79,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
-    parser.add_argument('--hivintact',
+    parser.add_argument('--cfeintact',
                         action='store_true',
-                        help="Launch the HIVIntact analysis.")
+                        help="Launch the CFEIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -427,9 +427,9 @@ def archive_hivseqinr_results(working_path: Path,
         archive.add(result_path, result_path.name)
 
 
-def archive_hivintact_results(working_path: Path,
-                              hivintact_results_tar: typing.IO):
-    archive = TarFile(fileobj=hivintact_results_tar, mode='w')
+def archive_cfeintact_results(working_path: Path,
+                              cfeintact_results_tar: typing.IO):
+    archive = TarFile(fileobj=cfeintact_results_tar, mode='w')
     for result_path in working_path.iterdir():
         archive.add(result_path, result_path.name)
 
@@ -446,8 +446,8 @@ def run(contigs_csv,
         force_all_proviral=False,
         default_sample_name: str = None,
         hivseqinr_results_tar: typing.IO = None,
-        run_hivintact: bool = False,
-        hivintact_results_tar: typing.IO = None):
+        run_cfeintact: bool = False,
+        cfeintact_results_tar: typing.IO = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
 
@@ -531,8 +531,8 @@ def run(contigs_csv,
                 if hivseqinr_results_tar is not None:
                     archive_hivseqinr_results(working_path,
                                               hivseqinr_results_tar)
-            if run_hivintact:
-                working_path = outpath / f'hivintact_{i}'
+            if run_cfeintact:
+                working_path = outpath / f'cfeintact_{i}'
                 log_file_path = working_path / 'hiv-intact.log'
                 os.makedirs(working_path, exist_ok=True)
 
@@ -558,9 +558,9 @@ def run(contigs_csv,
                     output_csv=True,
                 )
 
-                if hivintact_results_tar is not None:
-                    archive_hivintact_results(working_path,
-                                              hivintact_results_tar)
+                if cfeintact_results_tar is not None:
+                    archive_cfeintact_results(working_path,
+                                              cfeintact_results_tar)
             files.append(no_primers_fasta)
     return files
 
@@ -576,7 +576,7 @@ def main():
                       nodups=args.nodups,
                       split=args.split,
                       sample_size=args.sample_size,
-                      run_hivintact=args.hivintact)
+                      run_cfeintact=args.cfeintact)
     return {'fasta_files': fasta_files, 'args': args}
 
 

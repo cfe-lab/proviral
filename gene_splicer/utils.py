@@ -404,7 +404,7 @@ def align(target_seq,
     else:
         return alignment_path
 
-HIVINTACT_ERRORS_TABLE = [
+CFEINTACT_ERRORS_TABLE = [
     'UnknownNucleotide',
     'NonHIV',
     'LongDeletion',
@@ -426,12 +426,12 @@ HIVINTACT_ERRORS_TABLE = [
     'SequenceDivergence',
     ]
 
-def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
+def iterate_cfeintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
     intact = set()
 
     def get_verdict(SEQID: str, all_defects) -> Tuple[str, str]:
         if all_defects:
-            ordered = sorted(all_defects, key=HIVINTACT_ERRORS_TABLE.index)
+            ordered = sorted(all_defects, key=CFEINTACT_ERRORS_TABLE.index)
             verdict = ordered[0]
         else:
             verdict = "Intact"
@@ -455,16 +455,16 @@ def iterate_hivintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> I
                 yield get_verdict(sequence_name, all_defects)
 
 
-def iterate_hivintact_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
+def iterate_cfeintact_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
     intact: Set[str] = set()
 
-    for directory in outpath.glob('hivintact*'):
-        yield from iterate_hivintact_verdicts_1(directory, intact)
+    for directory in outpath.glob('cfeintact*'):
+        yield from iterate_cfeintact_verdicts_1(directory, intact)
 
 
-def get_hivintact_verdicts(name, outpath):
+def get_cfeintact_verdicts(name, outpath):
     column_names = ['SEQID', 'MyVerdict']
-    data = iterate_hivintact_verdicts(outpath)
+    data = iterate_cfeintact_verdicts(outpath)
     return pd.DataFrame(data, columns=column_names)
 
 
@@ -498,14 +498,14 @@ def generate_table_precursor(name, outpath, add_columns=None):
     # Load filtered sequences
     filtered_path = outpath / (name + '_filtered.csv')
     filtered = pd.read_csv(filtered_path)
-    # Load hivseqinr data or HIVIntact results
+    # Load hivseqinr data or Cfeintact results
 
-    if any(outpath.glob('hivintact*')):
-        results = get_hivintact_verdicts(name, outpath)
+    if any(outpath.glob('cfeintact*')):
+        results = get_cfeintact_verdicts(name, outpath)
     elif any(outpath.glob('hivseqinr*')):
         results = get_hivseqinr_verdicts(name, outpath)
     else:
-        raise RuntimeError("Neither HIVIntact nor HIVSeqinR directory exists.")
+        raise RuntimeError("Neither CFEIntact nor HIVSeqinR directory exists.")
 
     try:
         # Assign new columns based on split
