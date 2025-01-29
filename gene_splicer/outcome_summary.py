@@ -243,8 +243,8 @@ class OutcomeSummary:
             #    suffered primer failure -> MULTIPLE CONTIGS
             # 8. A sample that yielded multiple contigs, all of which SOLELY
             #    suffered low coverage ->  MULTIPLE CONTIGS
-            # 9. A sample that yielded multiple contigs, some of which failed
-            #    due to primer, some due to low coverage ->  MULTIPLE CONTIGS
+            # 9. A sample that yielded multiple contigs, all of which failed
+            #    either due to primer, or to low coverage ->  MULTIPLE CONTIGS
             conseq_failures = []
             for i, row in enumerate(self.data[sample]['failed']):
                 sequence_type = row[f'fail_seqtype_{i}']
