@@ -10,7 +10,7 @@ setup(
         'python-Levenshtein==0.12.0',
         'pandas==2.2.2',
         'requests==2.31.0',
-        'cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.23.0',
+        'cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.23.1',
         'pyyaml'
     ],
     package_data={
