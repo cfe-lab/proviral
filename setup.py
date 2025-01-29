@@ -9,7 +9,7 @@ setup(
         'numpy==1.25.1',
         'python-Levenshtein==0.12.0',
         'pandas==2.2.2',
-        'requests==2.31.0',
+        'requests==2.32.2',
         'cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.23.1',
         'pyyaml'
     ],
