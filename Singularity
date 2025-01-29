@@ -13,7 +13,7 @@ From: ubuntu:22.04
     MAINTAINER BC CfE in HIV/AIDS https://github.com/cfe-lab/
     KIVE_INPUTS sample_info_csv contigs_csv conseqs_csv cascade_csv
     KIVE_OUTPUTS outcome_summary_csv conseqs_primers_csv contigs_primers_csv \
-        table_precursor_csv proviral_landscape_csv hivseqinr_results_tar
+        table_precursor_csv proviral_landscape_csv detailed_results_tar
     KIVE_THREADS 1
     KIVE_MEMORY 6000
 

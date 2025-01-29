@@ -24,6 +24,7 @@ jobs:
         echo /opt/minimap2-2.17_x64-linux >> $GITHUB_PATH
     - name: Install dependencies
       run: |
+        sudo apt install -qq mafft ncbi-blast+
         python -m pip install --upgrade pip pipenv
         pipenv install --dev
     - name: Test with pytest

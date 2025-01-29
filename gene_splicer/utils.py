@@ -3,14 +3,18 @@ import logging
 import os
 import re
 import typing
+from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple
 
 import yaml
+import json
 import shutil
 import subprocess as sp
 import pandas as pd
 import glob
 from pathlib import Path
 from csv import DictWriter, DictReader
+from itertools import groupby
+from operator import itemgetter
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +101,9 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
                 })
 
 
-def split_cigar(row):
+def split_cigar(string):
     pattern = re.compile(r'(\d+)([A-Z])')
-    cigar = re.findall(pattern, row[5])
+    cigar = re.findall(pattern, string)
     return cigar
 
 
@@ -210,11 +214,12 @@ def modify_annot(annot):
 
 def splice_genes(query, target, samfile, annotation):
     results = {}
-    for i, row in samfile.iterrows():
+    for i, row in enumerate(samfile):
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
         query_pos = None
-        for size, op in row['cigar']:
+        cigar = row[5]
+        for size, op in split_cigar(cigar):
             size = int(size)
             # logger.debug(f'size: {size}, op: {op}')
             # logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
@@ -273,11 +278,12 @@ def coords_to_genes(coords, query):
 def splice_aligned_genes(query, target, samfile, annotation):
     results = {}
     sequences = {}
-    for i, row in samfile.iterrows():
+    for i, row in enumerate(samfile):
         # Subtract 1 to convert target position to zero-base
         target_pos = int(row[3]) - 1
         query_pos = None
-        for size, op in row['cigar']:
+        cigar = row[5]
+        for size, op in split_cigar(cigar):
             # print(f'size: {size}, op: {op}')
             # print(f'target_pos: {target_pos}, query_pos: {query_pos}')
             size = int(size)
@@ -330,9 +336,17 @@ def splice_aligned_genes(query, target, samfile, annotation):
     return results, sequences
 
 
-def load_samfile(samfile_path):
-    result = pd.read_table(samfile_path, skiprows=2, header=None)
-    result['cigar'] = result.apply(split_cigar, axis=1)
+def load_samfile(samfile_path: Path) -> List[List[str]]:
+    with open(samfile_path, 'r') as file:
+        reader = csv.reader(file, delimiter='\t')
+
+        result = []
+        for row in reader:
+            # Skip header lines (lines starting with '@')
+            if row[0].startswith('@'):
+                continue
+            result.append(row)
+
     return result
 
 
@@ -390,6 +404,92 @@ def align(target_seq,
     else:
         return alignment_path
 
+CFEINTACT_ERRORS_TABLE = [
+    'UnknownNucleotide',
+    'NonHIV',
+    'LongDeletion',
+    'InternalInversion',
+    'Scramble',
+    'APOBECHypermutation',
+    'MajorSpliceDonorSiteMutated',
+    'PackagingSignalDeletion',
+    'PackagingSignalNotComplete',
+    'RevResponseElementDeletion',
+    'MisplacedORF',
+    'WrongORFNumber',
+    'Deletion',
+    'Insertion',
+    'InternalStop',
+    'Frameshift',
+    'MutatedStopCodon',
+    'MutatedStartCodon',
+    'SequenceDivergence',
+    ]
+
+def iterate_cfeintact_verdicts_1(directory: Path, intact: Set[str] = set()) -> Iterable[Tuple[str, str]]:
+    intact = set()
+
+    def get_verdict(SEQID: str, all_defects) -> Tuple[str, str]:
+        if all_defects:
+            ordered = sorted(all_defects, key=CFEINTACT_ERRORS_TABLE.index)
+            verdict = ordered[0]
+        else:
+            verdict = "Intact"
+
+        return (SEQID, verdict)
+
+    with open(os.path.join(directory, 'holistic.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["intact"] == "True":
+                intact.add(row["qseqid"])
+                SEQID = row["qseqid"]
+                yield get_verdict(SEQID, all_defects=[])
+
+    with open(os.path.join(directory, 'defects.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        grouped = groupby(reader, key=itemgetter('qseqid'))
+        for sequence_name, defects in grouped:
+            if sequence_name not in intact:
+                all_defects = [defect['code'] for defect in defects]
+                yield get_verdict(sequence_name, all_defects)
+
+
+def iterate_cfeintact_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
+    intact: Set[str] = set()
+
+    for directory in outpath.glob('cfeintact*'):
+        yield from iterate_cfeintact_verdicts_1(directory, intact)
+
+
+def get_cfeintact_verdicts(name, outpath):
+    column_names = ['SEQID', 'MyVerdict']
+    data = iterate_cfeintact_verdicts(outpath)
+    return pd.DataFrame(data, columns=column_names)
+
+
+def iterate_hivseqinr_verdicts_1(directory: Path) -> Iterable[Tuple[str, str]]:
+    path = directory / 'Output_MyBigSummary_DF_FINAL.csv'
+    if not path.is_file():
+        return
+
+    with path.open() as fd:
+        reader = csv.DictReader(fd)
+        for row in reader:
+            yield (row["SEQID"], row["MyVerdict"])
+
+
+def iterate_hivseqinr_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
+    seqinr_paths = outpath.glob('hivseqinr*/Results_Final/Output_MyBigSummary_DF_FINAL.csv')
+    for path in seqinr_paths:
+        yield from iterate_hivseqinr_verdicts_1(path)
+
+
+def get_hivseqinr_verdicts(name, outpath):
+    column_names = ['SEQID', 'MyVerdict']
+    data = iterate_hivseqinr_verdicts(outpath)
+    return pd.DataFrame(data, columns=column_names)
+
 
 def generate_table_precursor(name, outpath, add_columns=None):
     # Output csv
@@ -398,24 +498,21 @@ def generate_table_precursor(name, outpath, add_columns=None):
     # Load filtered sequences
     filtered_path = outpath / (name + '_filtered.csv')
     filtered = pd.read_csv(filtered_path)
-    # Load hivseqinr data
-    seqinr_paths = glob.glob(
-        str(outpath / 'hivseqinr*' / 'Results_Final' /
-            'Output_MyBigSummary_DF_FINAL.csv'))
-    parts = []
-    for path in seqinr_paths:
-        if not os.path.isfile(path):
-            continue
-        part = pd.read_csv(path)
-        parts.append(part)
-    # seqinr = pd.read_csv(seqinr_path)
+    # Load hivseqinr data or Cfeintact results
+
+    if any(outpath.glob('cfeintact*')):
+        results = get_cfeintact_verdicts(name, outpath)
+    elif any(outpath.glob('hivseqinr*')):
+        results = get_hivseqinr_verdicts(name, outpath)
+    else:
+        raise RuntimeError("Neither CFEIntact nor HIVSeqinR directory exists.")
+
     try:
-        seqinr = pd.concat(parts)
         # Assign new columns based on split
-        seqinr[['name', 'sample', 'reference',
-                'seqtype']] = seqinr['SEQID'].str.split('::', expand=True)
+        results[['name', 'sample', 'reference',
+                'seqtype']] = results['SEQID'].str.split('::', expand=True)
         # Merge
-        merged = seqinr.merge(filtered, on='sample')
+        merged = results.merge(filtered, on='sample')
     except ValueError:
         with precursor_path.open('w') as output_file:
             writer = DictWriter(output_file,
@@ -448,7 +545,7 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
-    if parts:
+    if not results.empty:
         merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
             precursor_path, index=False)
     else:
@@ -497,89 +594,18 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def generate_proviral_landscape_csv(outpath):
-    proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
-    landscape_rows = []
-
-    table_precursor_csv = os.path.join(outpath, 'table_precursor.csv')
-    blastn_csv = glob.glob(
-        os.path.join(
-            outpath,
-            'hivseqinr*',
-            'Results_Intermediate',
-            'Output_Blastn_HXB2MEGA28_tabdelim.txt'
-        )
-    )[0]
-
-    blastn_columns = ['qseqid',
-                      'qlen',
-                      'sseqid',
-                      'sgi',
-                      'slen',
-                      'qstart',
-                      'qend',
-                      'sstart',
-                      'send',
-                      'evalue',
-                      'bitscore',
-                      'length',
-                      'pident',
-                      'nident',
-                      'btop',
-                      'stitle',
-                      'sstrand']
-    with open(blastn_csv, 'r') as blastn_file:
-        blastn_reader = DictReader(blastn_file, fieldnames=blastn_columns, delimiter='\t')
-        for row in blastn_reader:
-            if row['qseqid'] in ['8E5LAV', 'HXB2']:
-                # skip the positive control rows
-                continue
-            ref_start = int(row['sstart'])
-            ref_end = int(row['send'])
-            if ref_end <= LEFT_PRIMER_END or ref_start >= RIGHT_PRIMER_START:
-                # skip unspecific matches of LTR at start and end
-                continue
-            [run_name, sample_name, _, _] = row['qseqid'].split('::')
-            is_inverted = ''
-            if ref_end < ref_start:
-                # automatically recognize inverted regions
-                new_end = ref_start
-                ref_start = ref_end
-                ref_end = new_end
-                is_inverted = 'yes'
-            landscape_entry = {'ref_start': ref_start,
-                               'ref_end': ref_end,
-                               'samp_name': sample_name,
-                               'run_name': run_name,
-                               'is_inverted': is_inverted,
-                               'is_defective': ''}
-            # is_defective is empty for now, will be filled manually
-            landscape_rows.append(landscape_entry)
-
-    with open(table_precursor_csv, 'r') as tab_prec:
-        tab_prec_reader = DictReader(tab_prec)
-        for row in tab_prec_reader:
-            samp_name = row['sample']
-            verdict = row['MyVerdict']
-            for entry in landscape_rows:
-                if entry['samp_name'] == samp_name:
-                    entry['defect'] = verdict
-
-    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
-    with open(proviral_landscape_csv, 'w') as landscape_file:
-        landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
-        landscape_writer.writeheader()
-        landscape_writer.writerows(landscape_rows)
-
-
 def get_softclipped_region(query, alignment, alignment_path):
     try:
-        size, op = alignment.iloc[0]['cigar'][0]
+        first_match = alignment[0]
     except IndexError:
         logger.warning('No alignment in %s!', alignment_path)
         return
+
+    cigar = first_match[5]
+    size, op = split_cigar(cigar)[0]
     if op != 'S':
         return
+
     size = int(size)
     return query[:size]
 

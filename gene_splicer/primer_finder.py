@@ -1,10 +1,12 @@
 import re
+import subprocess
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader, DictWriter
 from itertools import groupby
 from operator import itemgetter
 import os
 from tarfile import TarFile
+import cfeintact
 
 import pandas as pd
 from pathlib import Path
@@ -77,6 +79,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
+    parser.add_argument('--cfeintact',
+                        action='store_true',
+                        help="Launch the CFEIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -386,8 +391,8 @@ def add_primers(row):
 def remove_primers(row):
     # Strip the primers out, convert index values from floats.
     newseq = row.sequence[
-             int(row.fwd_sample_primer_size + row.fwd_sample_primer_start)
-             :-int(row.rev_sample_primer_size + row.rev_sample_primer_start)]
+             int(row.fwd_sample_primer_size + row.fwd_sample_primer_start):
+             -int(row.rev_sample_primer_size + row.rev_sample_primer_start)]
     row.sequence = newseq
     return row
 
@@ -422,6 +427,13 @@ def archive_hivseqinr_results(working_path: Path,
         archive.add(result_path, result_path.name)
 
 
+def archive_cfeintact_results(working_path: Path,
+                              cfeintact_results_tar: typing.IO):
+    archive = TarFile(fileobj=cfeintact_results_tar, mode='w')
+    for result_path in working_path.iterdir():
+        archive.add(result_path, result_path.name)
+
+
 def run(contigs_csv,
         conseqs_csv,
         cascade_csv,
@@ -433,7 +445,9 @@ def run(contigs_csv,
         sample_size=50,
         force_all_proviral=False,
         default_sample_name: str = None,
-        hivseqinr_results_tar: typing.IO = None):
+        hivseqinr_results_tar: typing.IO = None,
+        run_cfeintact: bool = False,
+        cfeintact_results_tar: typing.IO = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
 
@@ -517,6 +531,36 @@ def run(contigs_csv,
                 if hivseqinr_results_tar is not None:
                     archive_hivseqinr_results(working_path,
                                               hivseqinr_results_tar)
+            if run_cfeintact:
+                working_path = outpath / f'cfeintact_{i}'
+                log_file_path = working_path / 'hiv-intact.log'
+                os.makedirs(working_path, exist_ok=True)
+
+                logger = cfeintact.logger
+                file_handler = logging.FileHandler(log_file_path)
+                logger.addHandler(file_handler)
+
+                cfeintact.check(
+                    working_dir=working_path,
+                    input_file=str(no_primers_fasta),
+                    subtype="B",
+                    check_packaging_signal=True,
+                    check_rre=True,
+                    check_major_splice_donor_site=True,
+                    check_hypermut=True,
+                    check_long_deletion=True,
+                    check_nonhiv=True,
+                    check_scramble=True,
+                    check_internal_inversion=True,
+                    check_unknown_nucleotides=True,
+                    check_small_orfs=True,
+                    check_distance=False,
+                    output_csv=True,
+                )
+
+                if cfeintact_results_tar is not None:
+                    archive_cfeintact_results(working_path,
+                                              cfeintact_results_tar)
             files.append(no_primers_fasta)
     return files
 
@@ -531,7 +575,8 @@ def main():
                       hivseqinr=args.hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
-                      sample_size=args.sample_size)
+                      sample_size=args.sample_size,
+                      run_cfeintact=args.cfeintact)
     return {'fasta_files': fasta_files, 'args': args}
 
 

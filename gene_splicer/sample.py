@@ -7,6 +7,7 @@ from pathlib import Path
 import gene_splicer.gene_splicer as gene_splicer
 import gene_splicer.primer_finder as primer_finder
 import gene_splicer.utils as utils
+import gene_splicer.landscapes as landscapes
 
 
 def parse_args():
@@ -43,8 +44,9 @@ def parse_args():
     parser.add_argument('proviral_landscape_csv',
                         help='Data for proviral landscape plot',
                         type=FileType('w'))
-    parser.add_argument('hivseqinr_results_tar',
-                        help="Archive file with HIVSeqinR's final results folder.",
+    parser.add_argument('detailed_results_tar',
+                        help="Archive file with HIVSeqinR's final results "
+                             "folder, or CFEIntact's results.",
                         type=FileType('wb'))
     parser.add_argument(
         '-p',
@@ -57,6 +59,9 @@ def parse_args():
                         help="Path to HIVSeqinR source code, or download "
                              "destination. HIVSeqinR will be skipped if this "
                              "isn't given.")
+    parser.add_argument('--cfeintact',
+                        action='store_true',
+                        help="Launch the CFEIntact analysis.")
     parser.add_argument(
         '--nodups',
         action='store_false',
@@ -69,7 +74,7 @@ def parse_args():
         help='To avoid memory issues in hivseqinr, split the resulting '
              'qc-passed sequences into this number of fastas, each will be '
              'processed sequentially and then all will be merged into the '
-             'final result')
+             'final result. Obsolete for CFEIntact.')
     return parser.parse_args()
 
 
@@ -88,10 +93,16 @@ def main():
         info_reader = DictReader(args.sample_info_csv)
         sample_info: dict = next(info_reader)
     run_name = sample_info.get('run_name', 'kive_run')
+    if args.cfeintact:
+        hivseqinr_results_tar = None
+        cfeintact_results_tar = args.detailed_results_tar
+    else:
+        hivseqinr_results_tar = args.detailed_results_tar
+        cfeintact_results_tar = None
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
-                                    hivseqinr_results_tar=args.hivseqinr_results_tar,
+                                    hivseqinr_results_tar=hivseqinr_results_tar,
                                     name=run_name,
                                     outpath=outpath,
                                     hivseqinr=args.hivseqinr,
@@ -99,11 +110,13 @@ def main():
                                     split=args.split,
                                     sample_size=args.sample_size,
                                     force_all_proviral=True,
-                                    default_sample_name=sample_info['sample'])
+                                    default_sample_name=sample_info['sample'],
+                                    run_cfeintact=args.cfeintact,
+                                    cfeintact_results_tar=cfeintact_results_tar)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
-    utils.generate_proviral_landscape_csv(outpath)
+    landscapes.generate_proviral_landscape_csv(outpath, is_cfeintact=args.cfeintact)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)

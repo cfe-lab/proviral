@@ -4,6 +4,7 @@
 1. minimap2 (https://github.com/lh3/minimap2) (must be available via commandline)
 2. blast tools (ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
 3. R and RSCRIPT (https://www.r-project.org/)
+4. mafft (https://mafft.cbrc.jp/alignment/software/)
 
 ### Singularity builds
 * Build all singularity images inside of the `simages` folder
