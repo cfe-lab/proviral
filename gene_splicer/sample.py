@@ -1,8 +1,11 @@
 import logging
 import typing
+import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader
 from pathlib import Path
+from importlib.metadata import version
+from typing import Sequence
 
 import gene_splicer.gene_splicer as gene_splicer
 import gene_splicer.primer_finder as primer_finder
@@ -10,7 +13,7 @@ import gene_splicer.utils as utils
 import gene_splicer.landscapes as landscapes
 
 
-def parse_args():
+def get_argument_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description='Search sequences from a single sample for primers, and '
                     'identify errors.',
@@ -75,7 +78,7 @@ def parse_args():
              'qc-passed sequences into this number of fastas, each will be '
              'processed sequentially and then all will be merged into the '
              'final result. Obsolete for CFEIntact.')
-    return parser.parse_args()
+    return parser
 
 
 def copy_output(source: Path, target: typing.IO):
@@ -83,9 +86,10 @@ def copy_output(source: Path, target: typing.IO):
     source.rename(target.name)
 
 
-def main():
+def main(argv: Sequence[str]) -> int:
     logging.basicConfig(level=logging.WARNING)
-    args = parse_args()
+    parser = get_argument_parser()
+    args = parser.parse_args(argv)
     outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True)
@@ -124,7 +128,11 @@ def main():
                 args.contigs_primers_csv)
     copy_output(outpath / 'table_precursor.csv', args.table_precursor_csv)
     copy_output(outpath / 'proviral_landscape.csv', args.proviral_landscape_csv)
+    return 0
 
 
-if __name__ == '__main__':
-    main()
+def entry() -> None:
+    sys.exit(main(sys.argv[1:]))
+
+
+if __name__ == '__main__': entry()  # noqa

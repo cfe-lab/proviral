@@ -1,8 +1,8 @@
 import argparse
 import os
+import sys
 from pathlib import Path
 import gene_splicer.utils as utils
-from importlib.metadata import version
 
 
 def parse_args():
@@ -19,9 +19,6 @@ def parse_args():
                         type=Path,
                         default=Path(os.getcwd()).resolve(),
                         help='Path to output files')
-    parser.add_argument('--version',
-                        action='store_true',
-                        help='Show version of the pipeline and exit')
     return parser.parse_args()
 
 
@@ -52,21 +49,8 @@ def run(query_fasta, outdir):
                 o.write(f'>{gene}\n{seq}\n')
 
 
-def print_version() -> None:
-    if __package__ is None:
-        print("Proviral pipeline is not installed.")
-        exit(1)
-    else:
-        print(version(__package__))
-        exit(0)
-
-
 def main():
     args = parse_args()
-    if args.version:
-        print_version()
-        return
-
     run(query_fasta=args.query_fasta, outdir=args.outdir)
 
 

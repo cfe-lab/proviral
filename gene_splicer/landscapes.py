@@ -56,6 +56,10 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
             ref_end = new_end
             is_inverted = 'yes'
 
+        if qseqid not in verdicts:
+            logger.error("Could not generate landscapes for qseqid %r.", qseqid)
+            continue
+
         verdict = verdicts[qseqid]
         is_defective = verdict != 'Intact'
         landscape_entry = {'ref_start': ref_start,

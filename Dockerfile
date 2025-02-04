@@ -9,4 +9,6 @@ COPY scripts      /opt/primer_finder/scripts/
 
 RUN sh -- /opt/primer_finder/scripts/install.sh
 
-ENTRYPOINT ["gene_splicer_sample", "--hivseqinr", "/opt/hivseqinr"]
+WORKDIR /data
+
+ENTRYPOINT ["cfeproviral"]
