@@ -1,13 +1,13 @@
 
 # Introduction
 
-In the study of viral sequences, understanding the proviral genome -- the viral genome integrated into the host DNA -- is crucial. This guide is designed to help biology researchers without programming expertise analyze proviral sequences efficiently using a dedicated bioinformatics pipeline. By leveraging a Docker container, we simplify the technical setup, allowing you to focus on the biological insights from your data.
+The study of viral sequences often leads to analysis of proviral genomes. This guide is designed to help people without programming expertise analyze these proviral sequences efficiently using our dedicated bioinformatics pipeline. By leveraging a Docker container, we simplify the technical setup, allowing them to focus on the biological insights from their data.
 
 ---
 
 ### Background
 
-Proviral sequences are fragments of viral DNA integrated into the host's genome. Analyzing these sequences helps researchers understand viral integration, replication fidelity, and structure of proviral reservoir. Our pipeline facilitates this analysis by automating processes such as primer identification, sequence alignment, and error detection.
+Proviral sequences are fragments of viral DNA integrated into the host's genome. Analyzing these sequences helps researchers understand viral integration, replication fidelity, and the structure of proviral reservoir. Our pipeline facilitates this analysis by automating processes such as primer identification, sequence alignment, and error detection.
 
 ---
 
@@ -24,12 +24,10 @@ The pipeline offers the following core features:
 
 ## Setup and Environment
 
-To make our pipeline accessible and easy to use, we have encapsulated it within a Docker container. This ensures all dependencies and configurations are pre-installed, minimizing compatibility issues across different systems.
-
-- **Docker**: A platform to develop, ship, and run applications in isolated environments. Ensure that Docker is installed and running on your computer.
+To make our pipeline accessible and easy to use, we have encapsulated it within a Docker container. This ensures all dependencies and configurations are pre-installed, minimizing compatibility issues across different systems. Docker is a platform to develop, ship, and run applications in isolated environments.
 
 By following the rest of this guide, you will be up and running with proviral sequence analysis quickly, even with minimal technical background.
 
 ---
 
-Next: [installation](/installation.html).
+Next: [installation](installation.md).
