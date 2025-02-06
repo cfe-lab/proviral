@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 import logging
-import typing
 import argparse
 from typing import Sequence
 import runpy
