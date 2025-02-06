@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='gene_splicer',
+    name='cfeproviral',
     version='v2.3.10',
     packages=find_packages(),
     install_requires=[
