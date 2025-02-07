@@ -25,7 +25,7 @@ These files should be organized accordingly in your dataset directory, often str
 
 ## Utilizing Example Data for Practice
 
-For practical understanding and experimentation, visit the directory `./tests/data/example4/` for sample inputs that align with these specifications. Using these samples, you can become familiar with the structure and usage of the input files.
+For practical understanding and experimentation, visit [the example directory](https://github.com/cfe-lab/proviral/tree/master/tests/data/example4/inputs) for sample inputs that align with these specifications. Using these samples, you can become familiar with the structure and usage of the input files. If you are having issues when downloading the sample inputs, following [these instructions](https://www.wikihow.com/Download-a-GitHub-Folder).
 
 ---
 
