@@ -2,7 +2,7 @@
 
 set -e
 
-echo ===== Installing hivseqinr ===== >/dev/null
+echo ===== Installing R dependencies needed for hivseqinr ===== >/dev/null
 
 set -x
 
