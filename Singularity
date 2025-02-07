@@ -29,4 +29,4 @@ From: ubuntu:22.04
     export LANG=en_US.UTF-8
 
 %runscript
-    cfeproviral sample --hivseqinr /opt/hivseqinr "$@"
+    cfeproviral sample --hivseqinr "$@"

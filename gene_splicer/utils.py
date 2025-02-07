@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import typing
-from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple
+from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple, Optional, Literal
 
 import yaml
 import json
@@ -17,6 +17,8 @@ from itertools import groupby
 from operator import itemgetter
 
 logger = logging.getLogger(__name__)
+
+Backend = Optional[Literal["CFEIntact", "HIVSeqinR"]]
 
 LEFT_PRIMER_END = 666
 RIGHT_PRIMER_START = 9604

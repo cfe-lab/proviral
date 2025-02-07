@@ -14,6 +14,7 @@ import logging
 import math
 
 import typing
+from typing import Literal
 
 from gene_splicer.primer_finder_errors import PrimerFinderErrors
 from gene_splicer.primer_finder_class import PrimerFinder
@@ -26,6 +27,12 @@ mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
 logger = logging.getLogger(__name__)
+
+ROOT = Path.cwd()
+while ROOT.parent != ROOT:
+    ROOT = ROOT.parent
+
+HIVSEQINR_PATH = ROOT / "opt" / "hivseqinr"
 
 # Note these are 1-based indicies
 primers = {
@@ -75,10 +82,8 @@ def parse_args():
                         default=Path(os.getcwd()),
                         type=Path)
     parser.add_argument('--hivseqinr',
-                        type=Path,
-                        help="Path to HIVSeqinR source code, or download "
-                             "destination. HIVSeqinR will be skipped if this "
-                             "isn't given.")
+                        action='store_true',
+                        help="Launch the HIVSeqinR analysis.")
     parser.add_argument('--cfeintact',
                         action='store_true',
                         help="Launch the CFEIntact analysis.")
@@ -439,14 +444,13 @@ def run(contigs_csv,
         cascade_csv,
         name,
         outpath,
-        hivseqinr: Path = None,
         nodups=True,
         split=1,
         sample_size=50,
         force_all_proviral=False,
         default_sample_name: str = None,
         hivseqinr_results_tar: typing.IO = None,
-        run_cfeintact: bool = False,
+        backend: utils.Backend = None,
         cfeintact_results_tar: typing.IO = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
@@ -522,16 +526,18 @@ def run(contigs_csv,
                 o2.write(f'{header}\n{row.sequence.replace("-", "")}\n')
             o.close()
             o2.close()
-            if hivseqinr is not None:
+
+            if backend == "HIVSeqinR":
                 working_path = outpath / f'hivseqinr_{i}'
-                hivseqinr_runner = Hivseqinr(hivseqinr,
+                hivseqinr_runner = Hivseqinr(HIVSEQINR_PATH,
                                              working_path,
                                              synthetic_primers_fasta)
                 hivseqinr_runner.run()
                 if hivseqinr_results_tar is not None:
                     archive_hivseqinr_results(working_path,
                                               hivseqinr_results_tar)
-            if run_cfeintact:
+
+            elif backend == "CFEIntact":
                 working_path = outpath / f'cfeintact_{i}'
                 log_file_path = working_path / 'hiv-intact.log'
                 os.makedirs(working_path, exist_ok=True)
@@ -561,22 +567,30 @@ def run(contigs_csv,
                 if cfeintact_results_tar is not None:
                     archive_cfeintact_results(working_path,
                                               cfeintact_results_tar)
+
             files.append(no_primers_fasta)
     return files
 
 
 def main():
     args = parse_args()
+
+    backend = None
+    if args.cfeintact:
+        backend = "CFEIntact"
+    elif args.hivseqinr:
+        backend = "HIVSeqinR"
+
     fasta_files = run(contigs_csv=args.contigs_csv,
                       conseqs_csv=args.conseqs_csv,
                       cascade_csv=args.cascade_csv,
                       name=args.name,
                       outpath=args.outpath.resolve(),
-                      hivseqinr=args.hivseqinr,
                       nodups=args.nodups,
                       split=args.split,
                       sample_size=args.sample_size,
-                      run_cfeintact=args.cfeintact)
+                      backend=backend)
+
     return {'fasta_files': fasta_files, 'args': args}
 
 

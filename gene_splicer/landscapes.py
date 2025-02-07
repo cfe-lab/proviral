@@ -19,7 +19,7 @@ from operator import itemgetter
 from gene_splicer.utils import (
     iterate_cfeintact_verdicts_1,
     iterate_hivseqinr_verdicts_1,
-    LEFT_PRIMER_END, RIGHT_PRIMER_START,
+    LEFT_PRIMER_END, RIGHT_PRIMER_START, Backend,
 )
 
 
@@ -133,13 +133,16 @@ def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
         )
 
 
-def generate_proviral_landscape_csv(outpath: Path, is_cfeintact: bool):
+def generate_proviral_landscape_csv(outpath: Path, backend: Backend):
     proviral_landscape_csv = os.path.join(outpath, 'proviral_landscape.csv')
 
-    if is_cfeintact:
+    if backend == "CFEIntact":
         subpath = 'cfeintact*'
-    else:
+    elif backend == "HIVSeqinR":
         subpath = 'hivseqinr*'
+    else:
+        _: None = subpath
+        subpath = "/dev/null"
 
     landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
     with open(proviral_landscape_csv, 'w') as landscape_file:
