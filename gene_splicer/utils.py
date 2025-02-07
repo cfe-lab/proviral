@@ -469,8 +469,9 @@ def get_cfeintact_verdicts(name, outpath):
 
 
 def iterate_hivseqinr_verdicts_1(directory: Path) -> Iterable[Tuple[str, str]]:
-    path = directory / 'Output_MyBigSummary_DF_FINAL.csv'
+    path = directory / "Results_Final" / "Output_MyBigSummary_DF_FINAL.csv"
     if not path.is_file():
+        logger.error("Missing HIVSeqinR result in %r.", str(path))
         return
 
     with path.open() as fd:
@@ -480,9 +481,8 @@ def iterate_hivseqinr_verdicts_1(directory: Path) -> Iterable[Tuple[str, str]]:
 
 
 def iterate_hivseqinr_verdicts(outpath: Path) -> Iterable[Tuple[str, str]]:
-    seqinr_paths = outpath.glob('hivseqinr*/Results_Final/Output_MyBigSummary_DF_FINAL.csv')
-    for path in seqinr_paths:
-        yield from iterate_hivseqinr_verdicts_1(path)
+    for directory in outpath.glob('hivseqinr*'):
+        yield from iterate_hivseqinr_verdicts_1(directory)
 
 
 def get_hivseqinr_verdicts(name, outpath):
