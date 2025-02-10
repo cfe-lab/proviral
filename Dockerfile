@@ -9,6 +9,6 @@ COPY scripts      /opt/primer_finder/scripts/
 
 RUN sh -- /opt/primer_finder/scripts/install.sh
 
-WORKDIR /data
+WORKDIR /w
 
 ENTRYPOINT ["cfeproviral"]

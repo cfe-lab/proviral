@@ -27,7 +27,7 @@ The pipeline image available on Docker Hub is preconfigured to run all necessary
 To run the pipeline using the `sample` entrypoint, open your terminal, navigate to your working directory (which contains your input files), and use the following command:
 
 ```bash
-docker run --rm -v .:/data cfelab/proviral sample sample_info.csv contigs.csv conseqs.csv cascade.csv outcome_summary.csv conseqs_primers.csv contigs_primers.csv table_precursor.csv proviral_landscape.csv detailed_results.tar --hivseqinr
+docker run --rm -v .:/w cfelab/proviral sample sample_info.csv contigs.csv conseqs.csv cascade.csv outcome_summary.csv conseqs_primers.csv contigs_primers.csv table_precursor.csv proviral_landscape.csv detailed_results.tar --hivseqinr
 ```
 
 ### Command Breakdown
@@ -35,8 +35,8 @@ docker run --rm -v .:/data cfelab/proviral sample sample_info.csv contigs.csv co
 - **`docker run --rm`**
   Runs the container and automatically removes it after execution.
 
-- **`-v .:/data`**
-  Mounts your current directory (which holds both input and eventual output files) into the container’s `/data` folder.
+- **`-v .:/w`**
+  Mounts your current directory (which holds both input and eventual output files) into the container’s `/w` folder.
 
 - **`cfelab/proviral`**
   Specifies the Docker image containing the proviral pipeline.
