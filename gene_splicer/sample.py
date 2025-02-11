@@ -93,7 +93,11 @@ def main(argv: Sequence[str]) -> int:
     outpath.mkdir(exist_ok=True)
     with args.sample_info_csv:
         info_reader = DictReader(args.sample_info_csv)
-        sample_info: dict = next(info_reader)
+        for row in info_reader:
+            sample_info: dict = row
+            break
+        else:
+            sample_info = {'run_name': 'test_run', 'sample': 'Sample_S1'}
     run_name = sample_info.get('run_name', 'kive_run')
 
     hivseqinr_results_tar = None
