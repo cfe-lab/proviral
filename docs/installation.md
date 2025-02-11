@@ -1,10 +1,11 @@
-
-# Installation
+---
+title: Installation
+---
 
 To streamline the installation process and avoid potential software conflicts, we utilize Docker. 
 Docker allows us to package all necessary components inside a container, ensuring consistency across different environments.
 
-## Step 1: Install Docker
+## Install Docker
 
 - **Windows / macOS**:
   1. Visit the [Docker Desktop download page](https://www.docker.com/products/docker-desktop/) and download the installer for your operating system.
@@ -22,7 +23,7 @@ Docker allows us to package all necessary components inside a container, ensurin
      sudo systemctl enable docker
      ```
 
-## Step 2: Pull the Docker Image for Proviral Analysis
+## Pull the Docker Image for Proviral Analysis
 
 With Docker installed and running, you can now download the pre-configured Docker image that contains the proviral sequence analysis pipeline:
 

@@ -1,3 +1,6 @@
+---
+title: Contributing to the Pipeline
+---
 
 # GitHub Web Site
 

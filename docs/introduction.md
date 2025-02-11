@@ -1,5 +1,6 @@
-
-# Introduction
+---
+title: Introduction
+---
 
 The study of viral sequences often leads to analysis of proviral genomes. This guide is designed to help people without programming expertise analyze these proviral sequences efficiently using our dedicated bioinformatics pipeline. By leveraging a Docker container, we simplify the technical setup, allowing them to focus on the biological insights from their data.
 
@@ -8,6 +9,8 @@ The study of viral sequences often leads to analysis of proviral genomes. This g
 ### Background
 
 Proviral sequences are fragments of viral DNA integrated into the host's genome. Analyzing these sequences helps researchers understand viral integration, replication fidelity, and the structure of proviral reservoir. Our pipeline facilitates this analysis by automating processes such as primer identification, sequence alignment, and error detection.
+
+![image](https://s7d1.scene7.com/is/image/CENODS/09705-scicon5-hiv?&wid=400)
 
 ---
 

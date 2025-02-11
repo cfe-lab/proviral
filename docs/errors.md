@@ -1,12 +1,15 @@
-
-# Error codes
+---
+title: Error codes
+---
 
 Error messages get recorded in several output files, and it's not always clear
 what the different messages mean. They are all defined in the
 `primer_finder_errors.py` file, but the list of which errors can appear in which
 files are described here, along with their meaning.
 
-### contigs_primer_analysis.csv
+---
+
+## --- `contigs_primer_analysis.csv` ---
 
 The denovo assembler can assemble several contigs per sample. In a successful
 sample, there is one contig that has a BLAST match to HIV, and possibly some
@@ -23,7 +26,9 @@ The possible errors are:
 - `primer failed validation` - found part of the primer, but the neighbouring
   sequence didn't align to the expected part of HXB2.
 
-### conseqs_primer_analysis.csv
+---
+
+## --- `conseqs_primer_analysis.csv` ---
 
 Analyses the consensus of all the reads that map to each assembled contig.
 Coverage must be at least 100 reads for a position to be included in the
@@ -45,7 +50,9 @@ All the same errors can be reported as for contigs, plus these:
   has removed all X's. If that leaves less than one sixth of the original,
   length, it generates this error.
 
-### outcome_summary.csv
+---
+
+## --- `outcome_summary.csv` ---
 
 This file tries to find a usable result: first from conseqs, then from contigs.
 The `seqtype` column shows where it found the result. If both failed, it will
@@ -65,7 +72,9 @@ summarize the errors:
   due to some combination of primer errors and low coverage.
 - `hiv but failed` - unexpected failure, such as non TCGA.
 
-### study_summary.csv
+---
+
+## --- `study_summary.csv` ---
 
 Summarizes the sample counts and error counts by run folder, by participant id,
 and grand total. It reports the following errors, grouping the details from the

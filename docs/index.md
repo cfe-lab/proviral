@@ -1,5 +1,9 @@
+---
+title: Proviral Pipeline documentation
+---
 
-# Welcome to BCCFE's Proviral Pipeline documentation!
+
+Welcome to BCCFE's Proviral Pipeline documentation!
 
 Here you can find:
 

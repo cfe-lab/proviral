@@ -1,5 +1,6 @@
-
-# Filtering
+---
+title: Filtering
+---
 
 - At the core of the proviral pipeline, data is read from `contigs.csv` and `conseqs.csv` files produced by MiCall
 - First the pipeline reads through all of the contigs, then the contigs

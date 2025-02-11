@@ -1,5 +1,6 @@
-
-# Running the Pipeline
+---
+title: Running the Pipeline
+---
 
 The proviral pipeline is designed to analyze proviral sequences through several stages --- from primer detection and alignment to detailed error reporting and result summarization. In this document we assume you have already installed Docker and have prepared your input data files. In this chapter you will learn how to run the pipeline using the provided Docker image as well as the sample entrypoint for a complete end--to--end example.
 
