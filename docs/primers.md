@@ -10,6 +10,8 @@ In the proviral pipeline, two main tasks are performed with regard to primers. F
 - For the proviral pipeline, only one set of primers is supported. The forward primer is defined as `GCGCCCGAACAGGGACYTGAAARCGAAAG` (and a "no-mixture" variant is available to remove any ambiguous letters), and the reverse primer is `TAAGCCTCAATAAAGCTTGCCTTGAGTGC`.
 - These specific primers tell the pipeline where the viral sequence begins and ends. However, once these locations are defined, it's important to remove the primer sequences before running further analyses so that the extra nonviral bits do not distort downstream results.
 
+![primers](https://cdn.kastatic.org/ka-perseus-images/6d0650905be0b38de294f614a5449d9559d3387a.png) \\
+
 # How the Pipeline Handles Primers
 
 1. **Quality Check and Primer Search**
