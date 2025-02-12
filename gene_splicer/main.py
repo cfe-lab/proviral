@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 
-PROGRAMS = ['sample', 'pipeline', 'study_summary']
+PROGRAMS = ['sample', 'pipeline', 'study_summary', 'landscapes']
 
 
 def get_version() -> str:
