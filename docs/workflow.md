@@ -4,6 +4,8 @@ title: High-Level Workflow of the Proviral Pipeline
 
 The Proviral Pipeline automatically transforms raw sequencing results into quality--controlled viral sequences with key defect annotations. This page provides a concise overview of the conceptual stages of the workflow.
 
+![workflow diagram](workflow.png)
+
 ## A. Sample Verification and Selection
 
 - **Sequencing Depth Check:**
