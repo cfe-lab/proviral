@@ -17,7 +17,7 @@ Before you start, please ensure that:
   - **conseqs.csv** (consensus sequences)
   - **cascade.csv** (MiCall output indicating mapped read counts)
 
-For more details on data preparation and installation, see the [Installation](installation.md) and [Data Preparation](data_prep.md) sections.
+For more details on data preparation and installation, see the [Installation](installation.html) and [Data Preparation](data_prep.html) sections.
 
 ---
 
@@ -70,9 +70,9 @@ In case you encounter errors:
 
 - Review the terminal output and any generated log files to identify issues (common errors include missing or misformatted input files).
 - Verify that Docker is properly mounting your current directory (using the `-v` flag).
-- Revisit [Installation](installation.md) and [Data Preparation](data_prep.md) if input file formats or configurations are uncertain.
+- Revisit [Installation](installation.html) and [Data Preparation](data_prep.html) if input file formats or configurations are uncertain.
 - Run the pipeline with the `--help` option inside Docker (e.g., `docker run --rm cfelab/proviral --help`) to review available options and usage information.
 
 ---
 
-Next: [Viewing and Interpreting Outputs](interpretation.md)
+Next: [Viewing and Interpreting Outputs](interpretation.html)

@@ -48,4 +48,4 @@ With Docker installed and running, you can now download the pre-configured Docke
 
 ---
 
-Next: [data preparation](data_prep.md).
+Next: [data preparation](data_prep.html).

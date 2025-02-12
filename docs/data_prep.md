@@ -36,4 +36,4 @@ For practical understanding and experimentation, visit [the example directory](h
 
 ---
 
-Next: [running the pipeline](running_pipeline.md).
+Next: [running the pipeline](running_pipeline.html).

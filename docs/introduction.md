@@ -41,4 +41,4 @@ By following the rest of this guide, you will be up and running with proviral se
 
 ---
 
-Next: [installation](installation.md).
+Next: [installation](installation.html).

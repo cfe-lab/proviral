@@ -11,7 +11,7 @@ The proviral pipeline produces a collection of output files that capture the sta
 - Prepare data for downstream analysis and visualization
 - Examine detailed log information in case troubleshooting is required
 
-These output files are created in the current working directory, assuming that you followed [previous instructions](running_pipeline.md).
+These output files are created in the current working directory, assuming that you followed [previous instructions](running_pipeline.html).
 Most of them are of the spreadsheet format, which means that they can be opened with Excel or even Notepad.
 
 ---
@@ -40,7 +40,7 @@ This file includes columns such as `sample`, `run`, `passed`, `error`, `referenc
   - `multiple contigs`
   - `hiv but failed`
 
-  For details on these refer to the [Error codes](errors.md) page.
+  For details on these refer to the [Error codes](errors.html) page.
 
 - **reference**: reference sequence to which this sample was aligned.
 - **seqlen**: length of the sample sequence.
@@ -235,7 +235,7 @@ When reviewing the output files, consider the following troubleshooting steps:
 
 - **Consult Further Documentation**:
 
-  For details on specific error codes and primer filtering logic, refer to the [Error codes](errors.md) and [Filtering workflow](filtering.md) documentation.
+  For details on specific error codes and primer filtering logic, refer to the [Error codes](errors.html) and [Filtering workflow](filtering.html) documentation.
 
 - **Submit a question to the developers of the Proviral Pipeline**:
 
