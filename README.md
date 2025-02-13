@@ -1,34 +1,53 @@
 
 # CFE Proviral Pipeline
 
-A comprehensive, Docker-enabled pipeline for proviral sequence analysis. The CFE Proviral Pipeline automates the process of quality filtering, primer detection and removal, sequence alignment, gene splicing, and defect classification (using HIVSeqinR or CFEIntact) – all built for ease of use by researchers with minimal programming expertise.
+A comprehensive, Docker-enabled pipeline for proviral sequence
+analysis. The CFE Proviral Pipeline automates the process of quality
+filtering, primer detection and removal, sequence alignment, gene
+splicing, and defect classification (using HIVSeqinR or CFEIntact) –
+all built for ease of use by researchers with minimal programming
+expertise.
 
-Proviral genomes — in particular, those integrated into host DNA during HIV infections — are a key subject of study in viral persistence research. Analyzing these sequences can reveal both intact and defective viral genomes, with implications for HIV reactivation and cure strategies.
+Studying proviral genomes is critical for understanding viral
+persistence, reactivation potential, and the barriers to curing
+infections. The pipeline was developed to simplify this complex
+analysis by:
+
+- Ensuring high-quality sequence selection through automated filtering
+  and control checks.
+- Detecting laboratory-introduced primer sequences and removing them
+  so that only genuine viral genomic data are analyzed.
+- Extracting and aligning gene segments from the viral genome (based
+  on the standard HIV HXB2 reference) and identifying key genetic
+  defects.
+
+In short, the pipeline supports researchers in gaining better insight
+into the biology of viral reservoirs and the effects of antiviral
+therapies.
 
 ---
 
 ## Features
 
 - Primer Detection and Removal
+
 - Quality Filtering
-  - Evaluates sequencing depth and coverage from MiCall's cascade output
-  - Flags non-HIV, low read coverage, and sequences with internal ambiguities
   - Applies multiple criteria to decide which sequences advance for analysis
+  - Flags non-HIV, low read coverage, and sequences with internal ambiguities
+  - Evaluates sequencing depth and coverage from MiCall's cascade output
 
 - Sequence Alignment and Gene Splicing
-  - Extracts gene-level segments for further analysis
+  - Aligns sequences against HXB2 and extracts gene-level segments for further study
 
 - Defect Detection and Prioritization
   - Integrates secondary modules (HIVSeqinR or CFEIntact) to assess genetic defects
   - Provides a "most severe defect" verdict for each sample in the final summary
 
 - Comprehensive Output Summaries
-  - Generates files such as `outcome_summary.csv`, `table_precursor.csv`, and `proviral_landscape.csv`
   - Supports downstream visualization and statistical aggregation
 
 - Docker-Based Deployment
   - Prepackaged Docker image reduces setup time and dependency conflicts
-  - Consistent runtime across diverse computing environments
 
 ----
 
