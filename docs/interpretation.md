@@ -172,7 +172,7 @@ that automatically generates plots based on the contents of
 proviral_landscape.csv. The tool produces images similar to the
 example below:
 
-![example landscape plot](example_landscape.svg) \\
+![example landscape plot](example_landscape.svg)
 
 If you are interested in comparing data across multiple runs, you can
 combine individual `proviral_landscape.csv` files from different
@@ -212,6 +212,8 @@ This archive contains detailed, low--level output from the secondary analysis to
 #### Contents
 
 Once extracted, you will find:
+
+- More information about proviral defects.
 - Detailed alignment logs.
 - Intermediate result files, possibly including full SAM files and blast output.
 - Additional scripts or configuration logs (for example, `minimap2.log` and `gene_splicer.log`).
