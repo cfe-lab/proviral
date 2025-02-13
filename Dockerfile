@@ -3,11 +3,11 @@ FROM ubuntu:22.04
 
 ENV LANG=en_US.UTF-8
 
-COPY setup.py     /opt/primer_finder/setup.py
-COPY cfeproviral /opt/primer_finder/cfeproviral/
-COPY scripts      /opt/primer_finder/scripts/
+COPY setup.py     /opt/cfeproviral/setup.py
+COPY cfeproviral /opt/cfeproviral/cfeproviral/
+COPY scripts      /opt/cfeproviral/scripts/
 
-RUN sh -- /opt/primer_finder/scripts/install.sh
+RUN sh -- /opt/cfeproviral/scripts/install.sh
 
 WORKDIR /w
 

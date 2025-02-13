@@ -18,12 +18,12 @@ From: ubuntu:22.04
     KIVE_MEMORY 6000
 
 %files
-    setup.py /opt/primer_finder/
-    cfeproviral /opt/primer_finder/
-    scripts /opt/primer_finder/
+    setup.py /opt/cfeproviral/
+    cfeproviral /opt/cfeproviral/
+    scripts /opt/cfeproviral/
 
 %post
-    sh -- /opt/primer_finder/scripts/install.sh
+    sh -- /opt/cfeproviral/scripts/install.sh
 
 %environment
     export LANG=en_US.UTF-8
