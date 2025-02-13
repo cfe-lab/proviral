@@ -88,3 +88,9 @@ Contributions are welcome! Please review the following guidelines before submitt
 - Thanks to the developers behind HIVSeqinR and CFEIntact – their tools are integrated as backends for defect analysis.
 - Acknowledgment to the MiCall project for alignment modules and related utilities.
 - For further reading on proviral sequencing and HIV research methodologies, refer to the [pipeline's documentation](https://cfe-lab.github.io/proviral).
+
+---
+
+## Licensing
+
+This project is destributed under the MIT license. For details see, [the LICENSE file](LICENSE).

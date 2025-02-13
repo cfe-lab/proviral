@@ -3,6 +3,10 @@ from setuptools import setup, find_packages
 setup(
     name='cfeproviral',
     version='v2.3.10',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+    ],
+    license='MIT',
     packages=find_packages(),
     install_requires=[
         'gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment',
