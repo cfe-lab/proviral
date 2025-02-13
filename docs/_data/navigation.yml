@@ -1,0 +1,27 @@
+- name: Quick Start
+  link: /introduction.html
+  dropdown:
+    - name: Introduction
+      link: /introduction.html
+    - name: Installation
+      link: /installation.html
+    - name: Data Preparation
+      link: /data_prep.html
+    - name: Running the Pipeline
+      link: /running_pipeline.html
+    - name: Outputs Interpretation
+      link: /interpretation.html
+- name: Topics
+  dropdown:
+    - name: Workflow
+      link: /workflow.html
+    - name: Proviral defects
+      link: /defects.html
+    - name: Primers
+      link: /primers.html
+    - name: Error codes
+      link: /errors.html
+    - name: Filtering workflow
+      link: /filtering.html
+    - name: Contributing
+      link: /contributing.html

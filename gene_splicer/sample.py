@@ -1,8 +1,11 @@
 import logging
 import typing
+import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, FileType
 from csv import DictReader
 from pathlib import Path
+from importlib.metadata import version
+from typing import Sequence
 
 import gene_splicer.gene_splicer as gene_splicer
 import gene_splicer.primer_finder as primer_finder
@@ -10,7 +13,7 @@ import gene_splicer.utils as utils
 import gene_splicer.landscapes as landscapes
 
 
-def parse_args():
+def get_argument_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description='Search sequences from a single sample for primers, and '
                     'identify errors.',
@@ -55,10 +58,8 @@ def parse_args():
         help='Length of sequence (probe) from each end of sample to search for primer',
         default=50)
     parser.add_argument('--hivseqinr',
-                        type=Path,
-                        help="Path to HIVSeqinR source code, or download "
-                             "destination. HIVSeqinR will be skipped if this "
-                             "isn't given.")
+                        action='store_true',
+                        help="Launch the HIVSeqinR analysis.")
     parser.add_argument('--cfeintact',
                         action='store_true',
                         help="Launch the CFEIntact analysis.")
@@ -75,7 +76,7 @@ def parse_args():
              'qc-passed sequences into this number of fastas, each will be '
              'processed sequentially and then all will be merged into the '
              'final result. Obsolete for CFEIntact.')
-    return parser.parse_args()
+    return parser
 
 
 def copy_output(source: Path, target: typing.IO):
@@ -83,40 +84,50 @@ def copy_output(source: Path, target: typing.IO):
     source.rename(target.name)
 
 
-def main():
+def main(argv: Sequence[str]) -> int:
     logging.basicConfig(level=logging.WARNING)
-    args = parse_args()
+    parser = get_argument_parser()
+    args = parser.parse_args(argv)
     outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True)
     with args.sample_info_csv:
         info_reader = DictReader(args.sample_info_csv)
-        sample_info: dict = next(info_reader)
+        for row in info_reader:
+            sample_info: dict = row
+            break
+        else:
+            sample_info = {'run_name': 'test_run', 'sample': 'Sample_S1'}
     run_name = sample_info.get('run_name', 'kive_run')
+
+    hivseqinr_results_tar = None
+    cfeintact_results_tar = None
+    backend = None
+
     if args.cfeintact:
-        hivseqinr_results_tar = None
         cfeintact_results_tar = args.detailed_results_tar
-    else:
+        backend = "CFEIntact"
+    elif args.hivseqinr:
         hivseqinr_results_tar = args.detailed_results_tar
-        cfeintact_results_tar = None
+        backend = "HIVSeqinR"
+
     fasta_files = primer_finder.run(contigs_csv=args.contigs_csv,
                                     conseqs_csv=args.conseqs_csv,
                                     cascade_csv=args.cascade_csv,
                                     hivseqinr_results_tar=hivseqinr_results_tar,
                                     name=run_name,
                                     outpath=outpath,
-                                    hivseqinr=args.hivseqinr,
                                     nodups=args.nodups,
                                     split=args.split,
                                     sample_size=args.sample_size,
                                     force_all_proviral=True,
                                     default_sample_name=sample_info['sample'],
-                                    run_cfeintact=args.cfeintact,
+                                    backend=backend,
                                     cfeintact_results_tar=cfeintact_results_tar)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)
-    landscapes.generate_proviral_landscape_csv(outpath, is_cfeintact=args.cfeintact)
+    landscapes.generate_proviral_landscape_csv(outpath, backend)
     copy_output(outpath / 'outcome_summary.csv', args.outcome_summary_csv)
     copy_output(outpath / (run_name + '_conseqs_primer_analysis.csv'),
                 args.conseqs_primers_csv)
@@ -124,7 +135,11 @@ def main():
                 args.contigs_primers_csv)
     copy_output(outpath / 'table_precursor.csv', args.table_precursor_csv)
     copy_output(outpath / 'proviral_landscape.csv', args.proviral_landscape_csv)
+    return 0
 
 
-if __name__ == '__main__':
-    main()
+def entry() -> None:
+    sys.exit(main(sys.argv[1:]))
+
+
+if __name__ == '__main__': entry()  # noqa

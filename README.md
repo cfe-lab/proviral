@@ -1,32 +1,90 @@
-## Readme
 
-### Dependencies
-1. minimap2 (https://github.com/lh3/minimap2) (must be available via commandline)
-2. blast tools (ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
-3. R and RSCRIPT (https://www.r-project.org/)
-4. mafft (https://mafft.cbrc.jp/alignment/software/)
+# CFE Proviral Pipeline
 
-### Singularity builds
-* Build all singularity images inside of the `simages` folder
+A comprehensive, Docker-enabled pipeline for proviral sequence
+analysis. The CFE Proviral Pipeline automates the process of quality
+filtering, primer detection and removal, sequence alignment, gene
+splicing, and defect classification (using HIVSeqinR or CFEIntact) –
+all built for ease of use by researchers with minimal programming
+expertise.
 
-### Filtering
-* At the core of the proviral pipeline, data is read from `contigs.csv` and `conseqs.csv` files produced by MiCall
-* First the pipeline reads through all of the contigs, then the contigs
-* When it does this (see the `find_primers()` function) it applies the following logic in this order for filtering/tagging:
-  1. If a sample is not proviral, skip it. Do not attempt to find primers or anything, just log a message saying `sample X was skipped because it was non-proviral`
-  2. If a sample has 0 in the remap column of the `cascade.csv` file, tag that sequence with an error: `No contig/conseq constructed`, do not analyze it or try to find primers, and write it to the `*primer_analysis.csv` file (which records all failures)
-  3. If the `consensus-percent-cutoff` is NOT `MAX`, tag it with an error: `contig not MAX` and skip the sequence (do not try to find primers)
-  4. If the reference of the sample is `HIV1-CON-XX-Consensus-seed` tag that sequence with an error: `is V3 sequence`, skip the sequence (do not try to find primers), and write it to the `*primer_analysis.csv` file
-  5. If there is an `X` in the middle of the sequence, tag that sequence with an error: `low internal read coverage`, skip the sequence (do not try to find primers), and write it to the `*primer_analysis.csv` file
-  6. If there are ANY non-TCGA characters in the sequence, tag that sequence with an error: `contig sequence contained non-TCGA/gap`, skip the sequence (do not try to find primers), and write it to the `*primer_analysis.csv` file
-  7. For each end (5' (fwd), 3' (rev)) of the sequence:
-     1. If there are `X` characters found, try to remove them (if they are clustered) and if not possible to remove tag the fwd/rev end with a fwd/rev primer error: `low read coverage in primer region`, skip the fwd/rev end (do not try to find primers)
-     2. If fwd/rev end has zero nucleotides found for primer, tag the fwd/rev end with a fwd/rev primer error: `primer was not found`, skip to the next end if any
-     3. If the fwd/rev primer is deemed not valid, tag the fwd/rev end with a fwd/rev primer error: `primer failed secondary validation`, skip to the next end if any
-  8. Write the sequence to the `*primer_analysis.csv` file regardless of tagged errors in any error column
-  9. Load the `*primer_analysis.csv` files for both contigs and conseqs and for both of them apply the following filters in order:
-     1. Remove all rows where either the `error`, `fwd_error`, or `rev_error` is tagged
-     2. Remove the primers from the sequences (for hivseqinr)
-     3. Remove rows where sample name appears twice (duplicates)
-     4. Remove rows where the reference contains `unknown` or `reverse`
-  10. Finally merge the filtered contigs and conseqs and write the final `*filtered.csv` file with conseqs taking precedence over contigs
+Studying proviral genomes is critical for understanding viral
+persistence, reactivation potential, and the barriers to curing
+infections. The pipeline was developed to simplify this complex
+analysis by:
+
+- Ensuring high-quality sequence selection through automated filtering
+  and control checks.
+- Detecting laboratory-introduced primer sequences and removing them
+  so that only genuine viral genomic data are analyzed.
+- Extracting and aligning gene segments from the viral genome (based
+  on the standard HIV HXB2 reference) and identifying key genetic
+  defects.
+
+In short, the pipeline supports researchers in gaining better insight
+into the biology of viral reservoirs and the effects of antiviral
+therapies.
+
+---
+
+## Features
+
+- Primer Detection and Removal
+
+- Quality Filtering
+  - Applies multiple criteria to decide which sequences advance for analysis
+  - Flags non-HIV, low read coverage, and sequences with internal ambiguities
+  - Evaluates sequencing depth and coverage from MiCall's cascade output
+
+- Sequence Alignment and Gene Splicing
+  - Aligns sequences against HXB2 and extracts gene-level segments for further study
+
+- Defect Detection and Prioritization
+  - Integrates secondary modules (HIVSeqinR or CFEIntact) to assess genetic defects
+  - Provides a "most severe defect" verdict for each sample in the final summary
+
+- Comprehensive Output Summaries
+  - Supports downstream visualization and statistical aggregation
+
+- Docker-Based Deployment
+  - Prepackaged Docker image reduces setup time and dependency conflicts
+
+----
+
+## Installation and Usage
+
+Refer to [the documentation page](https://cfe-lab.github.io/proviral/introduction.html).
+
+---
+
+## Project Structure
+
+The repository is organized as follows:
+
+- `Dockerfile` – Defines build instructions for the main image (Ubuntu-based).
+- `docs/` – Contains all documentation in markdown format (including installation, usage, workflow details, error codes, and troubleshooting).
+- `gene_splicer/` – Main source code directory containing:
+  - `primer_finder.py`: Primer detection, filtering, and error logging.
+  - `gene_splicer.py`: Gene splicing and alignment with external tools.
+  - `main.py`: Entry point (cfeproviral) and command-line interface orchestration.
+  - Additional modules, helpers, and utilities to support functions such as statistics, failure summary, and landscape generation.
+- `setup.py` – Package installation script with dependency management and console-script entry point.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please review the following guidelines before submitting pull requests:
+
+- Report bugs and feature requests via the [GitHub Issues tracker](https://github.com/cfe-lab/proviral/issues/new).
+- Follow the established coding style and add tests where appropriate.
+- Update documentation (both in docs/ and the README) for any changes that affect usage or behavior.
+- See [the contributing file](docs/contributing.md) for a detailed guide on how to contribute.
+
+---
+
+## References and Acknowledgments
+
+- Thanks to the developers behind HIVSeqinR and CFEIntact – their tools are integrated as backends for defect analysis.
+- Acknowledgment to the MiCall project for alignment modules and related utilities.
+- For further reading on proviral sequencing and HIV research methodologies, refer to the [pipeline's documentation](https://cfe-lab.github.io/proviral).

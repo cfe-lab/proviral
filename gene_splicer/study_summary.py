@@ -17,7 +17,7 @@ from gene_splicer.primer_finder_errors import PrimerFinderErrors
 
 def parse_args():
     parser = ArgumentParser(
-        description='Run HIVSeqinR on many run directories, then summarize.',
+        description='Run analysis on many run directories, then summarize.',
         formatter_class=ArgumentDefaultsHelpFormatter,
         epilog="This will create a subfolder for each run in the same folder "
                "as the study summary CSV file. If a run's subfolder already "
@@ -213,7 +213,6 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
     short_run_name = '_'.join(full_run_name.split('_')[:2])
     python_path = sys.executable
     launch_path = Path(__file__).parent.parent
-    hivseqinr_path = launch_path / 'hivseqinr'
     log_path = outcome_folder / 'gene_splicer.log'
     pipeline_args = [python_path,
                      '-m', 'gene_splicer.pipeline',
@@ -225,7 +224,7 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
     if run_cfeintact:
         pipeline_args.append('--cfeintact')
     else:
-        pipeline_args.append(f'--hivseqinr={hivseqinr_path}')
+        pipeline_args.append('--hivseqinr')
     try:
         with log_path.open('w') as log_file:
             run(pipeline_args,
