@@ -19,7 +19,7 @@ From: ubuntu:22.04
 
 %files
     setup.py /opt/primer_finder/
-    gene_splicer /opt/primer_finder/
+    cfeproviral /opt/primer_finder/
     scripts /opt/primer_finder/
 
 %post

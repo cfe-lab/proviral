@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 import io
 
-import gene_splicer.utils as utils
-import gene_splicer.primer_finder as primer_finder
-import gene_splicer.gene_splicer as gene_splicer
+import cfeproviral.utils as utils
+import cfeproviral.primer_finder as primer_finder
+import cfeproviral.gene_splicer as gene_splicer
 
 cwd = Path(os.path.realpath(__file__)).parent
 data = cwd.parent / 'data'

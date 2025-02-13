@@ -1,7 +1,7 @@
 import logging
 import re
 import Levenshtein
-import gene_splicer.utils as utils
+import cfeproviral.utils as utils
 from gotoh import align_it
 
 logger = logging.getLogger(__name__)

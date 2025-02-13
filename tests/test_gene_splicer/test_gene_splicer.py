@@ -3,7 +3,7 @@ from pathlib import Path
 
 cwd = Path(os.path.realpath(__file__)).parent
 
-import gene_splicer.utils as utils
+import cfeproviral.utils as utils
 
 utils.write_fasta({'MOD_HXB2': utils.mod_hxb2}, cwd / 'mod_hxb2.fasta')
 valid_genes = utils.load_yaml(cwd / 'valid' / 'valid_genes.yaml')

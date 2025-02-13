@@ -1,4 +1,4 @@
-from gene_splicer.file import File
+from cfeproviral.file import File
 
 
 def test_file_inmem():

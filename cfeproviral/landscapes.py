@@ -16,7 +16,7 @@ from csv import DictWriter, DictReader
 from itertools import groupby
 from operator import itemgetter
 
-from gene_splicer.utils import (
+from cfeproviral.utils import (
     iterate_cfeintact_verdicts_1,
     iterate_hivseqinr_verdicts_1,
     LEFT_PRIMER_END, RIGHT_PRIMER_START, Backend,

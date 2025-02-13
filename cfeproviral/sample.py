@@ -7,10 +7,10 @@ from pathlib import Path
 from importlib.metadata import version
 from typing import Sequence
 
-import gene_splicer.gene_splicer as gene_splicer
-import gene_splicer.primer_finder as primer_finder
-import gene_splicer.utils as utils
-import gene_splicer.landscapes as landscapes
+import cfeproviral.gene_splicer as gene_splicer
+import cfeproviral.primer_finder as primer_finder
+import cfeproviral.utils as utils
+import cfeproviral.landscapes as landscapes
 
 
 def get_argument_parser() -> ArgumentParser:

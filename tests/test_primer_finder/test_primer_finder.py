@@ -6,10 +6,10 @@ from pathlib import Path
 
 cwd = Path(os.path.realpath(__file__)).parent
 
-import gene_splicer.utils as utils
-from gene_splicer.primer_finder_class import PrimerFinder
+import cfeproviral.utils as utils
+from cfeproviral.primer_finder_class import PrimerFinder
 import Levenshtein
-from gene_splicer.primer_finder import primers
+from cfeproviral.primer_finder import primers
 
 
 @pytest.fixture

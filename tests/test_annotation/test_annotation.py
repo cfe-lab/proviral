@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-import gene_splicer.utils as utils
+import cfeproviral.utils as utils
 
 
 def test_annotation():
