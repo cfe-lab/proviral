@@ -49,6 +49,8 @@ The Proviral Pipeline automatically transforms raw sequencing results into quali
 - **Defect Prioritization:**
   Detected defects are ordered by severity to identify the most critical anomaly for each sample (this is the `MyVerdict` field of `table_precursor.csv` file from [interpretation page](interpretation.html)). Detailed results of this stage are archived and later used for visualization and further review.
 
+More on this [here](defects.html).
+
 ## F. Gene Alignment and Splicing
 
 - **Alignment to Reference:**
