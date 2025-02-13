@@ -61,19 +61,23 @@ While a single proviral genome may display multiple defects simultaneously, for 
    For every proviral sequence, the analysis modules generate a list of defect calls when abnormalities are detected. If no defects are found, the provirus is labeled as "Intact."
 
 2. **Severity Ordering**:
-   The pipeline defines an ordered list of defect codes where the order indicates increasing severity. For instance, defects such as **Hypermutation** will be ranked higher than defects like **Frameshift** because hypermutation is considered to more comprehensively incapacitate the virus.
+   The pipeline defines an ordered list of defect codes where the order indicates increasing severity. For instance, defects such as **APOBECHypermutation** will be ranked higher than defects like **Frameshift** because hypermutation is considered to more comprehensively incapacitate the virus.
 
 3. **Selection**:
    When multiple defects are present, the pipeline chooses the defect that appears first in the severity ranking list to represent the provirus's status. This "most serious defect" is then used in outcome summaries and downstream analyses.
 
-<!-- TODO: Visual representation of severity ranking order for both CFEIntact and HIVSeqinR -->
+Visually, the procedure looks like this:
+
+![CFEIntact's decision tree](defect_decesion.png)
+
+> Note: this part describes CFEIntact's decision process. To learn about HIVSeqinR's one, study [it's introduction paper](https://www.nature.com/articles/s41467-019-10659-2).
 
 ---
 
 # Example Case
 
-Consider a proviral sequence that shows evidence of both **Hypermutation** and **Frameshift**.
-Given that the predefined ranking prioritizes **Hypermutation**, the pipeline designates "Hypermutation" as the most serious defect. This result --- encoded in the summary (for example, in the `MyVerdict` field of the `table_precursor.csv`) --- provides a streamlined way to assess the overall quality of the provirus.
+Consider a proviral sequence that shows evidence of both **APOBECHypermutation** and **Frameshift**.
+Given that the predefined ranking prioritizes **APOBECHypermutation**, the pipeline designates "Hypermutation" as the most serious defect. This result --- encoded in the summary (for example, in the `MyVerdict` field of the `table_precursor.csv`) --- provides a streamlined way to assess the overall quality of the provirus.
 
 ---
 
