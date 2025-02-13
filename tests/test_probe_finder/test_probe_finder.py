@@ -2,7 +2,7 @@ import os
 import pytest
 from pathlib import Path
 
-from gene_splicer.probe_finder import ProbeFinder
+from cfeproviral.probe_finder import ProbeFinder
 
 
 @pytest.fixture

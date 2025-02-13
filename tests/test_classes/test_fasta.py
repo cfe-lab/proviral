@@ -1,4 +1,4 @@
-from gene_splicer.fasta import Fasta
+from cfeproviral.fasta import Fasta
 
 
 def test_fasta():

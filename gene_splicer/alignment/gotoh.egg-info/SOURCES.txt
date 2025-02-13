@@ -1,7 +1,0 @@
-gotoh.cpp
-setup.py
-gotoh.egg-info/PKG-INFO
-gotoh.egg-info/SOURCES.txt
-gotoh.egg-info/dependency_links.txt
-gotoh.egg-info/not-zip-safe
-gotoh.egg-info/top_level.txt

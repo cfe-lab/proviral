@@ -6,5 +6,5 @@ echo ===== Installing hivseqinr ===== >/dev/null
 
 set -x
 
-python3 -m gene_splicer.hivseqinr /opt/hivseqinr
+python3 -m cfeproviral.hivseqinr /opt/hivseqinr
 

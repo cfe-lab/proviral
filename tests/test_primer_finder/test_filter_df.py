@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-import gene_splicer.primer_finder as primer_finder
+import cfeproviral.primer_finder as primer_finder
 
 cwd = Path(os.path.realpath(__file__)).parent
 inputs = cwd.parent / 'data' / 'example3' / 'inputs'

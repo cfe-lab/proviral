@@ -36,7 +36,7 @@ def execute_module_as_main(module_name: str, arguments: Sequence[str]) -> int:
 
 
 def execute_program(program: str, arguments: Sequence[str]) -> int:
-    mod = f'gene_splicer.{program}'
+    mod = f'cfeproviral.{program}'
     sys.argv = ['cfeproviral ' + program] + list(arguments)
     return execute_module_as_main(mod, arguments)
 

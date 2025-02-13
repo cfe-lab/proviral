@@ -7,8 +7,8 @@ from pathlib import Path
 cwd = Path(os.path.realpath(__file__)).parent
 # sys.path.append(str(cwd.parent.parent))
 
-import gene_splicer.utils as utils
-from gene_splicer.fasta import Fasta
+import cfeproviral.utils as utils
+from cfeproviral.fasta import Fasta
 
 
 def test_get_softclip_start():

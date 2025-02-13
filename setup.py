@@ -19,6 +19,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'cfeproviral = gene_splicer.main:entry',
+            'cfeproviral = cfeproviral.main:entry',
         ]
     })

@@ -2,8 +2,8 @@ import argparse
 import os
 import csv
 from pathlib import Path
-from gene_splicer.primer_finder_errors import PrimerFinderErrors
-from gene_splicer.helpers.proviral_helper import ProviralHelper
+from cfeproviral.primer_finder_errors import PrimerFinderErrors
+from cfeproviral.helpers.proviral_helper import ProviralHelper
 
 
 # Base this file on the outcome summary. For all samples total, for all samples in each run, and for all samples belonging to every participant compute the following columns:

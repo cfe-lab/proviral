@@ -16,13 +16,13 @@ import math
 import typing
 from typing import Literal
 
-from gene_splicer.primer_finder_errors import PrimerFinderErrors
-from gene_splicer.primer_finder_class import PrimerFinder
-from gene_splicer.outcome_summary import OutcomeSummary
-from gene_splicer.hivseqinr import Hivseqinr
-from gene_splicer.helpers.proviral_helper import ProviralHelper
+from cfeproviral.primer_finder_errors import PrimerFinderErrors
+from cfeproviral.primer_finder_class import PrimerFinder
+from cfeproviral.outcome_summary import OutcomeSummary
+from cfeproviral.hivseqinr import Hivseqinr
+from cfeproviral.helpers.proviral_helper import ProviralHelper
 
-import gene_splicer.utils as utils
+import cfeproviral.utils as utils
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 

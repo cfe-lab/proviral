@@ -1,7 +1,7 @@
 from io import StringIO
 from pathlib import Path
 
-from gene_splicer.study_summary import StudySummary
+from cfeproviral.study_summary import StudySummary
 
 
 def test_load_runs():

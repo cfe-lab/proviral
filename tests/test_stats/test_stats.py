@@ -3,7 +3,7 @@ import os
 import csv
 from pathlib import Path
 
-import gene_splicer.stats as stats
+import cfeproviral.stats as stats
 
 cwd = Path(os.path.realpath(__file__)).parent
 

@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-import gene_splicer.utils as utils
+import cfeproviral.utils as utils
 
 
 def parse_args():

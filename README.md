@@ -63,7 +63,7 @@ The repository is organized as follows:
 
 - `Dockerfile` – Defines build instructions for the main image (Ubuntu-based).
 - `docs/` – Contains all documentation in markdown format (including installation, usage, workflow details, error codes, and troubleshooting).
-- `gene_splicer/` – Main source code directory containing:
+- `cfeproviral/` – Main source code directory containing:
   - `primer_finder.py`: Primer detection, filtering, and error logging.
   - `gene_splicer.py`: Gene splicing and alignment with external tools.
   - `main.py`: Entry point (cfeproviral) and command-line interface orchestration.

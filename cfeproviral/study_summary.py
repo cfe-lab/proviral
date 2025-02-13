@@ -12,7 +12,7 @@ from operator import itemgetter
 from pathlib import Path
 from subprocess import run, CalledProcessError, STDOUT
 
-from gene_splicer.primer_finder_errors import PrimerFinderErrors
+from cfeproviral.primer_finder_errors import PrimerFinderErrors
 
 
 def parse_args():
@@ -201,7 +201,7 @@ class StudySummary:
                   file=report_file)
 
 
-def run_gene_splicer(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
+def run_cfeproviral(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
     version_results_path = run_path / 'Results' / 'version_7.14'
     assert version_results_path.exists(), version_results_path
     denovo_path = version_results_path / 'denovo'
@@ -215,7 +215,7 @@ def run_gene_splicer(run_path: Path, outcome_folder: Path, run_cfeintact: bool):
     launch_path = Path(__file__).parent.parent
     log_path = outcome_folder / 'gene_splicer.log'
     pipeline_args = [python_path,
-                     '-m', 'gene_splicer.pipeline',
+                     '-m', 'cfeproviral.pipeline',
                      '--outpath', str(outcome_folder),
                      contigs_path,
                      conseq_path,
@@ -265,7 +265,7 @@ def main():
                 print('Missing denovo results:', run_path)
                 continue
             else:
-                run_gene_splicer(run_path, outcome_path.parent, args.cfeintact)
+                run_cfeproviral(run_path, outcome_path.parent, args.cfeintact)
                 assert outcome_path.exists(), outcome_path
                 print('.', end='', flush=True)
                 dots_printed = True
