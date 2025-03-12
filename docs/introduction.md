@@ -39,6 +39,11 @@ To make our pipeline accessible and easy to use, we have encapsulated it within 
 
 By following the rest of this guide, you will be up and running with proviral sequence analysis quickly, even with minimal technical background.
 
+The proviral pipeline is a command-line program --- it is designed to be interacted with from within a terminal.
+If you are not experienced with that, see the following guides:
+- For Windows: [a beginner's guide to the Windows Command Prompt](https://www.makeuseof.com/tag/a-beginners-guide-to-the-windows-command-line).
+- For POSIX (GNU, BSD, MacOS, ...): [command line for beginners](https://www.freecodecamp.org/news/command-line-for-beginners).
+
 ---
 
 Next: [installation](installation.html).
