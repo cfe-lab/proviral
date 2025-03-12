@@ -57,10 +57,10 @@ docker run --rm -v .:/w cfelab/proviral sample sample_info.csv contigs.csv conse
     - **contigs_primers.csv** – Primer analysis for contigs
     - **table_precursor.csv** – Data ready for downstream upload
     - **proviral_landscape.csv** – Data for generating proviral landscape plots
-    - **detailed_results.tar** – Archive of detailed results produced by HIVSeqinR (or CFEIntact)
+    - **detailed_results.tar** – Archive of detailed results produced by CFEIntact (or HIVSeqinR)
 
-- **`--hivseqinr`**
-  Specifies that the HIVSeqinR backend should be used for downstream analysis. (You may alternatively specify `--cfeintact` if that is preferred.)
+- **`--cfeintact`**
+  Specifies that the CFEIntact backend should be used for downstream analysis. You may alternatively specify `--hivseqinr` if that is preferred.
 
 ---
 
