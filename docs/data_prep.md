@@ -11,8 +11,12 @@ To analyze proviral sequences, the pipeline expects specific input files generat
    - **match**: The fraction of the contig matched in BLAST (negative values indicate reverse-complemented matches).
    - **group_ref**: The reference name selected to best align with all contigs in a sample.
    - **contig**: The nucleotide sequence of the assembled contig.
+   
+> In MiCall's output, this file is called `unstitched_contigs.csv`.
 
 2. **conseqs.csv**: Contains refined/improved versions of contigs.
+
+> In MiCall's output, this file is called `unstitched_conseq.csv`.
 
 3. **cascade.csv**: Tracks the number of read pairs processed through different stages of the pipeline.
    - **demultiplexed**: Raw FASTQ count.
