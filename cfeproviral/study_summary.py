@@ -43,10 +43,10 @@ def parse_args():
                              'the runs in samples_csv. Any samples not found '
                              'in samples.csv will guess the participant id '
                              'from the first part of the sample name.')
-    parser.add_argument('--cfeintact',
+    parser.add_argument('--hivseqinr',
                         action='store_true',
-                        help="Launch the CFEIntact analysis instead of "
-                             "HIVSeqinR.")
+                        help="Launch the HIVSeqinR analysis instead of "
+                             "CFEIntact.")
     return parser.parse_args()
 
 
@@ -265,7 +265,7 @@ def main():
                 print('Missing denovo results:', run_path)
                 continue
             else:
-                run_cfeproviral(run_path, outcome_path.parent, args.cfeintact)
+                run_cfeproviral(run_path, outcome_path.parent, not args.hivseqinr)
                 assert outcome_path.exists(), outcome_path
                 print('.', end='', flush=True)
                 dots_printed = True
