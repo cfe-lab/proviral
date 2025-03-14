@@ -71,7 +71,7 @@
         },
         "cfeintact": {
             "git": "https://github.com/cfe-lab/CFEIntact",
-            "ref": "a96d1e7e9b49ed9bc18983d5132f8b935e9bdcf1"
+            "ref": "6ae623ec57449b707e8df0081e2ce7235912bb5e"
         },
         "charset-normalizer": {
             "hashes": [
