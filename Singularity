@@ -3,7 +3,7 @@ Bootstrap: docker
 From: ubuntu:22.04
 
 %help
-    Search proviral consensus sequences for primers, then use HIVSeqinR to
+    Search proviral consensus sequences for primers, then use CFEIntact to
     decide if the genomes are complete.
 
     This Singularity container can be run on Kive: http://cfe-lab.github.io/Kive
