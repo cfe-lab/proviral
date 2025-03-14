@@ -10,7 +10,7 @@ python-levenshtein = "==0.26.1"
 pandas = "==2.2.3"
 requests = "==2.32.3"
 pyyaml = "==6.0.2"
-cfeintact = {ref = "v1.23.1", git = "https://github.com/cfe-lab/CFEIntact"}
+cfeintact = {ref = "v1.23.2", git = "https://github.com/cfe-lab/CFEIntact"}
 
 [dev-packages]
 pytest = "*"
