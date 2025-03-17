@@ -547,7 +547,7 @@ def run(contigs_csv,
                 logger.addHandler(file_handler)
 
                 cfeintact.check(
-                    working_dir=working_path,
+                    output_dir=working_path,
                     input_file=str(no_primers_fasta),
                     subtype="B",
                     check_packaging_signal=True,
