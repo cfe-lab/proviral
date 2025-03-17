@@ -604,6 +604,10 @@ def get_softclipped_region(query, alignment, alignment_path):
         return
 
     cigar = first_match[5]
+    if cigar == '*':
+        logger.warning('No alignment in %s!', alignment_path)
+        return
+
     size, op = split_cigar(cigar)[0]
     if op != 'S':
         return
