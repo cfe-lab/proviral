@@ -90,7 +90,7 @@ def main(argv: Sequence[str]) -> int:
     args = parser.parse_args(argv)
     outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
     outpath = outpath.resolve()
-    outpath.mkdir(exist_ok=True)
+    outpath.mkdir(exist_ok=True, parents=True)
     with args.sample_info_csv:
         info_reader = DictReader(args.sample_info_csv)
         for row in info_reader:
