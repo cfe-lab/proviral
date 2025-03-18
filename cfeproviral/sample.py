@@ -13,6 +13,14 @@ import cfeproviral.utils as utils
 import cfeproviral.landscapes as landscapes
 
 
+def output_file(argument: str) -> Path:
+    path = Path(argument)
+    if (not path.exists()) or path.is_file():
+        return path
+    else:
+        raise ValueError(f"Path {argument!r} is not a regular file.")
+
+
 def get_argument_parser() -> ArgumentParser:
     parser = ArgumentParser(
         description='Search sequences from a single sample for primers, and '
@@ -34,23 +42,23 @@ def get_argument_parser() -> ArgumentParser:
     # outputs
     parser.add_argument('outcome_summary_csv',
                         help='Summary result for the whole sample',
-                        type=FileType('w'))
+                        type=output_file)
     parser.add_argument('conseqs_primers_csv',
                         help='Analysis of primers in consensus sequences',
-                        type=FileType('w'))
+                        type=output_file)
     parser.add_argument('contigs_primers_csv',
                         help='Analysis of primers in assembled contig sequences',
-                        type=FileType('w'))
+                        type=output_file)
     parser.add_argument('table_precursor_csv',
                         help='Sequence data ready to upload',
-                        type=FileType('w'))
+                        type=output_file)
     parser.add_argument('proviral_landscape_csv',
                         help='Data for proviral landscape plot',
-                        type=FileType('w'))
+                        type=output_file)
     parser.add_argument('detailed_results_tar',
                         help="Archive file with HIVSeqinR's final results "
                              "folder, or CFEIntact's results.",
-                        type=FileType('wb'))
+                        type=output_file)
     parser.add_argument(
         '-p',
         '--sample_size',
@@ -79,20 +87,19 @@ def get_argument_parser() -> ArgumentParser:
     return parser
 
 
-def copy_output(source: Path, target: typing.IO):
-    target.close()
-    source.rename(target.name)
+def copy_output(source: Path, target: Path):
+    source.rename(target)
 
 
 def main(argv: Sequence[str]) -> int:
     logging.basicConfig(level=logging.WARNING)
     parser = get_argument_parser()
     args = parser.parse_args(argv)
-    outpath = Path(args.outcome_summary_csv.name).parent / 'scratch'
+    outpath = args.outcome_summary_csv.parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True, parents=True)
-    with args.sample_info_csv:
-        info_reader = DictReader(args.sample_info_csv)
+    with args.sample_info_csv as reader:
+        info_reader = DictReader(reader)
         for row in info_reader:
             sample_info: dict = row
             break
@@ -102,7 +109,7 @@ def main(argv: Sequence[str]) -> int:
 
     hivseqinr_results_tar = None
     cfeintact_results_tar = None
-    backend = None
+    backend: utils.Backend = None
 
     if args.cfeintact:
         cfeintact_results_tar = args.detailed_results_tar

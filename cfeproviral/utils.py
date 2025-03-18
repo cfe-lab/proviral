@@ -700,7 +700,7 @@ def isNan(num):
 
 
 def get_samples_from_cascade(cascade_csv: typing.IO,
-                             default_sample_name: str = None):
+                             default_sample_name: Optional[str] = None):
     all_samples = {}
     reader = DictReader(cascade_csv)
     if 'sample' in reader.fieldnames:

@@ -14,7 +14,7 @@ import logging
 import math
 
 import typing
-from typing import Literal
+from typing import Literal, Optional
 
 from cfeproviral.primer_finder_errors import PrimerFinderErrors
 from cfeproviral.primer_finder_class import PrimerFinder
@@ -425,18 +425,20 @@ def filter_df(df, nodups=True):
 
 
 def archive_hivseqinr_results(working_path: Path,
-                              hivseqinr_results_tar: typing.IO):
+                              hivseqinr_results_tar: Path):
     final_results_path = working_path / 'Results_Final'
-    archive = TarFile(fileobj=hivseqinr_results_tar, mode='w')
-    for result_path in final_results_path.iterdir():
-        archive.add(result_path, result_path.name)
+    with hivseqinr_results_tar.open("wb") as writer:
+        archive = TarFile(fileobj=writer, mode='w')
+        for result_path in final_results_path.iterdir():
+            archive.add(result_path, result_path.name)
 
 
 def archive_cfeintact_results(working_path: Path,
-                              cfeintact_results_tar: typing.IO):
-    archive = TarFile(fileobj=cfeintact_results_tar, mode='w')
-    for result_path in working_path.iterdir():
-        archive.add(result_path, result_path.name)
+                              cfeintact_results_tar: Path):
+    with cfeintact_results_tar.open("wb") as writer:
+        archive = TarFile(fileobj=writer, mode='w')
+        for result_path in working_path.iterdir():
+            archive.add(result_path, result_path.name)
 
 
 def run(contigs_csv,
@@ -448,10 +450,10 @@ def run(contigs_csv,
         split=1,
         sample_size=50,
         force_all_proviral=False,
-        default_sample_name: str = None,
-        hivseqinr_results_tar: typing.IO = None,
+        default_sample_name: Optional[str] = None,
+        hivseqinr_results_tar: Optional[Path] = None,
         backend: utils.Backend = None,
-        cfeintact_results_tar: typing.IO = None):
+        cfeintact_results_tar: Optional[Path] = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
 
