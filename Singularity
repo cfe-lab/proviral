@@ -29,4 +29,5 @@ From: ubuntu:22.04
     export LANG=en_US.UTF-8
 
 %runscript
+    cd -- /w
     cfeproviral sample --cfeintact "$@"
