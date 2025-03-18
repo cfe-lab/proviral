@@ -43,7 +43,7 @@ With Docker installed and running, you can now download the pre-configured Docke
   You should see a version number like this:
   
   ```
-  Proviral Pipeline 2.4.1
+  Proviral Pipeline 2.4.2
   ```
 
 ---
