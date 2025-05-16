@@ -393,9 +393,9 @@ def add_primers(row):
     return row
 
 
-def remove_primers(row):
+def remove_primers(sample_size, row):
     # Strip the primers out, convert index values from floats.
-    N = 50
+    N = sample_size
     fwd_end = int(row.fwd_sample_primer_start + row.fwd_sample_primer_size)
     rev_start = len(row.sequence) - N + int(row.rev_sample_primer_start)
     newseq = row.sequence[fwd_end:rev_start]
@@ -403,11 +403,11 @@ def remove_primers(row):
     return row
 
 
-def filter_df(df, nodups=True):
+def filter_df(sample_size, df, nodups=True):
     filtered = df[(df['error'].isna()
                    & df['fwd_error'].isna()
                    & df['rev_error'].isna())]
-    filtered = filtered.apply(remove_primers, axis=1, result_type='broadcast')
+    filtered = filtered.apply(lambda x: remove_primers(sample_size, x), axis=1, result_type='broadcast')
     if nodups:
         filtered = filtered.drop_duplicates(subset='sample', keep=False)
     if not filtered.empty:
@@ -482,8 +482,8 @@ def run(contigs_csv,
         OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
-        filtered_contigs = filter_df(contigs_df, nodups)
-        filtered_conseqs = filter_df(conseqs_df, nodups)
+        filtered_contigs = filter_df(sample_size, contigs_df, nodups)
+        filtered_conseqs = filter_df(sample_size, conseqs_df, nodups)
         joined = filtered_contigs.merge(filtered_conseqs,
                                         on='sample',
                                         suffixes=('_contig', '_conseq'),

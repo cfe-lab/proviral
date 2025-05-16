@@ -11,6 +11,7 @@ outputs = cwd.parent / 'data' / 'example3' / 'outputs'
 
 
 def test_filter_df():
+    sample_size = 50
     sample = pd.DataFrame(
         data={
             'error': [''],
@@ -20,7 +21,7 @@ def test_filter_df():
             'sequence': [''],
             'seqtype': ['']
         })
-    primer_finder.filter_df(sample)
+    primer_finder.filter_df(sample_size, sample)
 
     # This breaks because of a string filter being applied to a numeric column
     # sample = pd.DataFrame(
@@ -59,5 +60,5 @@ def test_filter_df():
     # break the filter_df function since it uses a pandas .str filter internally
     contigs_df = dfs[run_name]['contigs'].fillna('')
     conseqs_df = dfs[run_name]['conseqs'].fillna('')
-    primer_finder.filter_df(contigs_df, nodups=True)
-    primer_finder.filter_df(conseqs_df, nodups=True)
+    primer_finder.filter_df(sample_size, contigs_df, nodups=True)
+    primer_finder.filter_df(sample_size, conseqs_df, nodups=True)
