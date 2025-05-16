@@ -395,9 +395,10 @@ def add_primers(row):
 
 def remove_primers(row):
     # Strip the primers out, convert index values from floats.
-    newseq = row.sequence[
-             int(row.fwd_sample_primer_size + row.fwd_sample_primer_start):
-             -int(row.rev_sample_primer_size + row.rev_sample_primer_start)]
+    N = 50
+    fwd_end = int(row.fwd_sample_primer_start + row.fwd_sample_primer_size)
+    rev_start = len(row.sequence) - N + int(row.rev_sample_primer_start)
+    newseq = row.sequence[fwd_end:rev_start]
     row.sequence = newseq
     return row
 
