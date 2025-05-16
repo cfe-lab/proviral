@@ -85,6 +85,7 @@ In addition to reporting the sample, run, and error, these files contain:
   - `sample_primer_seq`: The sequence identified in the sample.
   - Positional details such as `sample_primer_start`, `sample_primer_end`, and the computed primer sizes.
   - Converted positions relative to the HXB2 reference (e.g., `hxb2_sample_primer_start`).
+- The `sequence` column: the raw assembled string as it came in from MiCall (from `conseq.csv` or `contigs.csv` respectively), converted to uppercase only, and used as the substrate for all primer-finding steps.  No primers or gaps are removed or altered for this column.
 
 #### Interpretation Tips
 
