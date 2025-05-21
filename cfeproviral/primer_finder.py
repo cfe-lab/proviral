@@ -398,6 +398,9 @@ def remove_primers(sample_size, row):
     N = sample_size
     fwd_end = int(row.fwd_sample_primer_start + row.fwd_sample_primer_size)
     rev_start = len(row.sequence) - N + int(row.rev_sample_primer_start)
+    if rev_start <= fwd_end:
+        return row
+
     newseq = row.sequence[fwd_end:rev_start]
     row.sequence = newseq
     return row
