@@ -260,3 +260,54 @@ def test_partial_primer_trimming(tmp_path):
     # Should have exactly one row, and its sequence equals the payload
     assert len(trimmed) == 1
     assert trimmed.iloc[0]["sequence"] == payload
+
+
+def test_partial_primer_trimming_no_pad(tmp_path):
+    # Use partial‐primer fragments:
+    fwd_frag = primers["fwd"]["nomix"][-10:]
+    rev_frag = primers["rev"]["nomix"][:8]
+    front_pad = ""
+    back_pad = ""
+
+    # Payload must be A/C/T/G only to avoid non-TCGA QC filtering
+    payload = "ACTAAACTATATATTTAAATATATGTTCTCTATTC"
+
+    trimmed, full_seq = setup_trim_case(
+        tmp_path, fwd_frag, rev_frag, payload, front_pad, back_pad
+    )
+
+    # Should have exactly one row, and its sequence equals the payload
+    assert len(trimmed) == 1
+    assert trimmed.iloc[0]["sequence"] == payload
+
+
+def test_mutated_forward_primer_trimming(tmp_path):
+    base = primers["fwd"]["nomix"][-10:]
+    frag = list(base)
+
+    # mutate one base.
+    assert frag[2] != 'C'
+    frag[2] = 'C'
+
+    fwd_mut = ''.join(frag)
+    rev_frag = primers["rev"]["nomix"][:8]
+    payload  = "ACTGACTGACTG"
+    trimmed, _ = setup_trim_case(tmp_path, fwd_mut, rev_frag, payload)
+    assert len(trimmed) == 1
+    assert trimmed.iloc[0]["sequence"] == payload
+
+
+def test_mutated_reverse_primer_trimming(tmp_path):
+    fwd_frag = primers["fwd"]["nomix"][-10:]
+    base = primers["rev"]["nomix"][:10]
+    frag = list(base)
+
+    # mutate one base.
+    assert frag[7] != 'A'
+    frag[7] = 'A'
+
+    rev_mut = ''.join(frag)
+    payload = "GTCAGTCAGTCA"
+    trimmed, _ = setup_trim_case(tmp_path, fwd_frag, rev_mut, payload)
+    assert len(trimmed) == 1
+    assert trimmed.iloc[0]["sequence"] == payload
