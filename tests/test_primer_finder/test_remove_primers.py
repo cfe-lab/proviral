@@ -24,8 +24,12 @@ Why this helps:
     any of these fundamental behaviors.
 """
 
+import pandas as pd
+import numpy as np
 import pytest
-from cfeproviral.primer_finder import remove_primers
+import re
+from cfeproviral.primer_finder_class import PrimerFinder
+from cfeproviral.primer_finder import remove_primers, filter_df, primers, PrimerFinderErrors, record_primers
 
 class DummyRow:
     """
@@ -106,3 +110,95 @@ def test_remove_primers_no_trimming_if_all_zero():
     row = DummyRow(payload, fwd_start=0, fwd_size=0, rev_start=0, rev_size=0)
     out = remove_primers(len(payload), row)
     assert out.sequence == payload
+
+
+def test_remove_primers_is_applied_by_filter_df():
+    # --- construct a fake molecule -------------------------------
+    payload       = "PAYLOAD"
+    fwd_size      = 3
+    fwd_start     = 2            # forward primer begins after 2 bases of pad
+    rev_size      = 4            # reverse primer length
+    front_pad     = "X" * fwd_start
+    fwd_primer    = "F" * fwd_size
+    rev_primer    = "R" * rev_size
+    back_pad      = "Y" * 5      # some extra tail padding
+
+    # we must compute absolute index where the reverse primer starts:
+    # front_pad + fwd_primer + payload
+    rev_start = fwd_start + fwd_size + len(payload)
+
+    # assemble the full sequence:
+    full_seq = front_pad + fwd_primer + payload + rev_primer + back_pad
+
+    # sanity:
+    assert full_seq[ rev_start : rev_start + rev_size ] == rev_primer
+
+    # --- build a DataFrame row just like primer_finder leaves it ----
+    sample_size = len(full_seq)
+    df = pd.DataFrame([{
+        # must be “no error” so filter_df doesn’t drop the row
+        "error":        np.nan,
+        "fwd_error":    np.nan,
+        "rev_error":    np.nan,
+        # any reference that doesn’t contain “reverse” or “unknown”
+        "reference":    "sample1",
+        "seqtype":      "contig",
+        # the long sequence, to be trimmed
+        "sequence":     full_seq,
+        # the four metadata fields remove_primers needs:
+        "fwd_sample_primer_start": fwd_start,
+        "fwd_sample_primer_size":  fwd_size,
+        "rev_sample_primer_start": rev_start,
+        "rev_sample_primer_size":  rev_size,
+    }])
+
+    # run filter_df without deduplication
+    filtered = filter_df(sample_size, df, nodups=False)
+
+    # after trimming, we should have exactly one row…
+    assert len(filtered) == 1
+
+    # …and its “sequence” column must be exactly the payload
+    assert filtered.iloc[0]["sequence"] == payload
+
+
+@pytest.mark.parametrize("direction", ("fwd","rev"))
+def test_primerfinder_detects_pure_acgt_suffixes(direction):
+    # grab the canonical primer (may contain mixtures Y/R/etc)
+    primer_seq = primers[direction]["seq"]
+    other      = primers["rev" if direction=="fwd" else "fwd"]["seq"]
+
+    # embed it in a little fake molecule
+    if direction == "fwd":
+        full = primer_seq + "PAYLOAD" + other
+    else:
+        full = other + "PAYLOAD" + primer_seq
+
+    sample_size     = len(full)
+    validation_size = 5
+
+    finder = PrimerFinder(
+        full_sample     = full,
+        primer          = primer_seq,
+        direction       = direction,
+        hxb2_start      = primers[direction]["hxb2_start"],
+        hxb2_end        = primers[direction]["hxb2_end"],
+        validation_size = validation_size,
+        sample_size     = sample_size,
+    )
+
+    # 1) primer_primer is pure A/C/G/T
+    found = finder.sample_primer
+    assert found and all(nt in "ACGT" for nt in found)
+
+    # 2) it must match the longest A/C/G/T suffix of the original
+    pure_tail = re.search(r"([ACGT]+)$", primer_seq).group(1)
+    assert found == pure_tail
+
+    # 3) only the reverse primer (no mixtures) is long enough to auto-validate
+    if direction == "rev":
+        assert finder.is_valid,        "reverse primer should be valid"
+        assert finder.is_full_length,  "reverse primer should be full-length"
+    else:
+        assert not finder.is_valid,       "forward primer suffix <7bp so not valid"
+        assert not finder.is_full_length, "forward suffix never reaches full_length"
