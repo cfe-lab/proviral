@@ -9,7 +9,8 @@ import numpy as np
 import pytest
 import re
 from cfeproviral.primer_finder_class import PrimerFinder
-from cfeproviral.primer_finder import remove_primers, filter_df, primers, PrimerFinderErrors, record_primers
+from cfeproviral.primer_finder import remove_primers, filter_df, primers, PrimerFinderErrors, record_primers, find_primers
+
 
 class DummyRow:
     """
@@ -182,3 +183,73 @@ def test_primerfinder_detects_pure_acgt_suffixes(direction):
     else:
         assert not finder.is_valid,       "forward primer suffix <7bp so not valid"
         assert not finder.is_full_length, "forward suffix never reaches full_length"
+
+
+def test_partial_primer_trimming(tmp_path):
+    import pandas as pd
+    from cfeproviral.primer_finder import find_primers, filter_df, primers
+
+    # 1) prepare our temp dirs and parameters
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+
+    # grab the "no-mix" primer sequences from the pipeline
+    fwd_nomix = primers["fwd"]["nomix"]
+    rev_nomix = primers["rev"]["nomix"]
+
+    # take only a suffix of the forward primer and a prefix of the reverse
+    fwd_suffix = fwd_nomix[-10:]
+    rev_prefix = rev_nomix[:8]
+
+    front_buffer = "AAA"
+    back_buffer = "TTT"
+    payload     = "ACTAAACTATATATTTAAATATATGTTCTCTATTC"
+
+    # assemble a contig that contains only partial primers
+    full_seq = front_buffer + fwd_suffix + payload + rev_prefix + back_buffer
+    assert full_seq != payload  # sanity: must be different
+
+    sample_name = "TEST_SAMPLE"
+
+    # 2) write contigs.csv (must include a 'region' column per primer_finder’s code)
+    contigs_csv = tmp_path / "contigs.csv"
+    with contigs_csv.open("w") as f:
+        f.write("sample,region,sequence\n")
+        f.write(f"{sample_name},HIV_dummy,{full_seq}\n")
+
+    # 3) write a minimal cascade.csv so find_primers thinks this sample is proviral
+    cascade_csv = tmp_path / "cascade.csv"
+    with cascade_csv.open("w") as f:
+        f.write("sample,remap\n")
+        f.write(f"{sample_name},1\n")
+
+    # 4) run primer-finder
+    analysis_csv = find_primers(
+        csv_filepath=contigs_csv.open("r"),
+        outpath=outdir,
+        run_name="run1",
+        all_samples={sample_name: 1},
+        seqtype="contigs",
+        sample_size=len(full_seq),
+        force_all_proviral=True
+    )
+
+    # 5) read the raw primer_analysis CSV
+    df_raw = pd.read_csv(analysis_csv)
+
+    # sanity‐check: before trimming, the sequence column should be the full one
+    assert df_raw.loc[0, "sequence"] == full_seq
+
+    # 6) normalize the three error columns so that BOTH "" *and* "None" become real NA
+    for col in ("error", "fwd_error", "rev_error"):
+        df_raw[col] = df_raw[col].replace({"": pd.NA, "None": pd.NA})
+
+    # 7) add the seqtype column that filter_df expects
+    df_raw["seqtype"] = "contigs"
+
+    # 8) run the in-memory filter (which applies remove_primers under the hood)
+    df_trimmed = filter_df(sample_size=len(full_seq), df=df_raw, nodups=False)
+
+    # we should now have exactly one row, and its sequence must be just the payload
+    assert len(df_trimmed) == 1
+    assert df_trimmed.iloc[0]["sequence"] == payload
