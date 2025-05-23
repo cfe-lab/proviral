@@ -2,6 +2,21 @@
 """
 Verify that remove_primers() correctly chops off only the synthetic
 forward- and reverse-primer "handles" and returns exactly the payload.
+
+Each test constructs a fake contig by embedding forward and/or reverse
+primer fragments around a payload, runs the detection and trimming steps
+(`find_primers` → `filter_df` → `remove_primers`), and asserts that trimming
+behavior matches expectations (or that no trimming occurs when primers
+overlap or are missing).
+
+Caveat: the pipeline’s QC filter will drop any sequence containing
+non-TCGA characters (e.g. digits); such rows are silently removed before
+trimming, which can make tests “disappear.” If your payload includes
+non-TCGA bases, either clear its resulting error fields or restrict payloads
+to A/C/T/G only.
+
+Maintenance: if primer definitions or QC rules change, these tests
+will need to be updated accordingly.
 """
 
 import pandas as pd
