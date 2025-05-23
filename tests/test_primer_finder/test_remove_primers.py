@@ -2,26 +2,6 @@
 """
 Verify that remove_primers() correctly chops off only the synthetic
 forward- and reverse-primer "handles" and returns exactly the payload.
-
-Key ideas:
-  * We build a minimal DummyRow whose `.sequence` is:
-       [front-padding] + F*<fwd_size> + payload + R*<rev_size>
-    and we compute the absolute start-index of the R-primer.
-
-  * By calling remove_primers(sample_size=len(full), row), we force
-    the function's internal math to use our exact indices.
-
-  * We parametrize over:
-      - primers flush to the ends
-      - primers shifted inside their windows
-      - zero-length primers
-      - and the "no-op" case when both primer sizes are zero
-
-Why this helps:
-  - No CSVs, no pandas, no side effects -- just pure string slicing.
-  - Covers all corner cases of forward/reverse offsets and zero lengths.
-  - If you ever tweak remove_primers, you'll immediately see if you broke
-    any of these fundamental behaviors.
 """
 
 import pandas as pd
