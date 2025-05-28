@@ -10,9 +10,7 @@
                 "ms-python.python",
                 "ms-python.pylint",
                 "ms-python.flake8",
-                "ms-toolsai.jupyter",
-                "ms-vscode.makefile-tools",
-                "ms-vscode.cpptools"
+                "ms-vscode.makefile-tools"
             ],
             "settings": {
                 "python.defaultInterpreterPath": "/usr/bin/python3",
@@ -30,7 +28,14 @@
             }
         }
     },
-    "postCreateCommand": "pip install -e .",
+    "postCreateCommand": "apt update -qq && apt-get install -y git && pip uninstall -y cfeproviral",
     "workspaceFolder": "/w",
-    "overrideCommand": false
+    "overrideCommand": true,
+    "runArgs": [
+        "--entrypoint=",
+        "--init"
+    ],
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/w,type=bind,consistency=cached"
+    ]
 }
