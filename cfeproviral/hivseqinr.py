@@ -48,7 +48,7 @@ class Hivseqinr:
         hxb2_path = self.blast_db / 'HXB2.fasta'
         shutil.copyfile(self.source_path / 'R_HXB2.fasta', hxb2_path)
         cmd = [
-            'makeblastdb', '-in', hxb2_path, '-parse_seqids', '-dbtype', 'nucl'
+            'makeblastdb', '-in', str(hxb2_path), '-parse_seqids', '-dbtype', 'nucl'
         ]
         log_path = self.blast_db / 'blast.log'
         with log_path.open('w') as log_file:
@@ -90,7 +90,7 @@ class Hivseqinr:
         self.download()
         self.copy_fasta()
         outpath = Path(self.outpath)
-        cmd = ['Rscript', str(self.source_path) / 'modified.R']
+        cmd = ['Rscript', str(self.source_path / 'modified.R')]
         log_path = outpath / 'hivseqinr.log'
         error_path = outpath / 'hivseqinr_error.log'
         with log_path.open('w') as log_file, error_path.open('w') as error_file:
