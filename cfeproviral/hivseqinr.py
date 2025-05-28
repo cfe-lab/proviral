@@ -90,7 +90,7 @@ class Hivseqinr:
         self.download()
         self.copy_fasta()
         outpath = Path(self.outpath)
-        cmd = ['Rscript', self.source_path / 'modified.R']
+        cmd = ['Rscript', str(self.source_path) / 'modified.R']
         log_path = outpath / 'hivseqinr.log'
         error_path = outpath / 'hivseqinr_error.log'
         with log_path.open('w') as log_file, error_path.open('w') as error_file:
