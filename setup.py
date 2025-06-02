@@ -23,6 +23,6 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'cfeproviral = cfeproviral.main:entry',
+            'cfeproviral = cfeproviral.__main__:entry',
         ]
     })
