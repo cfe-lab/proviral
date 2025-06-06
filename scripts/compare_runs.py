@@ -224,13 +224,17 @@ def read_csv_file(csv_path: Path) -> List[List[str]]:
         return []
 
 
-def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
+def compare_csv_contents(
+    file1: Path, file2: Path, version: str, filename: str
+) -> List[Discrepancy]:
     """
     Compare the contents of two CSV files and return list of discrepancies.
 
     Args:
         file1: Path to first CSV file
         file2: Path to second CSV file
+        version: Version being compared
+        filename: Name of the file being compared
 
     Returns:
         List of Discrepancy objects
@@ -251,7 +255,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                 Severity.CRITICAL,
                 Confidence.HIGH,
                 "First file is empty or failed to read",
-                location={"file": str(file1)},
+                location={
+                    "file": filename,
+                    "version": version,
+                    "run": "run1",
+                    "file_path": str(file1),
+                },
             )
         )
         return discrepancies
@@ -263,7 +272,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                 Severity.CRITICAL,
                 Confidence.HIGH,
                 "Second file is empty or failed to read",
-                location={"file": str(file2)},
+                location={
+                    "file": filename,
+                    "version": version,
+                    "run": "run2",
+                    "file_path": str(file2),
+                },
             )
         )
         return discrepancies
@@ -276,6 +290,7 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                 Severity.HIGH,
                 Confidence.HIGH,
                 f"Row count differs: {len(content1)} vs {len(content2)}",
+                location={"file": filename, "version": version, "run": "both"},
                 values={"run1_rows": len(content1), "run2_rows": len(content2)},
             )
         )
@@ -294,7 +309,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                         Severity.CRITICAL,
                         Confidence.HIGH,
                         "Header row differs",
-                        location={"row": i + 1},
+                        location={
+                            "file": filename,
+                            "version": version,
+                            "run": "both",
+                            "row": i + 1,
+                        },
                         values={"run1": row1, "run2": row2},
                     )
                 )
@@ -307,7 +327,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                             Severity.CRITICAL,
                             Confidence.HIGH,
                             f"Header column count differs: {len(row1)} vs {len(row2)}",
-                            location={"row": i + 1},
+                            location={
+                                "file": filename,
+                                "version": version,
+                                "run": "both",
+                                "row": i + 1,
+                            },
                             values={
                                 "run1_columns": len(row1),
                                 "run2_columns": len(row2),
@@ -325,7 +350,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                         severity,
                         confidence,
                         f"Row {i + 1} differs",
-                        location={"row": i + 1},
+                        location={
+                            "file": filename,
+                            "version": version,
+                            "run": "both",
+                            "row": i + 1,
+                        },
                         values={"run1": row1, "run2": row2},
                     )
                 )
@@ -338,7 +368,12 @@ def compare_csv_contents(file1: Path, file2: Path) -> List[Discrepancy]:
                             Severity.HIGH,
                             Confidence.HIGH,
                             f"Row {i + 1} column count differs: {len(row1)} vs {len(row2)}",
-                            location={"row": i + 1},
+                            location={
+                                "file": filename,
+                                "version": version,
+                                "run": "both",
+                                "row": i + 1,
+                            },
                             values={
                                 "run1_columns": len(row1),
                                 "run2_columns": len(row2),
@@ -423,7 +458,11 @@ def compare_proviral_files(
                 Severity.CRITICAL,
                 Confidence.HIGH,
                 f"No proviral CSV files found for {version}",
-                location={"version": version},
+                location={
+                    "file": "proviral_directory",
+                    "version": version,
+                    "run": "both",
+                },
             ),
         )
         return
@@ -439,8 +478,9 @@ def compare_proviral_files(
                     Confidence.HIGH,
                     f"File missing in run1: {csv_name}",
                     location={
+                        "file": csv_name,
                         "version": version,
-                        "filename": csv_name,
+                        "run": "run1",
                         "missing_from": "run1",
                     },
                 ),
@@ -457,8 +497,9 @@ def compare_proviral_files(
                     Confidence.HIGH,
                     f"File missing in run2: {csv_name}",
                     location={
+                        "file": csv_name,
                         "version": version,
-                        "filename": csv_name,
+                        "run": "run2",
                         "missing_from": "run2",
                     },
                 ),
@@ -466,7 +507,9 @@ def compare_proviral_files(
             continue
 
         # Compare the files
-        discrepancies = compare_csv_contents(csv_files1[csv_name], csv_files2[csv_name])
+        discrepancies = compare_csv_contents(
+            csv_files1[csv_name], csv_files2[csv_name], version, csv_name
+        )
 
         if not discrepancies:
             report.mark_file_identical(version, csv_name)
@@ -511,6 +554,7 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                 Severity.CRITICAL,
                 Confidence.HIGH,
                 "No common versions found between the two runs",
+                location={"file": "versions", "version": "all", "run": "both"},
                 values={"run1_versions": versions1, "run2_versions": versions2},
             ),
         )
@@ -529,6 +573,7 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                 Severity.MEDIUM,
                 Confidence.HIGH,
                 f"Versions only in run1: {sorted(only_in_run1)}",
+                location={"file": "versions", "version": "multiple", "run": "run1"},
                 values={"missing_versions": sorted(only_in_run1)},
             ),
         )
@@ -542,6 +587,7 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                 Severity.MEDIUM,
                 Confidence.HIGH,
                 f"Versions only in run2: {sorted(only_in_run2)}",
+                location={"file": "versions", "version": "multiple", "run": "run2"},
                 values={"missing_versions": sorted(only_in_run2)},
             ),
         )
@@ -559,7 +605,12 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                     Severity.CRITICAL,
                     Confidence.MEDIUM,
                     f"Error comparing {version}: {str(e)}",
-                    location={"version": version, "error": str(e)},
+                    location={
+                        "file": "comparison_error",
+                        "version": version,
+                        "run": "both",
+                        "error": str(e),
+                    },
                 ),
             )
 
