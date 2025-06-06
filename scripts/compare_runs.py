@@ -66,6 +66,48 @@ class DiscrepancyType(Enum):
     EXTRA_ROW = "extra_row"
 
 
+def _trim_value_for_display(value: str, max_length: int = 20) -> str:
+    """
+    Trim a value for display purposes if it exceeds the maximum length.
+
+    For values longer than max_length, truncates with "..." in the middle
+    to preserve both the beginning and end of the value.
+
+    Args:
+        value: The string value to potentially trim
+        max_length: Maximum allowed length (default: 20)
+
+    Returns:
+        The original value if <= max_length, otherwise a trimmed version
+
+    Examples:
+        >>> _trim_value_for_display("short")
+        'short'
+        >>> _trim_value_for_display("this_is_a_very_long_value_that_exceeds_twenty_characters")
+        'this_is_...characters'
+    """
+    if not isinstance(value, str):
+        value = str(value)
+
+    if len(value) <= max_length:
+        return value
+
+    # Calculate prefix and suffix lengths
+    # We need room for "..." (3 chars) in the middle
+    available_chars = max_length - 3
+    prefix_length = available_chars // 2
+    suffix_length = available_chars - prefix_length
+
+    # Ensure we don't get negative lengths for very small max_length
+    if prefix_length < 0 or suffix_length < 0:
+        return value[:max_length]
+
+    prefix = value[:prefix_length]
+    suffix = value[-suffix_length:] if suffix_length > 0 else ""
+
+    return f"{prefix}...{suffix}"
+
+
 class Discrepancy:
     """Represents a single discrepancy between two runs."""
 
@@ -356,8 +398,8 @@ def _analyze_row_differences(
                     "column_index": idx1,
                     "column_name": col_name,
                     "change_type": change_type,
-                    "value1": val1,
-                    "value2": val2,
+                    "value1": _trim_value_for_display(val1),
+                    "value2": _trim_value_for_display(val2),
                     "value1_type": _get_value_type(val1),
                     "value2_type": _get_value_type(val2),
                     "value1_length": len(val1),
@@ -1091,7 +1133,7 @@ def _compare_rows_by_index_column(
                         DiscrepancyType.ROW_DIFFERENCE,
                         severity,
                         confidence,
-                        f"Row with {index_column_name}='{index_value}' differs: {change_summary}",
+                        f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' differs: {change_summary}",
                         location={
                             "file": filename,
                             "version": version,
@@ -1099,7 +1141,7 @@ def _compare_rows_by_index_column(
                             "row": pos1
                             + 1,  # Add backward compatibility field (1-based row number)
                             "index_column": index_column_name,
-                            "index_value": index_value,
+                            "index_value": _trim_value_for_display(str(index_value)),
                             "position_run1": pos1,
                             "position_run2": pos2,
                             "changed_columns": changed_column_names,
@@ -1120,13 +1162,15 @@ def _compare_rows_by_index_column(
                             DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
                             Severity.HIGH,
                             Confidence.HIGH,
-                            f"Row with {index_column_name}='{index_value}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
+                            f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
                             location={
                                 "file": filename,
                                 "version": version,
                                 "run": "both",
                                 "index_column": index_column_name,
-                                "index_value": index_value,
+                                "index_value": _trim_value_for_display(
+                                    str(index_value)
+                                ),
                                 "position_run1": pos1,
                                 "position_run2": pos2,
                                 "column_difference": abs(len(row1) - len(row2)),
@@ -1150,13 +1194,13 @@ def _compare_rows_by_index_column(
                     DiscrepancyType.MISSING_ROW,
                     Severity.HIGH,
                     Confidence.HIGH,
-                    f"Row with {index_column_name}='{index_value}' missing in run2",
+                    f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' missing in run2",
                     location={
                         "file": filename,
                         "version": version,
                         "run": "run2",
                         "index_column": index_column_name,
-                        "index_value": index_value,
+                        "index_value": _trim_value_for_display(str(index_value)),
                         "position_run1": pos1,
                         "missing_from": "run2",
                         "present_in": "run1",
@@ -1177,13 +1221,13 @@ def _compare_rows_by_index_column(
                     DiscrepancyType.EXTRA_ROW,
                     Severity.HIGH,
                     Confidence.HIGH,
-                    f"Row with {index_column_name}='{index_value}' extra in run2",
+                    f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' extra in run2",
                     location={
                         "file": filename,
                         "version": version,
                         "run": "run2",
                         "index_column": index_column_name,
-                        "index_value": index_value,
+                        "index_value": _trim_value_for_display(str(index_value)),
                         "position_run2": pos2,
                         "missing_from": "run1",
                         "present_in": "run2",
