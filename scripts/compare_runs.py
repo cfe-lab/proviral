@@ -1088,7 +1088,7 @@ def discover_index_column(
     max_shared = 0
     column_analysis = {}
 
-    for col_idx in candidate_columns:
+    for col_idx in sorted(candidate_columns):
         shared_count = _count_shared_values(csv_data1, csv_data2, col_idx)
 
         # Get column name if available
