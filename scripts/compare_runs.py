@@ -318,6 +318,40 @@ def _analyze_row_differences(
     return changes
 
 
+def _extract_column_names_from_changes(changes: Dict[str, Any]) -> List[str]:
+    """Extract column names from field changes, falling back to indices if names unavailable."""
+    column_names = []
+    for field_change in changes["field_changes"]:
+        col_name = field_change.get("column_name")
+        if col_name:
+            column_names.append(col_name)
+        else:
+            # Fall back to index if column name is not available
+            col_index = field_change.get("column_index", "unknown")
+            column_names.append(f"column_{col_index}")
+    return column_names
+
+
+def _extract_header_names_from_changes(
+    changes: Dict[str, Any], headers1: List[str], headers2: List[str]
+) -> List[str]:
+    """Extract header names from header changes, falling back to indices if names unavailable."""
+    header_names = []
+    for index in changes["indices"]:
+        # Try to get header name from either row
+        header_name = None
+        if index < len(headers1):
+            header_name = headers1[index]
+        elif index < len(headers2):
+            header_name = headers2[index]
+
+        if header_name:
+            header_names.append(header_name)
+        else:
+            header_names.append(f"column_{index}")
+    return header_names
+
+
 def _get_row_change_summary(changes: Dict[str, Any]) -> str:
     """Generate a human-readable summary of row changes."""
     if not changes["indices"]:
@@ -508,6 +542,9 @@ def compare_csv_contents(
                 # Identify specific header differences
                 changed_headers = _analyze_header_differences(row1, row2)
                 header_details = _get_header_change_summary(changed_headers)
+                changed_header_names = _extract_header_names_from_changes(
+                    changed_headers, row1, row2
+                )
 
                 discrepancies.append(
                     Discrepancy(
@@ -520,7 +557,7 @@ def compare_csv_contents(
                             "version": version,
                             "run": "both",
                             "row": i + 1,
-                            "changed_columns": changed_headers["indices"],
+                            "changed_columns": changed_header_names,
                             "total_header_changes": len(changed_headers["indices"]),
                         },
                         values={
@@ -567,6 +604,9 @@ def compare_csv_contents(
                 confidence = _determine_row_difference_confidence(row1, row2)
 
                 change_summary = _get_row_change_summary(column_differences)
+                changed_column_names = _extract_column_names_from_changes(
+                    column_differences
+                )
 
                 discrepancies.append(
                     Discrepancy(
@@ -579,7 +619,7 @@ def compare_csv_contents(
                             "version": version,
                             "run": "both",
                             "row": i + 1,
-                            "changed_columns": column_differences["indices"],
+                            "changed_columns": changed_column_names,
                             "total_field_changes": len(column_differences["indices"]),
                         },
                         values={
