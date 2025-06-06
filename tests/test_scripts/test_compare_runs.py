@@ -17,10 +17,6 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-# Import modules from the compare_runs script
-import sys
-
-sys.path.append(str(Path(__file__).parent.parent.parent / "scripts"))
 from scripts.compare_runs import (
     Severity,
     Confidence,
