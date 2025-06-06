@@ -792,30 +792,6 @@ def compare_csv_contents(
             f"No suitable index column found for {filename}: {index_info.get('reason', 'unknown') if index_info else 'no analysis'}"
         )
 
-        # Add a low-severity discrepancy if no index column could be identified
-        if (
-            index_info
-            and index_info.get("reason") in ["no_shared_values"]
-            and index_info.get("candidate_columns", 0) > 0
-        ):
-            discrepancies.append(
-                Discrepancy(
-                    DiscrepancyType.NO_INDEX_COLUMN,
-                    Severity.LOW,
-                    Confidence.MEDIUM,
-                    f"No suitable index column found: {index_info['candidate_columns']} unique columns but no shared values",
-                    location={
-                        "file": filename,
-                        "version": version,
-                        "run": "both",
-                    },
-                    values={
-                        "index_analysis": index_info,
-                        "candidate_columns": index_info.get("candidate_columns", 0),
-                    },
-                )
-            )
-
     # Check if files have same number of rows
     if len(content1) != len(content2):
         discrepancies.append(
@@ -888,7 +864,7 @@ def compare_csv_contents(
                 )
             )
 
-    # Use index-column-based comparison if available, otherwise fall back to position-based
+    # Use index-column-based comparison if available, otherwise report error
     if (
         index_info
         and index_info.get("index_column") is not None
@@ -914,77 +890,40 @@ def compare_csv_contents(
         )
         discrepancies.extend(index_based_discrepancies)
     else:
-        # Fall back to position-based row comparison (skip header row since already compared)
-        logger.debug("Using position-based row comparison")
+        # Report error when no index column is available - cannot perform row comparison
+        logger.warning(
+            f"Cannot perform row comparison for {filename}: no suitable index column available"
+        )
 
-        # Compare data rows (skip header at index 0)
-        max_rows = max(len(content1), len(content2))
-        for i in range(1, max_rows):  # Start from 1 to skip header row
-            row1 = content1[i] if i < len(content1) else []
-            row2 = content2[i] if i < len(content2) else []
+        # Determine the specific reason for unavailability
+        reason = "unknown"
+        if dup_check1 or dup_check2:
+            reason = "duplicate_column_names"
+        elif index_info:
+            reason = index_info.get("reason", "no_index_column")
+        else:
+            reason = "no_index_analysis"
 
-            if row1 != row2:
-                # Analyze which specific columns differ in data rows
-                column_differences = _analyze_row_differences(
-                    row1, row2, headers1, headers2, column_map1, column_map2
-                )
-
-                # Determine severity based on content analysis
-                severity = _determine_row_difference_severity(
-                    row1, row2, i, column_differences
-                )
-                confidence = _determine_row_difference_confidence(row1, row2)
-
-                change_summary = _get_row_change_summary(column_differences)
-                changed_column_names = _extract_column_names_from_changes(
-                    column_differences
-                )
-
-                discrepancies.append(
-                    Discrepancy(
-                        DiscrepancyType.ROW_DIFFERENCE,
-                        severity,
-                        confidence,
-                        f"Row {i + 1} differs: {change_summary}",
-                        location={
-                            "file": filename,
-                            "version": version,
-                            "run": "both",
-                            "row": i + 1,
-                            "changed_columns": changed_column_names,
-                            "total_field_changes": len(column_differences["indices"]),
-                        },
-                        values={
-                            "field_changes": column_differences,
-                            "change_types": column_differences["change_types"],
-                        },
-                    )
-                )
-
-                # Check for column count differences in data rows
-                if len(row1) != len(row2):
-                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
-                    discrepancies.append(
-                        Discrepancy(
-                            DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
-                            Severity.HIGH,
-                            Confidence.HIGH,
-                            f"Row {i + 1} column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
-                            location={
-                                "file": filename,
-                                "version": version,
-                                "run": "both",
-                                "row": i + 1,
-                                "column_difference": abs(len(row1) - len(row2)),
-                            },
-                            values={
-                                "run1_columns": len(row1),
-                                "run2_columns": len(row2),
-                                "columns_missing_in_run2": missing_cols,
-                                "columns_extra_in_run2": extra_cols,
-                            },
-                        )
-                    )
+        discrepancies.append(
+            Discrepancy(
+                DiscrepancyType.NO_INDEX_COLUMN,
+                Severity.CRITICAL,
+                Confidence.HIGH,
+                f"Row comparison skipped: No suitable index column available ({reason})",
+                location={
+                    "file": filename,
+                    "version": version,
+                    "run": "both",
+                    "reason": reason,
+                },
+                values={
+                    "index_analysis": index_info,
+                    "has_duplicate_columns_run1": bool(dup_check1),
+                    "has_duplicate_columns_run2": bool(dup_check2),
+                    "reason": reason,
+                },
+            )
+        )
 
     return discrepancies
 

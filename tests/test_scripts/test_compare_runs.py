@@ -669,29 +669,32 @@ class TestLocationFieldStandardization:
         assert location["run"] == "run1"
 
     def test_row_difference_location_fields(self, tmp_path):
-        """Test location fields for row difference discrepancies."""
+        """Test that NO_INDEX_COLUMN discrepancies are reported when no suitable index column is available."""
         file1 = tmp_path / "file1.csv"
         file2 = tmp_path / "file2.csv"
         file1.write_text("header\nvalue1\n")
         file2.write_text("header\nvalue2\n")
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
-        row_discrepancy = next(
-            (d for d in discrepancies if d.type == DiscrepancyType.ROW_DIFFERENCE), None
-        )
 
-        location = row_discrepancy.location
+        # Should find NO_INDEX_COLUMN discrepancy instead of row differences
+        no_index_discrepancy = next(
+            (d for d in discrepancies if d.type == DiscrepancyType.NO_INDEX_COLUMN),
+            None,
+        )
+        assert no_index_discrepancy is not None
+
+        location = no_index_discrepancy.location
 
         # Check all required fields are present
         assert "file" in location
         assert "version" in location
         assert "run" in location
-        assert "row" in location  # Type-specific field
+        assert "reason" in location  # Type-specific field
 
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
         assert location["run"] == "both"
-        assert location["row"] == 2
 
     def test_file_read_error_location_fields(self, tmp_path):
         """Test location fields for file read error discrepancies."""
@@ -1024,10 +1027,9 @@ class TestCSVComparisonWithIndexDiscovery:
             None,
         )
         assert no_index_discrepancy is not None
-        assert no_index_discrepancy.severity == Severity.LOW
-        assert no_index_discrepancy.confidence == Confidence.MEDIUM
-        assert "No suitable index column found" in no_index_discrepancy.description
-        assert no_index_discrepancy.values["candidate_columns"] == 2
+        assert no_index_discrepancy.severity == Severity.CRITICAL
+        assert no_index_discrepancy.confidence == Confidence.HIGH
+        assert "Row comparison skipped" in no_index_discrepancy.description
 
     def test_compare_csv_no_index_discrepancy_when_no_unique_columns(self, tmp_path):
         """Test that NO_INDEX_COLUMN discrepancy is not generated when no unique columns exist."""
@@ -1043,12 +1045,14 @@ class TestCSVComparisonWithIndexDiscovery:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should not find NO_INDEX_COLUMN discrepancy since no unique columns exist
+        # Should find NO_INDEX_COLUMN discrepancy since no suitable index column is available
         no_index_discrepancy = next(
             (d for d in discrepancies if d.type == DiscrepancyType.NO_INDEX_COLUMN),
             None,
         )
-        assert no_index_discrepancy is None
+        assert no_index_discrepancy is not None
+        assert no_index_discrepancy.severity == Severity.CRITICAL
+        assert "Row comparison skipped" in no_index_discrepancy.description
 
     def test_compare_csv_with_successful_index_discovery(self, tmp_path):
         """Test CSV comparison with successful index column discovery."""
@@ -1385,12 +1389,13 @@ class TestColumnValidation:
         )
         assert dup_discrepancy is not None
 
-        # Should still find row differences but using fallback index-based comparison
-        row_discrepancy = next(
-            (d for d in discrepancies if d.type == DiscrepancyType.ROW_DIFFERENCE),
+        # Should find NO_INDEX_COLUMN discrepancy instead of row differences
+        no_index_discrepancy = next(
+            (d for d in discrepancies if d.type == DiscrepancyType.NO_INDEX_COLUMN),
             None,
         )
-        assert row_discrepancy is not None
+        assert no_index_discrepancy is not None
+        assert no_index_discrepancy.severity == Severity.CRITICAL
 
     def test_column_order_difference_detailed_positions(self, tmp_path):
         """Test that column order differences include detailed position information."""
