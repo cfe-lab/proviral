@@ -61,6 +61,9 @@ class DiscrepancyType(Enum):
     NO_INDEX_COLUMN = "no_index_column"
     DUPLICATE_COLUMN_NAMES = "duplicate_column_names"
     COLUMN_ORDER_DIFFERENCE = "column_order_difference"
+    ROW_ORDER_DIFFERENCE = "row_order_difference"
+    MISSING_ROW = "missing_row"
+    EXTRA_ROW = "extra_row"
 
 
 class Discrepancy:
@@ -830,67 +833,97 @@ def compare_csv_contents(
             )
         )
 
-    # Compare row by row
-    max_rows = max(len(content1), len(content2))
-    for i in range(max_rows):
-        row1 = content1[i] if i < len(content1) else []
-        row2 = content2[i] if i < len(content2) else []
+    # Always check headers first, regardless of comparison method
+    if headers1 != headers2:
+        # Identify specific header differences
+        changed_headers = _analyze_header_differences(headers1, headers2)
+        header_details = _get_header_change_summary(changed_headers)
+        changed_header_names = _extract_header_names_from_changes(
+            changed_headers, headers1, headers2
+        )
 
-        if row1 != row2:
-            if i == 0:  # Header row
-                # Identify specific header differences
-                changed_headers = _analyze_header_differences(row1, row2)
-                header_details = _get_header_change_summary(changed_headers)
-                changed_header_names = _extract_header_names_from_changes(
-                    changed_headers, row1, row2
+        discrepancies.append(
+            Discrepancy(
+                DiscrepancyType.HEADER_DIFFERENCE,
+                Severity.CRITICAL,
+                Confidence.HIGH,
+                f"Header row differs: {header_details}",
+                location={
+                    "file": filename,
+                    "version": version,
+                    "run": "both",
+                    "row": 1,
+                    "changed_columns": changed_header_names,
+                    "total_header_changes": len(changed_headers["indices"]),
+                },
+                values={
+                    "header_changes": changed_headers,
+                    "run1_header_count": len(headers1),
+                    "run2_header_count": len(headers2),
+                },
+            )
+        )
+
+        # Check for column count differences in header
+        if len(headers1) != len(headers2):
+            missing_cols, extra_cols = _analyze_column_differences(headers1, headers2)
+            discrepancies.append(
+                Discrepancy(
+                    DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
+                    Severity.CRITICAL,
+                    Confidence.HIGH,
+                    f"Header column count differs: {len(headers1)} vs {len(headers2)} ({missing_cols} missing, {extra_cols} extra in run2)",
+                    location={
+                        "file": filename,
+                        "version": version,
+                        "run": "both",
+                        "row": 1,
+                    },
+                    values={
+                        "run1_columns": len(headers1),
+                        "run2_columns": len(headers2),
+                        "columns_missing_in_run2": missing_cols,
+                        "columns_extra_in_run2": extra_cols,
+                    },
                 )
+            )
 
-                discrepancies.append(
-                    Discrepancy(
-                        DiscrepancyType.HEADER_DIFFERENCE,
-                        Severity.CRITICAL,
-                        Confidence.HIGH,
-                        f"Header row differs: {header_details}",
-                        location={
-                            "file": filename,
-                            "version": version,
-                            "run": "both",
-                            "row": i + 1,
-                            "changed_columns": changed_header_names,
-                            "total_header_changes": len(changed_headers["indices"]),
-                        },
-                        values={
-                            "header_changes": changed_headers,
-                            "run1_header_count": len(row1),
-                            "run2_header_count": len(row2),
-                        },
-                    )
-                )
+    # Use index-column-based comparison if available, otherwise fall back to position-based
+    if (
+        index_info
+        and index_info.get("index_column") is not None
+        and not dup_check1
+        and not dup_check2
+    ):
+        # Use index-column-based row comparison (skip header row since already compared)
+        index_column_name = index_info["column_name"]
+        logger.debug(
+            f"Using index-column-based comparison with column: {index_column_name}"
+        )
 
-                # Check for column count differences in header
-                if len(row1) != len(row2):
-                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
-                    discrepancies.append(
-                        Discrepancy(
-                            DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
-                            Severity.CRITICAL,
-                            Confidence.HIGH,
-                            f"Header column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
-                            location={
-                                "file": filename,
-                                "version": version,
-                                "run": "both",
-                                "row": i + 1,
-                            },
-                            values={
-                                "run1_columns": len(row1),
-                                "run2_columns": len(row2),
-                                "columns_missing_in_run2": missing_cols,
-                                "columns_extra_in_run2": extra_cols,
-                            },
-                        )
-                    )
-            else:
+        index_based_discrepancies = _compare_rows_by_index_column(
+            content1,
+            content2,
+            index_column_name,
+            headers1,
+            headers2,
+            column_map1,
+            column_map2,
+            version,
+            filename,
+        )
+        discrepancies.extend(index_based_discrepancies)
+    else:
+        # Fall back to position-based row comparison (skip header row since already compared)
+        logger.debug("Using position-based row comparison")
+
+        # Compare data rows (skip header at index 0)
+        max_rows = max(len(content1), len(content2))
+        for i in range(1, max_rows):  # Start from 1 to skip header row
+            row1 = content1[i] if i < len(content1) else []
+            row2 = content2[i] if i < len(content2) else []
+
+            if row1 != row2:
                 # Analyze which specific columns differ in data rows
                 column_differences = _analyze_row_differences(
                     row1, row2, headers1, headers2, column_map1, column_map2
@@ -999,6 +1032,254 @@ def _determine_row_difference_confidence(
         return Confidence.HIGH
     else:  # Single value difference
         return Confidence.MEDIUM
+
+
+def _build_index_row_mapping(
+    csv_data: List[List[str]], index_column_name: str
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Build a mapping from index column values to row data and positions.
+
+    Args:
+        csv_data: List of rows, where first row contains headers
+        index_column_name: Name of the column to use as index
+
+    Returns:
+        Dictionary mapping index values to {"row": row_data, "position": row_position}
+    """
+    if not csv_data or len(csv_data) < 2:  # Need at least header + 1 data row
+        return {}
+
+    headers = csv_data[0]
+    if index_column_name not in headers:
+        return {}
+
+    index_col_idx = headers.index(index_column_name)
+    mapping = {}
+
+    # Start from row 1 to skip header
+    for row_idx in range(1, len(csv_data)):
+        row = csv_data[row_idx]
+        if index_col_idx < len(row):
+            index_value = row[index_col_idx].strip()
+            if index_value:  # Only map non-empty index values
+                mapping[index_value] = {"row": row, "position": row_idx}
+
+    return mapping
+
+
+def _compare_rows_by_index_column(
+    content1: List[List[str]],
+    content2: List[List[str]],
+    index_column_name: str,
+    headers1: List[str],
+    headers2: List[str],
+    column_map1: Dict[str, int],
+    column_map2: Dict[str, int],
+    version: str,
+    filename: str,
+) -> List[Discrepancy]:
+    """
+    Compare CSV rows using index column matching instead of position-based comparison.
+
+    Args:
+        content1: First CSV data
+        content2: Second CSV data
+        index_column_name: Name of column to use for row matching
+        headers1: Headers from first file
+        headers2: Headers from second file
+        column_map1: Column name to index mapping for first file
+        column_map2: Column name to index mapping for second file
+        version: Version being compared
+        filename: Name of the file being compared
+
+    Returns:
+        List of discrepancies found during comparison
+    """
+    discrepancies = []
+
+    # Build index-to-row mappings
+    index_map1 = _build_index_row_mapping(content1, index_column_name)
+    index_map2 = _build_index_row_mapping(content2, index_column_name)
+
+    # Get all unique index values from both files
+    all_index_values = set(index_map1.keys()) | set(index_map2.keys())
+
+    # Track row position differences for order comparison
+    position_differences = []
+
+    for index_value in sorted(all_index_values):
+        row1_info = index_map1.get(index_value)
+        row2_info = index_map2.get(index_value)
+
+        if row1_info and row2_info:
+            # Row exists in both files - compare content and positions
+            row1 = row1_info["row"]
+            row2 = row2_info["row"]
+            pos1 = row1_info["position"]
+            pos2 = row2_info["position"]
+
+            # Check if row positions differ (for order difference detection)
+            if pos1 != pos2:
+                position_differences.append(
+                    {
+                        "index_value": index_value,
+                        "position_run1": pos1,
+                        "position_run2": pos2,
+                    }
+                )
+
+            # Compare row content if rows differ
+            if row1 != row2:
+                # Analyze which specific columns differ
+                column_differences = _analyze_row_differences(
+                    row1, row2, headers1, headers2, column_map1, column_map2
+                )
+
+                # Determine severity based on content analysis
+                severity = _determine_row_difference_severity(
+                    row1, row2, pos1, column_differences
+                )
+                confidence = _determine_row_difference_confidence(row1, row2)
+
+                change_summary = _get_row_change_summary(column_differences)
+                changed_column_names = _extract_column_names_from_changes(
+                    column_differences
+                )
+
+                discrepancies.append(
+                    Discrepancy(
+                        DiscrepancyType.ROW_DIFFERENCE,
+                        severity,
+                        confidence,
+                        f"Row with {index_column_name}='{index_value}' differs: {change_summary}",
+                        location={
+                            "file": filename,
+                            "version": version,
+                            "run": "both",
+                            "row": pos1
+                            + 1,  # Add backward compatibility field (1-based row number)
+                            "index_column": index_column_name,
+                            "index_value": index_value,
+                            "position_run1": pos1,
+                            "position_run2": pos2,
+                            "changed_columns": changed_column_names,
+                            "total_field_changes": len(column_differences["indices"]),
+                        },
+                        values={
+                            "field_changes": column_differences,
+                            "change_types": column_differences["change_types"],
+                        },
+                    )
+                )
+
+                # Check for column count differences in data rows
+                if len(row1) != len(row2):
+                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
+                    discrepancies.append(
+                        Discrepancy(
+                            DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
+                            Severity.HIGH,
+                            Confidence.HIGH,
+                            f"Row with {index_column_name}='{index_value}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
+                            location={
+                                "file": filename,
+                                "version": version,
+                                "run": "both",
+                                "index_column": index_column_name,
+                                "index_value": index_value,
+                                "position_run1": pos1,
+                                "position_run2": pos2,
+                                "column_difference": abs(len(row1) - len(row2)),
+                            },
+                            values={
+                                "run1_columns": len(row1),
+                                "run2_columns": len(row2),
+                                "columns_missing_in_run2": missing_cols,
+                                "columns_extra_in_run2": extra_cols,
+                            },
+                        )
+                    )
+
+        elif row1_info and not row2_info:
+            # Row exists only in first file
+            row1 = row1_info["row"]
+            pos1 = row1_info["position"]
+
+            discrepancies.append(
+                Discrepancy(
+                    DiscrepancyType.MISSING_ROW,
+                    Severity.HIGH,
+                    Confidence.HIGH,
+                    f"Row with {index_column_name}='{index_value}' missing in run2",
+                    location={
+                        "file": filename,
+                        "version": version,
+                        "run": "run2",
+                        "index_column": index_column_name,
+                        "index_value": index_value,
+                        "position_run1": pos1,
+                        "missing_from": "run2",
+                        "present_in": "run1",
+                    },
+                    values={
+                        "missing_row_data": row1,
+                    },
+                )
+            )
+
+        elif row2_info and not row1_info:
+            # Row exists only in second file
+            row2 = row2_info["row"]
+            pos2 = row2_info["position"]
+
+            discrepancies.append(
+                Discrepancy(
+                    DiscrepancyType.EXTRA_ROW,
+                    Severity.HIGH,
+                    Confidence.HIGH,
+                    f"Row with {index_column_name}='{index_value}' extra in run2",
+                    location={
+                        "file": filename,
+                        "version": version,
+                        "run": "run2",
+                        "index_column": index_column_name,
+                        "index_value": index_value,
+                        "position_run2": pos2,
+                        "missing_from": "run1",
+                        "present_in": "run2",
+                    },
+                    values={
+                        "extra_row_data": row2,
+                    },
+                )
+            )
+
+    # Report row order differences if rows exist in both files but in different positions
+    if position_differences:
+        discrepancies.append(
+            Discrepancy(
+                DiscrepancyType.ROW_ORDER_DIFFERENCE,
+                Severity.LOW,
+                Confidence.HIGH,
+                f"Row order differs: {len(position_differences)} rows in different positions",
+                location={
+                    "file": filename,
+                    "version": version,
+                    "run": "both",
+                    "index_column": index_column_name,
+                    "reordered_rows": [
+                        diff["index_value"] for diff in position_differences
+                    ],
+                },
+                values={
+                    "position_differences": position_differences,
+                    "reordered_count": len(position_differences),
+                },
+            )
+        )
+
+    return discrepancies
 
 
 def compare_proviral_files(
