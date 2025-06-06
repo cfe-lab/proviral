@@ -224,6 +224,196 @@ def read_csv_file(csv_path: Path) -> List[List[str]]:
         return []
 
 
+def _analyze_header_differences(
+    header1: List[str], header2: List[str]
+) -> Dict[str, Any]:
+    """Analyze differences between two header rows."""
+    changes: Dict[str, Any] = {
+        "indices": [],
+        "added": [],
+        "removed": [],
+        "modified": [],
+    }
+
+    max_len = max(len(header1), len(header2))
+
+    for i in range(max_len):
+        val1 = header1[i] if i < len(header1) else None
+        val2 = header2[i] if i < len(header2) else None
+
+        if val1 != val2:
+            changes["indices"].append(i)
+
+            if val1 is None:
+                changes["added"].append({"index": i, "value": val2})
+            elif val2 is None:
+                changes["removed"].append({"index": i, "value": val1})
+            else:
+                changes["modified"].append(
+                    {"index": i, "old_header": val1, "new_header": val2}
+                )
+
+    return changes
+
+
+def _get_header_change_summary(changes: Dict[str, Any]) -> str:
+    """Generate a human-readable summary of header changes."""
+    parts = []
+
+    if changes["added"]:
+        parts.append(f"{len(changes['added'])} headers added")
+    if changes["removed"]:
+        parts.append(f"{len(changes['removed'])} headers removed")
+    if changes["modified"]:
+        parts.append(f"{len(changes['modified'])} headers modified")
+
+    if not parts:
+        return "unknown header changes"
+
+    return ", ".join(parts)
+
+
+def _analyze_row_differences(
+    row1: List[str], row2: List[str], headers1: List[str], headers2: List[str]
+) -> Dict[str, Any]:
+    """Analyze differences between two data rows."""
+    changes: Dict[str, Any] = {
+        "indices": [],
+        "change_types": [],
+        "field_changes": [],
+    }
+
+    max_len = max(len(row1), len(row2))
+
+    for i in range(max_len):
+        val1 = row1[i] if i < len(row1) else ""
+        val2 = row2[i] if i < len(row2) else ""
+
+        if val1 != val2:
+            changes["indices"].append(i)
+
+            # Determine change type
+            change_type = _classify_value_change(val1, val2)
+            changes["change_types"].append(change_type)
+
+            # Get column name if available
+            col_name = None
+            if i < len(headers1):
+                col_name = headers1[i]
+            elif i < len(headers2):
+                col_name = headers2[i]
+
+            change_info = {
+                "column_index": i,
+                "column_name": col_name,
+                "change_type": change_type,
+                "value1_type": _get_value_type(val1),
+                "value2_type": _get_value_type(val2),
+                "value1_length": len(val1),
+                "value2_length": len(val2),
+            }
+
+            changes["field_changes"].append(change_info)
+
+    return changes
+
+
+def _get_row_change_summary(changes: Dict[str, Any]) -> str:
+    """Generate a human-readable summary of row changes."""
+    if not changes["indices"]:
+        return "no changes detected"
+
+    change_counts: Dict[str, int] = {}
+    for change_type in changes["change_types"]:
+        change_counts[change_type] = change_counts.get(change_type, 0) + 1
+
+    parts = []
+    for change_type, count in change_counts.items():
+        if count == 1:
+            parts.append(f"1 {change_type} change")
+        else:
+            parts.append(f"{count} {change_type} changes")
+
+    col_summary = f"in {len(changes['indices'])} column(s)"
+
+    return f"{', '.join(parts)} {col_summary}"
+
+
+def _analyze_column_differences(row1: List[str], row2: List[str]) -> tuple[int, int]:
+    """Analyze column count differences between two rows."""
+    len1, len2 = len(row1), len(row2)
+    if len1 > len2:
+        return len1 - len2, 0  # missing in run2, extra in run1
+    elif len2 > len1:
+        return 0, len2 - len1  # missing in run1, extra in run2
+    else:
+        return 0, 0
+
+
+def _classify_value_change(val1: str, val2: str) -> str:
+    """Classify the type of change between two values."""
+    if not val1 and val2:
+        return "added"
+    elif val1 and not val2:
+        return "removed"
+    elif _is_numeric(val1) and _is_numeric(val2):
+        return "numeric"
+    elif val1.lower() in {
+        "success",
+        "failed",
+        "complete",
+        "incomplete",
+    } or val2.lower() in {"success", "failed", "complete", "incomplete"}:
+        return "outcome"
+    else:
+        return "text"
+
+
+def _get_value_type(value: str) -> str:
+    """Get the type classification of a value."""
+    if not value:
+        return "empty"
+    elif _is_numeric(value):
+        return "numeric"
+    elif value.lower() in {
+        "success",
+        "failed",
+        "complete",
+        "incomplete",
+        "true",
+        "false",
+    }:
+        return "categorical"
+    else:
+        return "text"
+
+
+def _is_numeric(value: str) -> bool:
+    """Check if a string represents a numeric value."""
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def _get_file_metadata(file_path: Path) -> Dict[str, Any]:
+    """Get metadata information about a file."""
+    try:
+        stat = file_path.stat()
+        return {
+            "size": stat.st_size,
+            "modified_time": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            "exists": True,
+        }
+    except Exception:
+        return {
+            "size": 0,
+            "modified_time": None,
+            "exists": False,
+        }
+
+
 def compare_csv_contents(
     file1: Path, file2: Path, version: str, filename: str
 ) -> List[Discrepancy]:
@@ -249,38 +439,46 @@ def compare_csv_contents(
         return discrepancies  # Both empty, no discrepancies
 
     if not content1:
+        file_size1 = file1.stat().st_size if file1.exists() else 0
         discrepancies.append(
             Discrepancy(
                 DiscrepancyType.FILE_READ_ERROR,
                 Severity.CRITICAL,
                 Confidence.HIGH,
-                "First file is empty or failed to read",
+                f"First file is empty or failed to read (size: {file_size1} bytes)",
                 location={
                     "file": filename,
                     "version": version,
                     "run": "run1",
                     "file_path": str(file1),
+                    "file_size": file_size1,
                 },
             )
         )
         return discrepancies
 
     if not content2:
+        file_size2 = file2.stat().st_size if file2.exists() else 0
         discrepancies.append(
             Discrepancy(
                 DiscrepancyType.FILE_READ_ERROR,
                 Severity.CRITICAL,
                 Confidence.HIGH,
-                "Second file is empty or failed to read",
+                f"Second file is empty or failed to read (size: {file_size2} bytes)",
                 location={
                     "file": filename,
                     "version": version,
                     "run": "run2",
                     "file_path": str(file2),
+                    "file_size": file_size2,
                 },
             )
         )
         return discrepancies
+
+    # Get headers if available
+    headers1 = content1[0] if content1 else []
+    headers2 = content2[0] if content2 else []
 
     # Check if files have same number of rows
     if len(content1) != len(content2):
@@ -289,9 +487,13 @@ def compare_csv_contents(
                 DiscrepancyType.ROW_COUNT_DIFFERENCE,
                 Severity.HIGH,
                 Confidence.HIGH,
-                f"Row count differs: {len(content1)} vs {len(content2)}",
+                f"Row count differs: {len(content1)} vs {len(content2)} (difference: {abs(len(content1) - len(content2))} rows)",
                 location={"file": filename, "version": version, "run": "both"},
-                values={"run1_rows": len(content1), "run2_rows": len(content2)},
+                values={
+                    "run1_rows": len(content1),
+                    "run2_rows": len(content2),
+                    "row_difference": abs(len(content1) - len(content2)),
+                },
             )
         )
 
@@ -303,30 +505,41 @@ def compare_csv_contents(
 
         if row1 != row2:
             if i == 0:  # Header row
+                # Identify specific header differences
+                changed_headers = _analyze_header_differences(row1, row2)
+                header_details = _get_header_change_summary(changed_headers)
+
                 discrepancies.append(
                     Discrepancy(
                         DiscrepancyType.HEADER_DIFFERENCE,
                         Severity.CRITICAL,
                         Confidence.HIGH,
-                        "Header row differs",
+                        f"Header row differs: {header_details}",
                         location={
                             "file": filename,
                             "version": version,
                             "run": "both",
                             "row": i + 1,
+                            "changed_columns": changed_headers["indices"],
+                            "total_header_changes": len(changed_headers["indices"]),
                         },
-                        values={"run1": row1, "run2": row2},
+                        values={
+                            "header_changes": changed_headers,
+                            "run1_header_count": len(row1),
+                            "run2_header_count": len(row2),
+                        },
                     )
                 )
 
                 # Check for column count differences in header
                 if len(row1) != len(row2):
+                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
                     discrepancies.append(
                         Discrepancy(
                             DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
                             Severity.CRITICAL,
                             Confidence.HIGH,
-                            f"Header column count differs: {len(row1)} vs {len(row2)}",
+                            f"Header column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
                             location={
                                 "file": filename,
                                 "version": version,
@@ -336,47 +549,67 @@ def compare_csv_contents(
                             values={
                                 "run1_columns": len(row1),
                                 "run2_columns": len(row2),
+                                "columns_missing_in_run2": missing_cols,
+                                "columns_extra_in_run2": extra_cols,
                             },
                         )
                     )
             else:
+                # Analyze which specific columns differ in data rows
+                column_differences = _analyze_row_differences(
+                    row1, row2, headers1, headers2
+                )
+
                 # Determine severity based on content analysis
-                severity = _determine_row_difference_severity(row1, row2, i)
+                severity = _determine_row_difference_severity(
+                    row1, row2, i, column_differences
+                )
                 confidence = _determine_row_difference_confidence(row1, row2)
+
+                change_summary = _get_row_change_summary(column_differences)
 
                 discrepancies.append(
                     Discrepancy(
                         DiscrepancyType.ROW_DIFFERENCE,
                         severity,
                         confidence,
-                        f"Row {i + 1} differs",
+                        f"Row {i + 1} differs: {change_summary}",
                         location={
                             "file": filename,
                             "version": version,
                             "run": "both",
                             "row": i + 1,
+                            "changed_columns": column_differences["indices"],
+                            "total_field_changes": len(column_differences["indices"]),
                         },
-                        values={"run1": row1, "run2": row2},
+                        values={
+                            "field_changes": column_differences,
+                            "change_types": column_differences["change_types"],
+                        },
                     )
                 )
 
                 # Check for column count differences in data rows
                 if len(row1) != len(row2):
+                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
                     discrepancies.append(
                         Discrepancy(
                             DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
                             Severity.HIGH,
                             Confidence.HIGH,
-                            f"Row {i + 1} column count differs: {len(row1)} vs {len(row2)}",
+                            f"Row {i + 1} column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
                             location={
                                 "file": filename,
                                 "version": version,
                                 "run": "both",
                                 "row": i + 1,
+                                "column_difference": abs(len(row1) - len(row2)),
                             },
                             values={
                                 "run1_columns": len(row1),
                                 "run2_columns": len(row2),
+                                "columns_missing_in_run2": missing_cols,
+                                "columns_extra_in_run2": extra_cols,
                             },
                         )
                     )
@@ -385,26 +618,27 @@ def compare_csv_contents(
 
 
 def _determine_row_difference_severity(
-    row1: List[str], row2: List[str], row_index: int
+    row1: List[str], row2: List[str], row_index: int, column_differences: Dict[str, Any]
 ) -> Severity:
     """Determine severity of row difference based on content analysis."""
-    # For proviral analysis, certain columns are more critical
-    critical_outcomes = {"failed", "success", "complete", "incomplete"}
+    # Check for outcome changes (highest priority)
+    for change in column_differences.get("field_changes", []):
+        if change["change_type"] == "outcome":
+            return Severity.HIGH
 
-    # Check if key outcome fields differ
-    for val1, val2 in zip(row1, row2):
-        if val1.lower() in critical_outcomes or val2.lower() in critical_outcomes:
-            if val1 != val2:
-                return Severity.HIGH
+    # Check for numeric changes
+    numeric_changes = sum(
+        1
+        for change in column_differences.get("field_changes", [])
+        if change["change_type"] == "numeric"
+    )
+    if numeric_changes > 0:
+        return Severity.MEDIUM
 
-    # Check if any numeric values differ significantly
-    for val1, val2 in zip(row1, row2):
-        try:
-            num1, num2 = float(val1), float(val2)
-            if abs(num1 - num2) > 0.001:  # Significant numeric difference
-                return Severity.MEDIUM
-        except ValueError:
-            continue
+    # Check if many fields changed
+    total_changes = len(column_differences.get("indices", []))
+    if total_changes > 3:
+        return Severity.MEDIUM
 
     # Default to medium for any data difference
     return Severity.MEDIUM
@@ -469,6 +703,8 @@ def compare_proviral_files(
 
     for csv_name in sorted(all_csv_names):
         if csv_name not in csv_files1:
+            # Get file info from run2
+            file2_info = _get_file_metadata(csv_files2[csv_name])
             report.add_discrepancy(
                 version,
                 csv_name,
@@ -476,18 +712,24 @@ def compare_proviral_files(
                     DiscrepancyType.MISSING_FILE,
                     Severity.CRITICAL,
                     Confidence.HIGH,
-                    f"File missing in run1: {csv_name}",
+                    f"File missing in run1: {csv_name} (run2 size: {file2_info['size']} bytes)",
                     location={
                         "file": csv_name,
                         "version": version,
                         "run": "run1",
                         "missing_from": "run1",
+                        "present_in": "run2",
+                    },
+                    values={
+                        "file_info_run2": file2_info,
                     },
                 ),
             )
             continue
 
         if csv_name not in csv_files2:
+            # Get file info from run1
+            file1_info = _get_file_metadata(csv_files1[csv_name])
             report.add_discrepancy(
                 version,
                 csv_name,
@@ -495,12 +737,16 @@ def compare_proviral_files(
                     DiscrepancyType.MISSING_FILE,
                     Severity.CRITICAL,
                     Confidence.HIGH,
-                    f"File missing in run2: {csv_name}",
+                    f"File missing in run2: {csv_name} (run1 size: {file1_info['size']} bytes)",
                     location={
                         "file": csv_name,
                         "version": version,
                         "run": "run2",
                         "missing_from": "run2",
+                        "present_in": "run1",
+                    },
+                    values={
+                        "file_info_run1": file1_info,
                     },
                 ),
             )

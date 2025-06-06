@@ -377,7 +377,14 @@ class TestSeverityDetermination:
         row1 = ["sample1", "success", "0.95"]
         row2 = ["sample1", "failed", "0.95"]
 
-        severity = _determine_row_difference_severity(row1, row2, 1)
+        # Mock column differences that indicate an outcome change
+        column_differences = {
+            "indices": [1],
+            "change_types": ["outcome"],
+            "field_changes": [{"change_type": "outcome"}],
+        }
+
+        severity = _determine_row_difference_severity(row1, row2, 1, column_differences)
 
         assert severity == Severity.HIGH
 
@@ -386,7 +393,14 @@ class TestSeverityDetermination:
         row1 = ["sample1", "success", "0.95"]
         row2 = ["sample1", "success", "0.85"]
 
-        severity = _determine_row_difference_severity(row1, row2, 1)
+        # Mock column differences that indicate a numeric change
+        column_differences = {
+            "indices": [2],
+            "change_types": ["numeric"],
+            "field_changes": [{"change_type": "numeric"}],
+        }
+
+        severity = _determine_row_difference_severity(row1, row2, 1, column_differences)
 
         assert severity == Severity.MEDIUM
 
@@ -395,7 +409,14 @@ class TestSeverityDetermination:
         row1 = ["sample1", "other", "text"]
         row2 = ["sample1", "different", "text"]
 
-        severity = _determine_row_difference_severity(row1, row2, 1)
+        # Mock column differences that indicate a text change
+        column_differences = {
+            "indices": [1],
+            "change_types": ["text"],
+            "field_changes": [{"change_type": "text"}],
+        }
+
+        severity = _determine_row_difference_severity(row1, row2, 1, column_differences)
 
         assert severity == Severity.MEDIUM
 
