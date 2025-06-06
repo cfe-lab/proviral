@@ -834,7 +834,7 @@ class TestIndexColumnDiscovery:
         ]
         unique_columns = _find_unique_value_columns(csv_data)
         # All columns should be unique
-        assert sorted(unique_columns) == [0, 1, 2]
+        assert sorted(unique_columns) == ["id", "name", "value"]
 
     def test_find_unique_value_columns_with_duplicates(self):
         """Test _find_unique_value_columns with some duplicate values."""
@@ -846,7 +846,7 @@ class TestIndexColumnDiscovery:
         ]
         unique_columns = _find_unique_value_columns(csv_data)
         # Only id and value columns should be unique
-        assert sorted(unique_columns) == [0, 2]
+        assert sorted(unique_columns) == ["id", "value"]
 
     def test_find_unique_value_columns_with_empty_values(self):
         """Test _find_unique_value_columns ignoring empty values."""
@@ -858,13 +858,13 @@ class TestIndexColumnDiscovery:
         ]
         unique_columns = _find_unique_value_columns(csv_data)
         # All columns should be unique (empty values are ignored)
-        assert sorted(unique_columns) == [0, 1, 2]
+        assert sorted(unique_columns) == ["id", "optional", "value"]
 
     def test_count_shared_values_no_shared(self):
         """Test _count_shared_values with no shared values."""
         csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"]]
         csv_data2 = [["id", "value"], ["3", "C"], ["4", "D"]]
-        shared_count = _count_shared_values(csv_data1, csv_data2, 0)
+        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
         assert shared_count == 0
 
     def test_count_shared_values_some_shared(self):
@@ -876,7 +876,7 @@ class TestIndexColumnDiscovery:
             ["3", "Y"],  # id "3" is shared
             ["4", "Z"],
         ]
-        shared_count = _count_shared_values(csv_data1, csv_data2, 0)
+        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
         assert shared_count == 2
 
     def test_count_shared_values_with_empty_values(self):
@@ -893,7 +893,7 @@ class TestIndexColumnDiscovery:
             ["", "Y"],  # Empty id should be ignored
             ["4", "Z"],
         ]
-        shared_count = _count_shared_values(csv_data1, csv_data2, 0)
+        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
         assert shared_count == 1
 
     def test_discover_index_column_empty_data(self):
@@ -987,12 +987,9 @@ class TestIndexColumnDiscovery:
         ]
         result = discover_index_column(csv_data1, csv_data2)
 
-        assert result is not None
-        assert (
-            result["index_column"] == 0
-        )  # sample_id column now has more shared values
-        assert result["column_name"] == "sample_id"  # Uses first file's header
-        assert result["shared_values"] == 1  # Only S001 shared
+        # When headers don't match, we cannot safely determine column correspondence
+        # by name, so no index column should be discovered
+        assert result is None
 
 
 class TestCSVComparisonWithIndexDiscovery:
@@ -1169,5 +1166,264 @@ class TestIntegrationWithIndexDiscovery:
 
         index_info = file_result["index_column"]
         assert index_info is not None
-        assert index_info["index_column"] == 0
-        assert index_info["column_name"] == "sample_id"
+        # Both columns are unique and have same shared values, algorithm picks "result" (sorted order)
+        assert index_info["index_column"] == 1
+        assert index_info["column_name"] == "result"
+
+
+class TestColumnValidation:
+    """Test column name validation and column order comparison functionality."""
+
+    def test_duplicate_column_names_run1(self, tmp_path):
+        """Test detection of duplicate column names in run1."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text(
+            "header1,header2,header1\nvalue1,value2,value3\n"
+        )  # Duplicate header1
+        file2.write_text("header1,header2,header3\nvalue1,value2,value3\n")
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should find duplicate column names discrepancy
+        dup_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.DUPLICATE_COLUMN_NAMES
+            ),
+            None,
+        )
+        assert dup_discrepancy is not None
+        assert dup_discrepancy.severity == Severity.CRITICAL
+        assert dup_discrepancy.confidence == Confidence.HIGH
+        assert "Duplicate column name 'header1'" in dup_discrepancy.description
+        assert "run1" in dup_discrepancy.description
+
+        # Check location fields
+        location = dup_discrepancy.location
+        assert location["file"] == "test.csv"
+        assert location["version"] == "version_7.15"
+        assert location["run"] == "run1"
+        assert location["duplicate_column"] == "header1"
+        assert location["positions"] == [0, 2]  # header1 appears at positions 0 and 2
+
+        # Check values
+        values = dup_discrepancy.values
+        assert values["duplicate_header"] == "header1"
+        assert values["all_headers"] == ["header1", "header2", "header1"]
+
+    def test_duplicate_column_names_run2(self, tmp_path):
+        """Test detection of duplicate column names in run2."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("header1,header2,header3\nvalue1,value2,value3\n")
+        file2.write_text(
+            "col1,col2,col1,col3\nvalue1,value2,value3,value4\n"
+        )  # Duplicate col1
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should find duplicate column names discrepancy
+        dup_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.DUPLICATE_COLUMN_NAMES
+            ),
+            None,
+        )
+        assert dup_discrepancy is not None
+        assert "Duplicate column name 'col1'" in dup_discrepancy.description
+        assert "run2" in dup_discrepancy.description
+        assert dup_discrepancy.location["run"] == "run2"
+        assert dup_discrepancy.location["duplicate_column"] == "col1"
+        assert dup_discrepancy.location["positions"] == [0, 2]
+
+    def test_duplicate_column_names_both_runs(self, tmp_path):
+        """Test detection of duplicate column names in both runs."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("id,name,id\nvalue1,alice,value3\n")  # Duplicate id
+        file2.write_text("name,id,name\nvalue1,value2,value3\n")  # Duplicate name
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should find duplicate column names discrepancies for both runs
+        dup_discrepancies = [
+            d for d in discrepancies if d.type == DiscrepancyType.DUPLICATE_COLUMN_NAMES
+        ]
+        assert len(dup_discrepancies) == 2
+
+        # Check that we have one for each run
+        run1_discrepancy = next(
+            (d for d in dup_discrepancies if d.location["run"] == "run1"), None
+        )
+        run2_discrepancy = next(
+            (d for d in dup_discrepancies if d.location["run"] == "run2"), None
+        )
+
+        assert run1_discrepancy is not None
+        assert run2_discrepancy is not None
+        assert run1_discrepancy.location["duplicate_column"] == "id"
+        assert run2_discrepancy.location["duplicate_column"] == "name"
+
+    def test_column_order_difference(self, tmp_path):
+        """Test detection of column order differences."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("id,name,value\n1,alice,100\n2,bob,200\n")
+        file2.write_text(
+            "name,id,value\n1,alice,100\n2,bob,200\n"
+        )  # Same columns, different order
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should find column order difference
+        order_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.COLUMN_ORDER_DIFFERENCE
+            ),
+            None,
+        )
+        assert order_discrepancy is not None
+        assert order_discrepancy.severity == Severity.MEDIUM
+        assert order_discrepancy.confidence == Confidence.HIGH
+        assert "Column order differs" in order_discrepancy.description
+        assert "2 columns reordered" in order_discrepancy.description
+
+        # Check location fields
+        location = order_discrepancy.location
+        assert location["file"] == "test.csv"
+        assert location["version"] == "version_7.15"
+        assert location["run"] == "both"
+        assert "reordered_columns" in location
+        assert set(location["reordered_columns"]) == {
+            "id",
+            "name",
+        }  # Both id and name changed positions
+
+        # Check values
+        values = order_discrepancy.values
+        assert "order_differences" in values
+        assert values["reordered_count"] == 2
+
+        order_diff = values["order_differences"]
+        assert order_diff["headers_run1"] == ["id", "name", "value"]
+        assert order_diff["headers_run2"] == ["name", "id", "value"]
+        assert len(order_diff["reordered_columns"]) == 2
+
+    def test_column_order_no_difference_same_order(self, tmp_path):
+        """Test that no column order discrepancy is reported when order is the same."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        content = "id,name,value\n1,alice,100\n2,bob,200\n"
+        file1.write_text(content)
+        file2.write_text(content)
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should not find column order difference
+        order_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.COLUMN_ORDER_DIFFERENCE
+            ),
+            None,
+        )
+        assert order_discrepancy is None
+
+    def test_column_order_no_difference_different_columns(self, tmp_path):
+        """Test that no column order discrepancy is reported when columns are different."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("id,name,value\n1,alice,100\n")
+        file2.write_text(
+            "id,address,phone\n1,123 Main St,555-1234\n"
+        )  # Different columns
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should not find column order difference (different columns, not just reordered)
+        order_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.COLUMN_ORDER_DIFFERENCE
+            ),
+            None,
+        )
+        assert order_discrepancy is None
+
+        # But should find header difference
+        header_discrepancy = next(
+            (d for d in discrepancies if d.type == DiscrepancyType.HEADER_DIFFERENCE),
+            None,
+        )
+        assert header_discrepancy is not None
+
+    def test_no_column_mapping_when_duplicates_exist(self, tmp_path):
+        """Test that column mappings are not created when duplicate column names exist."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("id,name,id\n1,alice,2\n")  # Duplicate id column
+        file2.write_text("id,name,value\n1,alice,100\n")
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        # Should find duplicate column names
+        dup_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.DUPLICATE_COLUMN_NAMES
+            ),
+            None,
+        )
+        assert dup_discrepancy is not None
+
+        # Should still find row differences but using fallback index-based comparison
+        row_discrepancy = next(
+            (d for d in discrepancies if d.type == DiscrepancyType.ROW_DIFFERENCE),
+            None,
+        )
+        assert row_discrepancy is not None
+
+    def test_column_order_difference_detailed_positions(self, tmp_path):
+        """Test that column order differences include detailed position information."""
+        file1 = tmp_path / "file1.csv"
+        file2 = tmp_path / "file2.csv"
+        file1.write_text("a,b,c,d\n1,2,3,4\n")
+        file2.write_text("d,b,a,c\n1,2,3,4\n")  # Completely reordered
+
+        discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
+
+        order_discrepancy = next(
+            (
+                d
+                for d in discrepancies
+                if d.type == DiscrepancyType.COLUMN_ORDER_DIFFERENCE
+            ),
+            None,
+        )
+        assert order_discrepancy is not None
+
+        order_diff = order_discrepancy.values["order_differences"]
+        reordered_columns = order_diff["reordered_columns"]
+
+        # All columns except 'b' should be reordered
+        assert len(reordered_columns) == 3  # a, c, d moved positions
+
+        # Check specific position changes
+        column_positions = {
+            col["column"]: (col["position_run1"], col["position_run2"])
+            for col in reordered_columns
+        }
+
+        assert column_positions["a"] == (0, 2)  # a moved from position 0 to 2
+        assert column_positions["c"] == (2, 3)  # c moved from position 2 to 3
+        assert column_positions["d"] == (3, 0)  # d moved from position 3 to 0
+        # b stayed at position 1, so it's not in reordered_columns
