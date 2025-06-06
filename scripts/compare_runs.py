@@ -58,6 +58,7 @@ class DiscrepancyType(Enum):
     COLUMN_COUNT_DIFFERENCE = "column_count_difference"
     FILE_READ_ERROR = "file_read_error"
     EMPTY_FILE = "empty_file"
+    NO_INDEX_COLUMN = "no_index_column"
 
 
 class Discrepancy:
@@ -108,12 +109,34 @@ class ComparisonReport:
     def add_discrepancy(self, version: str, filename: str, discrepancy: Discrepancy):
         """Add a discrepancy to the report."""
         if filename not in self.results[version]:
-            self.results[version][filename] = {"status": "differs", "discrepancies": []}
+            self.results[version][filename] = {
+                "status": "differs",
+                "discrepancies": [],
+                "index_column": None,
+            }
         self.results[version][filename]["discrepancies"].append(discrepancy.to_dict())
 
-    def mark_file_identical(self, version: str, filename: str):
+    def mark_file_identical(
+        self, version: str, filename: str, index_info: Optional[Dict[str, Any]] = None
+    ):
         """Mark a file as identical between runs."""
-        self.results[version][filename] = {"status": "identical", "discrepancies": []}
+        self.results[version][filename] = {
+            "status": "identical",
+            "discrepancies": [],
+            "index_column": index_info,
+        }
+
+    def set_file_index_info(
+        self, version: str, filename: str, index_info: Optional[Dict[str, Any]]
+    ):
+        """Set index column information for a file."""
+        if filename not in self.results[version]:
+            self.results[version][filename] = {
+                "status": "unknown",
+                "discrepancies": [],
+                "index_column": None,
+            }
+        self.results[version][filename]["index_column"] = index_info
 
     def get_summary(self) -> Dict[str, int]:
         """Generate summary statistics."""
@@ -514,6 +537,43 @@ def compare_csv_contents(
     headers1 = content1[0] if content1 else []
     headers2 = content2[0] if content2 else []
 
+    # Discover index column for better comparison
+    index_info = discover_index_column(content1, content2)
+
+    # Log index column discovery results
+    if index_info and index_info.get("index_column") is not None:
+        logger.debug(
+            f"Found index column for {filename}: {index_info['column_name']} (shared values: {index_info['shared_values']})"
+        )
+    else:
+        logger.debug(
+            f"No suitable index column found for {filename}: {index_info.get('reason', 'unknown') if index_info else 'no analysis'}"
+        )
+
+        # Add a low-severity discrepancy if no index column could be identified
+        if (
+            index_info
+            and index_info.get("reason") in ["no_shared_values"]
+            and index_info.get("candidate_columns", 0) > 0
+        ):
+            discrepancies.append(
+                Discrepancy(
+                    DiscrepancyType.NO_INDEX_COLUMN,
+                    Severity.LOW,
+                    Confidence.MEDIUM,
+                    f"No suitable index column found: {index_info['candidate_columns']} unique columns but no shared values",
+                    location={
+                        "file": filename,
+                        "version": version,
+                        "run": "both",
+                    },
+                    values={
+                        "index_analysis": index_info,
+                        "candidate_columns": index_info.get("candidate_columns", 0),
+                    },
+                )
+            )
+
     # Check if files have same number of rows
     if len(content1) != len(content2):
         discrepancies.append(
@@ -798,10 +858,30 @@ def compare_proviral_files(
         )
 
         if not discrepancies:
-            report.mark_file_identical(version, csv_name)
+            # For identical files, we still want to discover and store index column info
+            content1 = read_csv_file(csv_files1[csv_name])
+            content2 = read_csv_file(csv_files2[csv_name])
+            index_info = (
+                discover_index_column(content1, content2)
+                if content1 and content2
+                else None
+            )
+            report.mark_file_identical(version, csv_name, index_info)
         else:
+            # Set index column info for files with differences
+            content1 = read_csv_file(csv_files1[csv_name])
+            content2 = read_csv_file(csv_files2[csv_name])
+            index_info = (
+                discover_index_column(content1, content2)
+                if content1 and content2
+                else None
+            )
+
             for discrepancy in discrepancies:
                 report.add_discrepancy(version, csv_name, discrepancy)
+
+            # Set the index column info after adding discrepancies
+            report.set_file_index_info(version, csv_name, index_info)
 
 
 def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
@@ -901,6 +981,156 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
             )
 
     return report
+
+
+def _find_unique_value_columns(csv_data: List[List[str]]) -> List[int]:
+    """
+    Find all columns that have unique values (no duplicates).
+
+    Args:
+        csv_data: List of rows, where each row is a list of values
+
+    Returns:
+        List of column indices that contain only unique values
+    """
+    if not csv_data or len(csv_data) < 2:  # Need at least header + 1 data row
+        return []
+
+    unique_columns = []
+    num_columns = len(csv_data[0]) if csv_data else 0
+
+    for col_idx in range(num_columns):
+        # Extract all values from this column (skip header row)
+        column_values = []
+        for row_idx in range(1, len(csv_data)):  # Skip header
+            if col_idx < len(csv_data[row_idx]):
+                value = csv_data[row_idx][col_idx].strip()
+                if value:  # Only consider non-empty values
+                    column_values.append(value)
+
+        # Check if all values are unique
+        if len(column_values) > 0 and len(column_values) == len(set(column_values)):
+            unique_columns.append(col_idx)
+
+    return unique_columns
+
+
+def _count_shared_values(
+    csv_data1: List[List[str]], csv_data2: List[List[str]], col_idx: int
+) -> int:
+    """
+    Count how many values are shared between two CSV files in a specific column.
+
+    Args:
+        csv_data1: First CSV data
+        csv_data2: Second CSV data
+        col_idx: Column index to compare
+
+    Returns:
+        Number of shared non-empty values in the specified column
+    """
+    # Extract values from column in first file (skip header)
+    values1 = set()
+    for row_idx in range(1, len(csv_data1)):
+        if col_idx < len(csv_data1[row_idx]):
+            value = csv_data1[row_idx][col_idx].strip()
+            if value:
+                values1.add(value)
+
+    # Extract values from column in second file (skip header)
+    values2 = set()
+    for row_idx in range(1, len(csv_data2)):
+        if col_idx < len(csv_data2[row_idx]):
+            value = csv_data2[row_idx][col_idx].strip()
+            if value:
+                values2.add(value)
+
+    # Count intersection
+    return len(values1 & values2)
+
+
+def discover_index_column(
+    csv_data1: List[List[str]], csv_data2: List[List[str]]
+) -> Optional[Dict[str, Any]]:
+    """
+    Discover the best index column for comparing two CSV files.
+
+    An index column must:
+    1. Have all unique values within each file
+    2. Have the highest number of values shared between the two files
+
+    Args:
+        csv_data1: First CSV data as list of rows
+        csv_data2: Second CSV data as list of rows
+
+    Returns:
+        Dictionary with index column information, or None if no suitable column found
+    """
+    if not csv_data1 or not csv_data2:
+        return None
+
+    # Get headers from both files
+    headers1 = csv_data1[0] if csv_data1 else []
+    headers2 = csv_data2[0] if csv_data2 else []
+
+    # Find columns with unique values in both files
+    unique_cols1 = set(_find_unique_value_columns(csv_data1))
+    unique_cols2 = set(_find_unique_value_columns(csv_data2))
+
+    # Only consider columns that are unique in both files
+    candidate_columns = unique_cols1 & unique_cols2
+
+    if not candidate_columns:
+        return None
+
+    # Find the column with the most shared values
+    best_column = None
+    max_shared = 0
+    column_analysis = {}
+
+    for col_idx in candidate_columns:
+        shared_count = _count_shared_values(csv_data1, csv_data2, col_idx)
+
+        # Get column name if available
+        col_name1 = (
+            headers1[col_idx] if col_idx < len(headers1) else f"column_{col_idx}"
+        )
+        col_name2 = (
+            headers2[col_idx] if col_idx < len(headers2) else f"column_{col_idx}"
+        )
+
+        column_analysis[col_idx] = {
+            "column_index": col_idx,
+            "column_name_run1": col_name1,
+            "column_name_run2": col_name2,
+            "shared_values": shared_count,
+            "unique_in_both": True,
+        }
+
+        if shared_count > max_shared:
+            max_shared = shared_count
+            best_column = col_idx
+
+    if best_column is None:
+        return {
+            "index_column": None,
+            "shared_values": 0,
+            "candidate_columns": len(candidate_columns),
+            "column_analysis": column_analysis,
+            "reason": "no_shared_values",
+        }
+
+    # Get the best column info
+    best_col_info = column_analysis[best_column]
+
+    return {
+        "index_column": best_column,
+        "column_name": best_col_info["column_name_run1"],
+        "shared_values": max_shared,
+        "candidate_columns": len(candidate_columns),
+        "column_analysis": column_analysis,
+        "reason": "success",
+    }
 
 
 def main():
