@@ -108,6 +108,22 @@ def _trim_value_for_display(value: str, max_length: int = 20) -> str:
     return f"{prefix}...{suffix}"
 
 
+def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
+    """
+    Recursively trim string values in a data structure (dict, list, or string).
+    """
+    if isinstance(data, str):
+        return _trim_value_for_display(data, max_length)
+    elif isinstance(data, list):
+        return [_trim_data_recursively(item, max_length) for item in data]
+    elif isinstance(data, dict):
+        return {
+            key: _trim_data_recursively(value, max_length)
+            for key, value in data.items()
+        }
+    return data
+
+
 class Discrepancy:
     """Represents a single discrepancy between two runs."""
 
@@ -133,9 +149,11 @@ class Discrepancy:
             "type": self.type.value,
             "severity": self.severity.value,
             "confidence": self.confidence.value,
-            "description": self.description,
-            "location": self.location,
-            "values": self.values,
+            "description": self.description,  # Descriptions are usually crafted and might not need aggressive trimming here
+            "location": _trim_data_recursively(
+                self.location
+            ),  # Trim location data as well
+            "values": _trim_data_recursively(self.values),  # Recursively trim values
         }
 
 
@@ -436,8 +454,8 @@ def _analyze_row_differences(
                     "column_index": i,
                     "column_name": col_name,
                     "change_type": change_type,
-                    "value1": val1,
-                    "value2": val2,
+                    "value1": _trim_value_for_display(val1),
+                    "value2": _trim_value_for_display(val2),
                     "value1_type": _get_value_type(val1),
                     "value2_type": _get_value_type(val2),
                     "value1_length": len(val1),
