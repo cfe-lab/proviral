@@ -17,7 +17,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.compare_runs import (
+from scripts.compare_runs.__main__ import (
     Severity,
     Confidence,
     DiscrepancyType,
@@ -623,7 +623,7 @@ class TestFullComparison:
 
         # Mock compare_proviral_files to raise an exception - use the correct module path
         with patch(
-            "scripts.compare_runs.compare_proviral_files",
+            "scripts.compare_runs.__main__.compare_proviral_files",
             side_effect=Exception("Test error"),
         ):
             report = compare_runs(run1_dir, run2_dir)
@@ -731,7 +731,7 @@ class TestMainFunction:
         existing = tmp_path / "existing"
         existing.mkdir()
 
-        with patch("sys.argv", ["compare_runs.py", str(nonexistent), str(existing)]):
+        with patch("sys.argv", ["compare_runs", str(nonexistent), str(existing)]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1
@@ -747,7 +747,7 @@ class TestMainFunction:
             proviral_dir.mkdir(parents=True)
             (proviral_dir / "test.csv").write_text("header\nvalue\n")
 
-        with patch("sys.argv", ["compare_runs.py", str(run1_dir), str(run2_dir)]):
+        with patch("sys.argv", ["compare_runs", str(run1_dir), str(run2_dir)]):
             main()
 
         captured = capsys.readouterr()
@@ -771,7 +771,7 @@ class TestMainFunction:
 
         with patch(
             "sys.argv",
-            ["compare_runs.py", str(run1_dir), str(run2_dir), "-o", str(output_file)],
+            ["compare_runs", str(run1_dir), str(run2_dir), "-o", str(output_file)],
         ):
             main()
 
@@ -791,7 +791,7 @@ class TestMainFunction:
             (proviral_dir / "test.csv").write_text("header\nvalue\n")
 
         with patch(
-            "sys.argv", ["compare_runs.py", str(run1_dir), str(run2_dir), "--compact"]
+            "sys.argv", ["compare_runs", str(run1_dir), str(run2_dir), "--compact"]
         ):
             main()
 
@@ -811,9 +811,9 @@ class TestMainFunction:
         (run2_dir / "Results").mkdir()
 
         with patch(
-            "scripts.compare_runs.compare_runs", side_effect=KeyboardInterrupt()
+            "scripts.compare_runs.__main__.compare_runs", side_effect=KeyboardInterrupt()
         ):
-            with patch("sys.argv", ["compare_runs.py", str(run1_dir), str(run2_dir)]):
+            with patch("sys.argv", ["compare_runs", str(run1_dir), str(run2_dir)]):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 assert exc_info.value.code == 1
