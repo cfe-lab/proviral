@@ -13,14 +13,41 @@ Examples:
 
 import argparse
 import csv  # must not use pandas or numpy to avoid dependencies.
-import json
 import logging
 import sys
-from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Any
-from datetime import datetime
-from enum import Enum
+
+from .discrepancy import (
+    Severity,
+    Confidence,
+    DiscrepancyType,
+    Discrepancy,
+    ComparisonReport,
+    _trim_value_for_display,
+)
+from .csv_utils import (
+    get_file_metadata,
+    validate_column_names,
+    create_column_mapping,
+    get_column_value_by_name,
+    is_numeric,
+    get_value_type,
+    classify_value_change,
+    analyze_column_differences,
+    compare_column_orders,
+)
+from .index_discovery import (
+    discover_index_column,
+)
+from .row_comparison import (
+    analyze_header_differences,
+    analyze_row_differences,
+    get_header_change_summary,
+    get_row_change_summary,
+    extract_column_names_from_changes,
+    extract_header_names_from_changes,
+)
 
 
 # Set up logging
@@ -28,220 +55,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-class Severity(Enum):
-    """Severity levels for discrepancies."""
-
-    CRITICAL = "CRITICAL"
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-
-class Confidence(Enum):
-    """Confidence levels for discrepancies."""
-
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-
-class DiscrepancyType(Enum):
-    """Types of discrepancies that can be detected."""
-
-    MISSING_FILE = "missing_file"
-    MISSING_DIRECTORY = "missing_directory"
-    HEADER_DIFFERENCE = "header_difference"
-    ROW_DIFFERENCE = "row_difference"
-    ROW_COUNT_DIFFERENCE = "row_count_difference"
-    COLUMN_COUNT_DIFFERENCE = "column_count_difference"
-    FILE_READ_ERROR = "file_read_error"
-    EMPTY_FILE = "empty_file"
-    NO_INDEX_COLUMN = "no_index_column"
-    DUPLICATE_COLUMN_NAMES = "duplicate_column_names"
-    COLUMN_ORDER_DIFFERENCE = "column_order_difference"
-    ROW_ORDER_DIFFERENCE = "row_order_difference"
-    MISSING_ROW = "missing_row"
-    EXTRA_ROW = "extra_row"
-
-
-def _trim_value_for_display(value: str, max_length: int = 20) -> str:
-    """
-    Trim a value for display purposes if it exceeds the maximum length.
-
-    For values longer than max_length, truncates with "..." in the middle
-    to preserve both the beginning and end of the value.
-
-    Args:
-        value: The string value to potentially trim
-        max_length: Maximum allowed length (default: 20)
-
-    Returns:
-        The original value if <= max_length, otherwise a trimmed version
-
-    Examples:
-        >>> _trim_value_for_display("short")
-        'short'
-        >>> _trim_value_for_display("this_is_a_very_long_value_that_exceeds_twenty_characters")
-        'this_is_...characters'
-    """
-    if not isinstance(value, str):
-        value = str(value)
-
-    if len(value) <= max_length:
-        return value
-
-    # Calculate prefix and suffix lengths
-    # We need room for "..." (3 chars) in the middle
-    available_chars = max_length - 3
-    prefix_length = available_chars // 2
-    suffix_length = available_chars - prefix_length
-
-    # Ensure we don't get negative lengths for very small max_length
-    if prefix_length < 0 or suffix_length < 0:
-        return value[:max_length]
-
-    prefix = value[:prefix_length]
-    suffix = value[-suffix_length:] if suffix_length > 0 else ""
-
-    return f"{prefix}...{suffix}"
-
-
-def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
-    """
-    Recursively trim string values in a data structure (dict, list, or string).
-    """
-    if isinstance(data, str):
-        return _trim_value_for_display(data, max_length)
-    elif isinstance(data, list):
-        return [_trim_data_recursively(item, max_length) for item in data]
-    elif isinstance(data, dict):
-        return {
-            key: _trim_data_recursively(value, max_length)
-            for key, value in data.items()
-        }
-    return data
-
-
-class Discrepancy:
-    """Represents a single discrepancy between two runs."""
-
-    def __init__(
-        self,
-        discrepancy_type: DiscrepancyType,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        location: Optional[Dict[str, Any]] = None,
-        values: Optional[Dict[str, Any]] = None,
-    ):
-        self.type = discrepancy_type
-        self.severity = severity
-        self.confidence = confidence
-        self.description = description
-        self.location = location or {}
-        self.values = values or {}
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert discrepancy to dictionary for JSON output."""
-        return {
-            "type": self.type.value,
-            "severity": self.severity.value,
-            "confidence": self.confidence.value,
-            "description": self.description,  # Descriptions are usually crafted and might not need aggressive trimming here
-            "location": _trim_data_recursively(
-                self.location
-            ),  # Trim location data as well
-            "values": _trim_data_recursively(self.values),  # Recursively trim values
-        }
-
-
-class ComparisonReport:
-    """Collects and manages all discrepancies found during comparison."""
-
-    def __init__(self, run1_dir: Path, run2_dir: Path):
-        self.run1_dir = run1_dir
-        self.run2_dir = run2_dir
-        self.timestamp = datetime.now().isoformat()
-        self.versions_run1: List[str] = []
-        self.versions_run2: List[str] = []
-        self.common_versions: List[str] = []
-        self.results: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(
-            lambda: defaultdict(dict)
-        )
-
-    def add_discrepancy(self, version: str, filename: str, discrepancy: Discrepancy):
-        """Add a discrepancy to the report."""
-        if filename not in self.results[version]:
-            self.results[version][filename] = {
-                "status": "differs",
-                "discrepancies": [],
-                "index_column": None,
-            }
-        self.results[version][filename]["discrepancies"].append(discrepancy.to_dict())
-
-    def mark_file_identical(
-        self, version: str, filename: str, index_info: Optional[Dict[str, Any]] = None
-    ):
-        """Mark a file as identical between runs."""
-        self.results[version][filename] = {
-            "status": "identical",
-            "discrepancies": [],
-            "index_column": index_info,
-        }
-
-    def set_file_index_info(
-        self, version: str, filename: str, index_info: Optional[Dict[str, Any]]
-    ):
-        """Set index column information for a file."""
-        if filename not in self.results[version]:
-            self.results[version][filename] = {
-                "status": "unknown",
-                "discrepancies": [],
-                "index_column": None,
-            }
-        self.results[version][filename]["index_column"] = index_info
-
-    def get_summary(self) -> Dict[str, int]:
-        """Generate summary statistics."""
-        summary = {
-            "total_discrepancies": 0,
-            "critical_discrepancies": 0,
-            "high_discrepancies": 0,
-            "medium_discrepancies": 0,
-            "low_discrepancies": 0,
-        }
-
-        for version_results in self.results.values():
-            for file_results in version_results.values():
-                for discrepancy in file_results.get("discrepancies", []):
-                    summary["total_discrepancies"] += 1
-                    severity = discrepancy["severity"].lower()
-                    summary_key = f"{severity}_discrepancies"
-                    if summary_key in summary:
-                        summary[summary_key] += 1
-
-        return summary
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert report to dictionary for JSON output."""
-        return {
-            "metadata": {
-                "timestamp": self.timestamp,
-                "run1_dir": str(self.run1_dir),
-                "run2_dir": str(self.run2_dir),
-                "versions_run1": self.versions_run1,
-                "versions_run2": self.versions_run2,
-                "common_versions": self.common_versions,
-            },
-            "summary": self.get_summary(),
-            "results": dict(self.results),
-        }
-
-    def to_json(self, indent: int = 2) -> str:
-        """Convert report to JSON string."""
-        return json.dumps(self.to_dict(), indent=indent)
 
 
 def find_versions(run_dir: Path) -> List[str]:
@@ -312,38 +125,6 @@ def read_csv_file(csv_path: Path) -> List[List[str]]:
         return []
 
 
-def _analyze_header_differences(
-    header1: List[str], header2: List[str]
-) -> Dict[str, Any]:
-    """Analyze differences between two header rows."""
-    changes: Dict[str, Any] = {
-        "indices": [],
-        "added": [],
-        "removed": [],
-        "modified": [],
-    }
-
-    max_len = max(len(header1), len(header2))
-
-    for i in range(max_len):
-        val1 = header1[i] if i < len(header1) else None
-        val2 = header2[i] if i < len(header2) else None
-
-        if val1 != val2:
-            changes["indices"].append(i)
-
-            if val1 is None:
-                changes["added"].append({"index": i, "value": val2})
-            elif val2 is None:
-                changes["removed"].append({"index": i, "value": val1})
-            else:
-                changes["modified"].append(
-                    {"index": i, "old_header": val1, "new_header": val2}
-                )
-
-    return changes
-
-
 def _get_header_change_summary(changes: Dict[str, Any]) -> str:
     """Generate a human-readable summary of header changes."""
     parts = []
@@ -409,7 +190,7 @@ def _analyze_row_differences(
                 changes["column_names"].append(col_name)
 
                 # Determine change type
-                change_type = _classify_value_change(val1, val2)
+                change_type = classify_value_change(val1, val2)
                 changes["change_types"].append(change_type)
 
                 change_info = {
@@ -418,8 +199,8 @@ def _analyze_row_differences(
                     "change_type": change_type,
                     "value1": _trim_value_for_display(val1),
                     "value2": _trim_value_for_display(val2),
-                    "value1_type": _get_value_type(val1),
-                    "value2_type": _get_value_type(val2),
+                    "value1_type": get_value_type(val1),
+                    "value2_type": get_value_type(val2),
                     "value1_length": len(val1),
                     "value2_length": len(val2),
                 }
@@ -437,7 +218,7 @@ def _analyze_row_differences(
                 changes["indices"].append(i)
 
                 # Determine change type
-                change_type = _classify_value_change(val1, val2)
+                change_type = classify_value_change(val1, val2)
                 changes["change_types"].append(change_type)
 
                 # Get column name if available
@@ -456,8 +237,8 @@ def _analyze_row_differences(
                     "change_type": change_type,
                     "value1": _trim_value_for_display(val1),
                     "value2": _trim_value_for_display(val2),
-                    "value1_type": _get_value_type(val1),
-                    "value2_type": _get_value_type(val2),
+                    "value1_type": get_value_type(val1),
+                    "value2_type": get_value_type(val2),
                     "value1_length": len(val1),
                     "value2_length": len(val2),
                 }
@@ -520,184 +301,6 @@ def _get_row_change_summary(changes: Dict[str, Any]) -> str:
     col_summary = f"in {len(changes['indices'])} column(s)"
 
     return f"{', '.join(parts)} {col_summary}"
-
-
-def _analyze_column_differences(row1: List[str], row2: List[str]) -> tuple[int, int]:
-    """Analyze column count differences between two rows."""
-    len1, len2 = len(row1), len(row2)
-    if len1 > len2:
-        return len1 - len2, 0  # missing in run2, extra in run1
-    elif len2 > len1:
-        return 0, len2 - len1  # missing in run1, extra in run2
-    else:
-        return 0, 0
-
-
-def _classify_value_change(val1: str, val2: str) -> str:
-    """Classify the type of change between two values."""
-    if not val1 and val2:
-        return "added"
-    elif val1 and not val2:
-        return "removed"
-    elif _is_numeric(val1) and _is_numeric(val2):
-        return "numeric"
-    elif val1.lower() in {
-        "success",
-        "failed",
-        "complete",
-        "incomplete",
-    } or val2.lower() in {"success", "failed", "complete", "incomplete"}:
-        return "outcome"
-    else:
-        return "text"
-
-
-def _get_value_type(value: str) -> str:
-    """Get the type classification of a value."""
-    if not value:
-        return "empty"
-    elif _is_numeric(value):
-        return "numeric"
-    elif value.lower() in {
-        "success",
-        "failed",
-        "complete",
-        "incomplete",
-        "true",
-        "false",
-    }:
-        return "categorical"
-    else:
-        return "text"
-
-
-def _is_numeric(value: str) -> bool:
-    """Check if a string represents a numeric value."""
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
-
-
-def _get_file_metadata(file_path: Path) -> Dict[str, Any]:
-    """Get metadata information about a file."""
-    try:
-        stat = file_path.stat()
-        return {
-            "size": stat.st_size,
-            "modified_time": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            "exists": True,
-        }
-    except Exception:
-        return {
-            "size": 0,
-            "modified_time": None,
-            "exists": False,
-        }
-
-
-def _validate_column_names(csv_data: List[List[str]]) -> Optional[Dict[str, Any]]:
-    """
-    Validate that all column names in the CSV are unique.
-
-    Args:
-        csv_data: List of rows, where first row contains headers
-
-    Returns:
-        None if validation passes, otherwise a dict with error information
-    """
-    if not csv_data or not csv_data[0]:
-        return None
-
-    headers = csv_data[0]
-    header_counts: Dict[str, int] = {}
-
-    for i, header in enumerate(headers):
-        if header in header_counts:
-            return {
-                "duplicate_header": header,
-                "positions": [header_counts[header], i],
-                "all_headers": headers,
-            }
-        header_counts[header] = i
-
-    return None
-
-
-def _create_column_mapping(headers: List[str]) -> Dict[str, int]:
-    """
-    Create a mapping from column names to their indices.
-
-    Args:
-        headers: List of column names
-
-    Returns:
-        Dictionary mapping column names to indices
-    """
-    return {header: i for i, header in enumerate(headers)}
-
-
-def _get_column_value_by_name(
-    row: List[str], column_name: str, column_map: Dict[str, int]
-) -> str:
-    """
-    Get a value from a row by column name.
-
-    Args:
-        row: List of values in the row
-        column_name: Name of the column to retrieve
-        column_map: Mapping from column names to indices
-
-    Returns:
-        The value at the specified column, or empty string if not found
-    """
-    if column_name not in column_map:
-        return ""
-
-    col_idx = column_map[column_name]
-    return row[col_idx] if col_idx < len(row) else ""
-
-
-def _compare_column_orders(
-    headers1: List[str], headers2: List[str]
-) -> Optional[Dict[str, Any]]:
-    """
-    Compare the order of columns between two header lists.
-
-    Args:
-        headers1: First set of headers
-        headers2: Second set of headers
-
-    Returns:
-        None if orders match, otherwise a dict with order difference information
-    """
-    # Only compare if both have the same columns
-    set1 = set(headers1)
-    set2 = set(headers2)
-
-    if set1 != set2:
-        return None  # Different columns, not just different order
-
-    if headers1 == headers2:
-        return None  # Same order
-
-    # Find positions of each column in both files
-    pos1 = {col: i for i, col in enumerate(headers1)}
-    pos2 = {col: i for i, col in enumerate(headers2)}
-
-    reordered_columns = []
-    for col in headers1:
-        if pos1[col] != pos2[col]:
-            reordered_columns.append(
-                {"column": col, "position_run1": pos1[col], "position_run2": pos2[col]}
-            )
-
-    return {
-        "reordered_columns": reordered_columns,
-        "headers_run1": headers1,
-        "headers_run2": headers2,
-    }
 
 
 def compare_csv_contents(
@@ -767,7 +370,7 @@ def compare_csv_contents(
     headers2 = content2[0] if content2 else []
 
     # Validate column names for duplicates
-    dup_check1 = _validate_column_names(content1)
+    dup_check1 = validate_column_names(content1)
     if dup_check1:
         discrepancies.append(
             Discrepancy(
@@ -789,7 +392,7 @@ def compare_csv_contents(
             )
         )
 
-    dup_check2 = _validate_column_names(content2)
+    dup_check2 = validate_column_names(content2)
     if dup_check2:
         discrepancies.append(
             Discrepancy(
@@ -812,7 +415,7 @@ def compare_csv_contents(
         )
 
     # Check for column order differences (only if no duplicate names and same columns)
-    order_diff = _compare_column_orders(headers1, headers2)
+    order_diff = compare_column_orders(headers1, headers2)
     if order_diff:
         discrepancies.append(
             Discrepancy(
@@ -836,8 +439,8 @@ def compare_csv_contents(
         )
 
     # Create column mappings for name-based access (if no duplicates)
-    column_map1 = _create_column_mapping(headers1) if not dup_check1 else {}
-    column_map2 = _create_column_mapping(headers2) if not dup_check2 else {}
+    column_map1 = create_column_mapping(headers1) if not dup_check1 else {}
+    column_map2 = create_column_mapping(headers2) if not dup_check2 else {}
 
     # Discover index column for better comparison
     index_info = discover_index_column(content1, content2)
@@ -872,9 +475,9 @@ def compare_csv_contents(
     # Always check headers first, regardless of comparison method
     if headers1 != headers2:
         # Identify specific header differences
-        changed_headers = _analyze_header_differences(headers1, headers2)
-        header_details = _get_header_change_summary(changed_headers)
-        changed_header_names = _extract_header_names_from_changes(
+        changed_headers = analyze_header_differences(headers1, headers2)
+        header_details = get_header_change_summary(changed_headers)
+        changed_header_names = extract_header_names_from_changes(
             changed_headers, headers1, headers2
         )
 
@@ -902,7 +505,7 @@ def compare_csv_contents(
 
         # Check for column count differences in header
         if len(headers1) != len(headers2):
-            missing_cols, extra_cols = _analyze_column_differences(headers1, headers2)
+            missing_cols, extra_cols = analyze_column_differences(headers1, headers2)
             discrepancies.append(
                 Discrepancy(
                     DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
@@ -1131,7 +734,7 @@ def _compare_rows_by_index_column(
             # Compare row content if rows differ
             if row1 != row2:
                 # Analyze which specific columns differ
-                column_differences = _analyze_row_differences(
+                column_differences = analyze_row_differences(
                     row1, row2, headers1, headers2, column_map1, column_map2
                 )
 
@@ -1141,8 +744,8 @@ def _compare_rows_by_index_column(
                 )
                 confidence = _determine_row_difference_confidence(row1, row2)
 
-                change_summary = _get_row_change_summary(column_differences)
-                changed_column_names = _extract_column_names_from_changes(
+                change_summary = get_row_change_summary(column_differences)
+                changed_column_names = extract_column_names_from_changes(
                     column_differences
                 )
 
@@ -1174,7 +777,7 @@ def _compare_rows_by_index_column(
 
                 # Check for column count differences in data rows
                 if len(row1) != len(row2):
-                    missing_cols, extra_cols = _analyze_column_differences(row1, row2)
+                    missing_cols, extra_cols = analyze_column_differences(row1, row2)
                     discrepancies.append(
                         Discrepancy(
                             DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
@@ -1325,7 +928,7 @@ def compare_proviral_files(
     for csv_name in sorted(all_csv_names):
         if csv_name not in csv_files1:
             # Get file info from run2
-            file2_info = _get_file_metadata(csv_files2[csv_name])
+            file2_info = get_file_metadata(csv_files2[csv_name])
             report.add_discrepancy(
                 version,
                 csv_name,
@@ -1350,7 +953,7 @@ def compare_proviral_files(
 
         if csv_name not in csv_files2:
             # Get file info from run1
-            file1_info = _get_file_metadata(csv_files1[csv_name])
+            file1_info = get_file_metadata(csv_files1[csv_name])
             report.add_discrepancy(
                 version,
                 csv_name,
@@ -1502,172 +1105,6 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
             )
 
     return report
-
-
-def _find_unique_value_columns(csv_data: List[List[str]]) -> List[str]:
-    """
-    Find all columns that have unique values (no duplicates).
-
-    Args:
-        csv_data: List of rows, where each row is a list of values
-
-    Returns:
-        List of column names that contain only unique values
-    """
-    if not csv_data or len(csv_data) < 2:  # Need at least header + 1 data row
-        return []
-
-    unique_columns = []
-    headers = csv_data[0] if csv_data else []
-    num_columns = len(headers)
-
-    for col_idx in range(num_columns):
-        # Extract all values from this column (skip header row)
-        column_values = []
-        for row_idx in range(1, len(csv_data)):  # Skip header
-            if col_idx < len(csv_data[row_idx]):
-                value = csv_data[row_idx][col_idx].strip()
-                if value:  # Only consider non-empty values
-                    column_values.append(value)
-
-        # Check if all values are unique
-        if len(column_values) > 0 and len(column_values) == len(set(column_values)):
-            col_name = (
-                headers[col_idx] if col_idx < len(headers) else f"column_{col_idx}"
-            )
-            unique_columns.append(col_name)
-
-    return unique_columns
-
-
-def _count_shared_values(
-    csv_data1: List[List[str]], csv_data2: List[List[str]], column_name: str
-) -> int:
-    """
-    Count how many values are shared between two CSV files in a specific column.
-
-    Args:
-        csv_data1: First CSV data
-        csv_data2: Second CSV data
-        column_name: Column name to compare
-
-    Returns:
-        Number of shared non-empty values in the specified column
-    """
-    if not csv_data1 or not csv_data2:
-        return 0
-
-    headers1 = csv_data1[0] if csv_data1 else []
-    headers2 = csv_data2[0] if csv_data2 else []
-
-    # Find column indices by name
-    col_idx1 = headers1.index(column_name) if column_name in headers1 else -1
-    col_idx2 = headers2.index(column_name) if column_name in headers2 else -1
-
-    if col_idx1 == -1 or col_idx2 == -1:
-        return 0
-
-    # Extract values from column in first file (skip header)
-    values1 = set()
-    for row_idx in range(1, len(csv_data1)):
-        if col_idx1 < len(csv_data1[row_idx]):
-            value = csv_data1[row_idx][col_idx1].strip()
-            if value:
-                values1.add(value)
-
-    # Extract values from column in second file (skip header)
-    values2 = set()
-    for row_idx in range(1, len(csv_data2)):
-        if col_idx2 < len(csv_data2[row_idx]):
-            value = csv_data2[row_idx][col_idx2].strip()
-            if value:
-                values2.add(value)
-
-    # Count intersection
-    return len(values1 & values2)
-
-
-def discover_index_column(
-    csv_data1: List[List[str]], csv_data2: List[List[str]]
-) -> Optional[Dict[str, Any]]:
-    """
-    Discover the best index column for comparing two CSV files.
-
-    An index column must:
-    1. Have all unique values within each file
-    2. Have the highest number of values shared between the two files
-
-    Args:
-        csv_data1: First CSV data as list of rows
-        csv_data2: Second CSV data as list of rows
-
-    Returns:
-        Dictionary with index column information, or None if no suitable column found
-    """
-    if not csv_data1 or not csv_data2:
-        return None
-
-    # Get headers from both files
-    headers1 = csv_data1[0] if csv_data1 else []
-    headers2 = csv_data2[0] if csv_data2 else []
-
-    # Find columns with unique values in both files
-    unique_cols1 = set(_find_unique_value_columns(csv_data1))
-    unique_cols2 = set(_find_unique_value_columns(csv_data2))
-
-    # Only consider columns that are unique in both files
-    candidate_columns = unique_cols1 & unique_cols2
-
-    if not candidate_columns:
-        return None
-
-    # Find the column with the most shared values
-    best_column = None
-    max_shared = 0
-    column_analysis = {}
-
-    for col_name in sorted(candidate_columns):
-        shared_count = _count_shared_values(csv_data1, csv_data2, col_name)
-
-        # Get column indices for analysis
-        col_idx1 = headers1.index(col_name) if col_name in headers1 else -1
-        col_idx2 = headers2.index(col_name) if col_name in headers2 else -1
-
-        column_analysis[col_name] = {
-            "column_name": col_name,
-            "column_index_run1": col_idx1,
-            "column_index_run2": col_idx2,
-            "shared_values": shared_count,
-            "unique_in_both": True,
-        }
-
-        if shared_count > max_shared:
-            max_shared = shared_count
-            best_column = col_name
-
-    if best_column is None:
-        return {
-            "index_column": None,
-            "column_name": None,
-            "shared_values": 0,
-            "candidate_columns": len(candidate_columns),
-            "column_analysis": column_analysis,
-            "reason": "no_shared_values",
-        }
-
-    # Get the best column info
-    best_col_info = column_analysis[best_column]
-
-    return {
-        "index_column": best_col_info[
-            "column_index_run1"
-        ],  # Return index for backward compatibility
-        "column_name": best_column,
-        "shared_values": max_shared,
-        "candidate_columns": len(candidate_columns),
-        "column_analysis": column_analysis,
-        "reason": "success",
-    }
 
 
 def main():

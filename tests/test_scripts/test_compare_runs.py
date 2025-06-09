@@ -18,11 +18,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.compare_runs.__main__ import (
-    Severity,
-    Confidence,
-    DiscrepancyType,
-    Discrepancy,
-    ComparisonReport,
     find_versions,
     get_proviral_csv_files,
     read_csv_file,
@@ -32,8 +27,17 @@ from scripts.compare_runs.__main__ import (
     main,
     _determine_row_difference_severity,
     _determine_row_difference_confidence,
-    # Add imports for index column discovery functions
-    _find_unique_value_columns,
+)
+from scripts.compare_runs.discrepancy import (
+    Severity,
+    Confidence,
+    DiscrepancyType,
+    Discrepancy,
+    ComparisonReport,
+)
+from scripts.compare_runs.index_discovery import (
+    find_unique_value_columns,
+    count_shared_values,
     _count_shared_values,
     discover_index_column,
 )
@@ -823,55 +827,55 @@ class TestIndexColumnDiscovery:
     """Test index column discovery functionality."""
 
     def test_find_unique_value_columns_empty_data(self):
-        """Test _find_unique_value_columns with empty data."""
-        assert _find_unique_value_columns([]) == []
-        assert _find_unique_value_columns([["header"]]) == []  # Only header, no data
+        """Test find_unique_value_columns with empty data."""
+        assert find_unique_value_columns([]) == []
+        assert find_unique_value_columns([["header"]]) == []  # Only header, no data
 
     def test_find_unique_value_columns_all_unique(self):
-        """Test _find_unique_value_columns with all unique columns."""
+        """Test find_unique_value_columns with all unique columns."""
         csv_data = [
             ["id", "name", "value"],
             ["1", "alice", "100"],
             ["2", "bob", "200"],
             ["3", "charlie", "300"],
         ]
-        unique_columns = _find_unique_value_columns(csv_data)
+        unique_columns = find_unique_value_columns(csv_data)
         # All columns should be unique
         assert sorted(unique_columns) == ["id", "name", "value"]
 
     def test_find_unique_value_columns_with_duplicates(self):
-        """Test _find_unique_value_columns with some duplicate values."""
+        """Test find_unique_value_columns with some duplicate values."""
         csv_data = [
             ["id", "category", "value"],
             ["1", "A", "100"],
             ["2", "A", "200"],  # category "A" is duplicate
             ["3", "B", "300"],
         ]
-        unique_columns = _find_unique_value_columns(csv_data)
+        unique_columns = find_unique_value_columns(csv_data)
         # Only id and value columns should be unique
         assert sorted(unique_columns) == ["id", "value"]
 
     def test_find_unique_value_columns_with_empty_values(self):
-        """Test _find_unique_value_columns ignoring empty values."""
+        """Test find_unique_value_columns ignoring empty values."""
         csv_data = [
             ["id", "optional", "value"],
             ["1", "", "100"],
             ["2", "data", "200"],
             ["3", "", "300"],
         ]
-        unique_columns = _find_unique_value_columns(csv_data)
+        unique_columns = find_unique_value_columns(csv_data)
         # All columns should be unique (empty values are ignored)
         assert sorted(unique_columns) == ["id", "optional", "value"]
 
     def test_count_shared_values_no_shared(self):
-        """Test _count_shared_values with no shared values."""
+        """Test count_shared_values with no shared values."""
         csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"]]
         csv_data2 = [["id", "value"], ["3", "C"], ["4", "D"]]
-        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
+        shared_count = count_shared_values(csv_data1, csv_data2, "id")
         assert shared_count == 0
 
     def test_count_shared_values_some_shared(self):
-        """Test _count_shared_values with some shared values."""
+        """Test count_shared_values with some shared values."""
         csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"], ["3", "C"]]
         csv_data2 = [
             ["id", "value"],
@@ -879,11 +883,11 @@ class TestIndexColumnDiscovery:
             ["3", "Y"],  # id "3" is shared
             ["4", "Z"],
         ]
-        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
+        shared_count = count_shared_values(csv_data1, csv_data2, "id")
         assert shared_count == 2
 
     def test_count_shared_values_with_empty_values(self):
-        """Test _count_shared_values ignoring empty values."""
+        """Test count_shared_values ignoring empty values."""
         csv_data1 = [
             ["id", "value"],
             ["1", "A"],
