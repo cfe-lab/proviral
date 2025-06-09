@@ -156,7 +156,8 @@ def discover_index_column(
     best_column_name = None
     column_analysis = {}
 
-    for col_name in common_unique_cols:
+    # Sort column names for consistent tie-breaking
+    for col_name in sorted(common_unique_cols):
         shared_count = _count_shared_values(csv_data1, csv_data2, col_name)
         column_analysis[col_name] = {
             "shared_values": shared_count,
