@@ -8,7 +8,7 @@ gotoh = {subdirectory = "micall/alignment", ref = "v7.7.0", git = "https://githu
 numpy = "==2.2.2"
 python-levenshtein = "==0.26.1"
 pandas = "==2.2.3"
-requests = "==2.32.3"
+requests = "==2.32.4"
 pyyaml = "==6.0.2"
 cfeintact = {ref = "v1.23.2", git = "https://github.com/cfe-lab/CFEIntact"}
 
