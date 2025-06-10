@@ -78,10 +78,6 @@ class TestDiscrepancy:
                 "placeholder_col": {"run1": "A", "run2": "B", "change_type": "text"}
             },
             change_types=["text"],
-            _original_values={
-                "run1": ["A", "B"],
-                "run2": ["A", "C"],
-            },  # Preserve old values for assertion
         )
 
         assert isinstance(discrepancy, RowDifferenceDiscrepancy)
@@ -91,14 +87,6 @@ class TestDiscrepancy:
         # Assertions for location and values properties (should still work due to base class implementation)
         assert discrepancy.location["file"] == "test.csv"
         assert discrepancy.location["row"] == 2
-        assert discrepancy.values["run1"] == [
-            "A",
-            "B",
-        ]  # Checks _original_values via property
-        assert discrepancy.values["run2"] == [
-            "A",
-            "C",
-        ]  # Checks _original_values via property
 
     def test_discrepancy_to_dict(self):
         """Test conversion of discrepancy to dictionary."""
@@ -1296,9 +1284,8 @@ class TestColumnValidation:
         assert location["positions"] == [0, 2]  # header1 appears at positions 0 and 2
 
         # Check values
-        values = dup_discrepancy.values
-        assert values["duplicate_header"] == "header1"
-        assert values["all_headers"] == ["header1", "header2", "header1"]
+        assert dup_discrepancy.duplicate_column == "header1"
+        assert dup_discrepancy.all_headers == ["header1", "header2", "header1"]
 
     def test_duplicate_column_names_run2(self, tmp_path):
         """Test detection of duplicate column names in run2."""
@@ -1393,14 +1380,19 @@ class TestColumnValidation:
         }  # Both id and name changed positions
 
         # Check values
-        values = order_discrepancy.values
-        assert "order_differences" in values
-        assert values["reordered_count"] == 2
+        assert order_discrepancy.reordered_count == 2
 
-        order_diff = values["order_differences"]
-        assert order_diff["headers_run1"] == ["id", "name", "value"]
-        assert order_diff["headers_run2"] == ["name", "id", "value"]
-        assert len(order_diff["reordered_columns"]) == 2
+        assert order_discrepancy.order_differences["headers_run1"] == [
+            "id",
+            "name",
+            "value",
+        ]
+        assert order_discrepancy.order_differences["headers_run2"] == [
+            "name",
+            "id",
+            "value",
+        ]
+        assert len(order_discrepancy.order_differences["reordered_columns"]) == 2
 
     def test_column_order_no_difference_same_order(self, tmp_path):
         """Test that no column order discrepancy is reported when order is the same."""
@@ -1499,8 +1491,7 @@ class TestColumnValidation:
         )
         assert order_discrepancy is not None
 
-        order_diff = order_discrepancy.values["order_differences"]
-        reordered_columns = order_diff["reordered_columns"]
+        reordered_columns = order_discrepancy.order_differences["reordered_columns"]
 
         # All columns except 'b' should be reordered
         assert len(reordered_columns) == 3  # a, c, d moved positions

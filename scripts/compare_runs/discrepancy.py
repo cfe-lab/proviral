@@ -105,7 +105,6 @@ class DiscrepancyBase:
         file: str,
         version: str,
         run: str,
-        _original_values: Optional[Dict[str, Any]] = None,
     ):
         self.severity = severity
         self.confidence = confidence
@@ -114,8 +113,6 @@ class DiscrepancyBase:
         self.file = file
         self.version = version
         self.run = run
-        # Store original values for backward compatibility
-        self._original_values = _original_values or {}
 
     @property
     def location(self) -> Dict[str, Any]:
@@ -127,17 +124,6 @@ class DiscrepancyBase:
         }
         self._add_location_fields(location_dict)
         return location_dict
-
-    @property
-    def values(self) -> Dict[str, Any]:
-        """Get values information as a dictionary for backward compatibility."""
-        values_dict: Dict[str, Any] = {}
-        self._add_values_fields(values_dict)
-        # Add any original values that weren't mapped to specific fields
-        for key, value in self._original_values.items():
-            if key not in values_dict:
-                values_dict[key] = value
-        return values_dict
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
@@ -280,10 +266,9 @@ class RowDifferenceDiscrepancy(DiscrepancyBase):
         total_field_changes: int,
         field_changes: Dict[str, Any],
         change_types: List[str],
-        _original_values: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
-            severity, confidence, description, file, version, run, _original_values
+            severity, confidence, description, file, version, run
         )
         self.row = row
         self.index_column = index_column
