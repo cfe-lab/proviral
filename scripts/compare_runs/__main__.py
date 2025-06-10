@@ -23,8 +23,6 @@ from .discrepancy import (
     ComparisonReport,
     _trim_value_for_display,
     Discrepancy,
-    SeverityType,
-    ConfidenceType,
     # Import all specific discrepancy classes
     FileReadErrorDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
@@ -323,7 +321,7 @@ def compare_csv_contents(
 
 def _determine_row_difference_severity(
     row1: List[str], row2: List[str], row_index: int, column_differences: Dict[str, Any]
-) -> SeverityType:
+) -> Severity:
     """Determine severity of row difference based on content analysis."""
     # Check for outcome changes (highest priority)
     for change in column_differences.get("field_changes", []):
@@ -350,7 +348,7 @@ def _determine_row_difference_severity(
 
 def _determine_row_difference_confidence(
     row1: List[str], row2: List[str]
-) -> ConfidenceType:
+) -> Confidence:
     """Determine confidence level for row difference."""
     # High confidence if rows are clearly different
     if len(row1) != len(row2):

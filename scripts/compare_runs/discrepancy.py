@@ -17,113 +17,22 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from enum import Enum
 
 
-# Severity classes using subclassing approach
-class SeverityBase:
-    """Base class for severity levels."""
-
-    def __init__(self):
-        self.value = self.__class__.__name__.upper()
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, self.__class__)
-
-    def __hash__(self) -> int:
-        return hash(self.value)
+# Severity levels for discrepancies
+class Severity(Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
-class Critical(SeverityBase):
-    """Critical severity level."""
-
-    def __init__(self):
-        self.value = "CRITICAL"
-
-
-class High(SeverityBase):
-    """High severity level."""
-
-    def __init__(self):
-        self.value = "HIGH"
-
-
-class Medium(SeverityBase):
-    """Medium severity level."""
-
-    def __init__(self):
-        self.value = "MEDIUM"
-
-
-class Low(SeverityBase):
-    """Low severity level."""
-
-    def __init__(self):
-        self.value = "LOW"
-
-
-# Create a Severity class that provides enum-like access
-class Severity:
-    """Severity levels for discrepancies with class-based approach."""
-
-    CRITICAL = Critical()
-    HIGH = High()
-    MEDIUM = Medium()
-    LOW = Low()
-
-
-# Confidence classes using subclassing approach
-class ConfidenceBase:
-    """Base class for confidence levels."""
-
-    def __init__(self):
-        self.value = self.__class__.__name__.upper()
-
-    def __str__(self) -> str:
-        return self.value
-
-    def __eq__(self, other) -> bool:
-        return isinstance(other, self.__class__)
-
-    def __hash__(self) -> int:
-        return hash(self.value)
-
-
-class HighConfidence(ConfidenceBase):
-    """High confidence level."""
-
-    def __init__(self):
-        self.value = "HIGH"
-
-
-class MediumConfidence(ConfidenceBase):
-    """Medium confidence level."""
-
-    def __init__(self):
-        self.value = "MEDIUM"
-
-
-class LowConfidence(ConfidenceBase):
-    """Low confidence level."""
-
-    def __init__(self):
-        self.value = "LOW"
-
-
-# Create a Confidence class that provides enum-like access
-class Confidence:
-    """Confidence levels for discrepancies with class-based approach."""
-
-    HIGH = HighConfidence()
-    MEDIUM = MediumConfidence()
-    LOW = LowConfidence()
-
-
-# Union types for type hints
-SeverityType = Union[Critical, High, Medium, Low]
-ConfidenceType = Union[HighConfidence, MediumConfidence, LowConfidence]
+# Confidence levels for discrepancies
+class Confidence(Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 
 def _trim_value_for_display(value: str, max_length: int = 20) -> str:
@@ -190,8 +99,8 @@ class DiscrepancyBase:
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -265,8 +174,8 @@ class MissingFileDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -291,8 +200,8 @@ class MissingDirectoryDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -317,8 +226,8 @@ class HeaderDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -354,8 +263,8 @@ class RowDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -403,8 +312,8 @@ class RowCountDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -432,8 +341,8 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -488,8 +397,8 @@ class FileReadErrorDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -517,8 +426,8 @@ class EmptyFileDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -544,8 +453,8 @@ class NoIndexColumnDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -576,8 +485,8 @@ class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -605,8 +514,8 @@ class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -633,8 +542,8 @@ class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -664,8 +573,8 @@ class MissingRowDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
@@ -701,8 +610,8 @@ class ExtraRowDiscrepancy(DiscrepancyBase):
 
     def __init__(
         self,
-        severity: SeverityType,
-        confidence: ConfidenceType,
+        severity: Severity,
+        confidence: Confidence,
         description: str,
         file: str,
         version: str,
