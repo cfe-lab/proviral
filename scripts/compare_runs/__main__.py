@@ -20,10 +20,25 @@ from typing import Dict, List, Any
 from .discrepancy import (
     Severity,
     Confidence,
-    DiscrepancyType,
-    Discrepancy,
     ComparisonReport,
     _trim_value_for_display,
+    Discrepancy,
+    SeverityType,
+    ConfidenceType,
+    # Import all specific discrepancy classes
+    FileReadErrorDiscrepancy,
+    DuplicateColumnNamesDiscrepancy,
+    ColumnOrderDifferenceDiscrepancy,
+    HeaderDifferenceDiscrepancy,
+    ColumnCountDifferenceDiscrepancy,
+    RowCountDifferenceDiscrepancy,
+    NoIndexColumnDiscrepancy,
+    RowDifferenceDiscrepancy,
+    MissingRowDiscrepancy,
+    ExtraRowDiscrepancy,
+    RowOrderDifferenceDiscrepancy,
+    MissingFileDiscrepancy,
+    MissingDirectoryDiscrepancy,
 )
 from .csv_utils import (
     get_file_metadata,
@@ -85,18 +100,15 @@ def compare_csv_contents(
     if not content1:
         file_size1 = file1.stat().st_size if file1.exists() else 0
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.FILE_READ_ERROR,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"First file is empty or failed to read (size: {file_size1} bytes)",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "run1",
-                    "file_path": str(file1),
-                    "file_size": file_size1,
-                },
+            FileReadErrorDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"First file is empty or failed to read (size: {file_size1} bytes)",
+                file=filename,
+                version=version,
+                run="run1",
+                file_path=str(file1),
+                file_size=file_size1,
             )
         )
         return discrepancies
@@ -104,18 +116,15 @@ def compare_csv_contents(
     if not content2:
         file_size2 = file2.stat().st_size if file2.exists() else 0
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.FILE_READ_ERROR,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"Second file is empty or failed to read (size: {file_size2} bytes)",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "run2",
-                    "file_path": str(file2),
-                    "file_size": file_size2,
-                },
+            FileReadErrorDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Second file is empty or failed to read (size: {file_size2} bytes)",
+                file=filename,
+                version=version,
+                run="run2",
+                file_path=str(file2),
+                file_size=file_size2,
             )
         )
         return discrepancies
@@ -128,44 +137,32 @@ def compare_csv_contents(
     dup_check1 = validate_column_names(content1)
     if dup_check1:
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.DUPLICATE_COLUMN_NAMES,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"Duplicate column name '{dup_check1['duplicate_header']}' at positions {dup_check1['positions']} in run1",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "run1",
-                    "duplicate_column": dup_check1["duplicate_header"],
-                    "positions": dup_check1["positions"],
-                },
-                values={
-                    "all_headers": dup_check1["all_headers"],
-                    "duplicate_header": dup_check1["duplicate_header"],
-                },
+            DuplicateColumnNamesDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Duplicate column name '{dup_check1['duplicate_header']}' at positions {dup_check1['positions']} in run1",
+                file=filename,
+                version=version,
+                run="run1",
+                duplicate_column=dup_check1["duplicate_header"],
+                positions=dup_check1["positions"],
+                all_headers=dup_check1["all_headers"],
             )
         )
 
     dup_check2 = validate_column_names(content2)
     if dup_check2:
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.DUPLICATE_COLUMN_NAMES,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"Duplicate column name '{dup_check2['duplicate_header']}' at positions {dup_check2['positions']} in run2",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "run2",
-                    "duplicate_column": dup_check2["duplicate_header"],
-                    "positions": dup_check2["positions"],
-                },
-                values={
-                    "all_headers": dup_check2["all_headers"],
-                    "duplicate_header": dup_check2["duplicate_header"],
-                },
+            DuplicateColumnNamesDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Duplicate column name '{dup_check2['duplicate_header']}' at positions {dup_check2['positions']} in run2",
+                file=filename,
+                version=version,
+                run="run2",
+                duplicate_column=dup_check2["duplicate_header"],
+                positions=dup_check2["positions"],
+                all_headers=dup_check2["all_headers"],
             )
         )
 
@@ -173,23 +170,18 @@ def compare_csv_contents(
     order_diff = compare_column_orders(headers1, headers2)
     if order_diff:
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.COLUMN_ORDER_DIFFERENCE,
-                Severity.MEDIUM,
-                Confidence.HIGH,
-                f"Column order differs: {len(order_diff['reordered_columns'])} columns reordered",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "both",
-                    "reordered_columns": [
-                        col["column"] for col in order_diff["reordered_columns"]
-                    ],
-                },
-                values={
-                    "order_differences": order_diff,
-                    "reordered_count": len(order_diff["reordered_columns"]),
-                },
+            ColumnOrderDifferenceDiscrepancy(
+                severity=Severity.MEDIUM,
+                confidence=Confidence.HIGH,
+                description=f"Column order differs: {len(order_diff['reordered_columns'])} columns reordered",
+                file=filename,
+                version=version,
+                run="both",
+                reordered_columns=[
+                    col["column"] for col in order_diff["reordered_columns"]
+                ],
+                order_differences=order_diff,
+                reordered_count=len(order_diff["reordered_columns"]),
             )
         )
 
@@ -213,17 +205,16 @@ def compare_csv_contents(
     # Check if files have same number of rows
     if len(content1) != len(content2):
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.ROW_COUNT_DIFFERENCE,
-                Severity.HIGH,
-                Confidence.HIGH,
-                f"Row count differs: {len(content1)} vs {len(content2)} (difference: {abs(len(content1) - len(content2))} rows)",
-                location={"file": filename, "version": version, "run": "both"},
-                values={
-                    "run1_rows": len(content1),
-                    "run2_rows": len(content2),
-                    "row_difference": abs(len(content1) - len(content2)),
-                },
+            RowCountDifferenceDiscrepancy(
+                severity=Severity.HIGH,
+                confidence=Confidence.HIGH,
+                description=f"Row count differs: {len(content1)} vs {len(content2)} (difference: {abs(len(content1) - len(content2))} rows)",
+                file=filename,
+                version=version,
+                run="both",
+                run1_rows=len(content1),
+                run2_rows=len(content2),
+                row_difference=abs(len(content1) - len(content2)),
             )
         )
 
@@ -237,24 +228,19 @@ def compare_csv_contents(
         )
 
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.HEADER_DIFFERENCE,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"Header row differs: {header_details}",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "both",
-                    "row": 1,
-                    "changed_columns": changed_header_names,
-                    "total_header_changes": len(changed_headers["indices"]),
-                },
-                values={
-                    "header_changes": changed_headers,
-                    "run1_header_count": len(headers1),
-                    "run2_header_count": len(headers2),
-                },
+            HeaderDifferenceDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Header row differs: {header_details}",
+                file=filename,
+                version=version,
+                run="both",
+                changed_headers=changed_header_names,
+                total_header_changes=len(changed_headers["indices"]),
+                header_changes=changed_headers,
+                run1_header_count=len(headers1),
+                run2_header_count=len(headers2),
+                row=1,
             )
         )
 
@@ -262,23 +248,18 @@ def compare_csv_contents(
         if len(headers1) != len(headers2):
             missing_cols, extra_cols = analyze_column_differences(headers1, headers2)
             discrepancies.append(
-                Discrepancy(
-                    DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
-                    Severity.CRITICAL,
-                    Confidence.HIGH,
-                    f"Header column count differs: {len(headers1)} vs {len(headers2)} ({missing_cols} missing, {extra_cols} extra in run2)",
-                    location={
-                        "file": filename,
-                        "version": version,
-                        "run": "both",
-                        "row": 1,
-                    },
-                    values={
-                        "run1_columns": len(headers1),
-                        "run2_columns": len(headers2),
-                        "columns_missing_in_run2": missing_cols,
-                        "columns_extra_in_run2": extra_cols,
-                    },
+                ColumnCountDifferenceDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({missing_cols} missing, {extra_cols} extra in run2)",
+                    file=filename,
+                    version=version,
+                    run="both",
+                    run1_columns=len(headers1),
+                    run2_columns=len(headers2),
+                    columns_missing_in_run2=missing_cols,
+                    columns_extra_in_run2=extra_cols,
+                    row=1,
                 )
             )
 
@@ -323,23 +304,17 @@ def compare_csv_contents(
             reason = "no_index_analysis"
 
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.NO_INDEX_COLUMN,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"Row comparison skipped: No suitable index column available ({reason})",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "both",
-                    "reason": reason,
-                },
-                values={
-                    "index_analysis": index_info,
-                    "has_duplicate_columns_run1": bool(dup_check1),
-                    "has_duplicate_columns_run2": bool(dup_check2),
-                    "reason": reason,
-                },
+            NoIndexColumnDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Row comparison skipped: No suitable index column available ({reason})",
+                file=filename,
+                version=version,
+                run="both",
+                reason=reason,
+                index_analysis=index_info,
+                has_duplicate_columns_run1=bool(dup_check1),
+                has_duplicate_columns_run2=bool(dup_check2),
             )
         )
 
@@ -348,7 +323,7 @@ def compare_csv_contents(
 
 def _determine_row_difference_severity(
     row1: List[str], row2: List[str], row_index: int, column_differences: Dict[str, Any]
-) -> Severity:
+) -> SeverityType:
     """Determine severity of row difference based on content analysis."""
     # Check for outcome changes (highest priority)
     for change in column_differences.get("field_changes", []):
@@ -375,7 +350,7 @@ def _determine_row_difference_severity(
 
 def _determine_row_difference_confidence(
     row1: List[str], row2: List[str]
-) -> Confidence:
+) -> ConfidenceType:
     """Determine confidence level for row difference."""
     # High confidence if rows are clearly different
     if len(row1) != len(row2):
@@ -419,7 +394,7 @@ def _compare_rows_by_index_column(
     Returns:
         List of discrepancies found during comparison
     """
-    discrepancies = []
+    discrepancies: List[Discrepancy] = []
 
     # Build index-to-row mappings
     index_map1 = _build_index_row_mapping(content1, index_column_name)
@@ -471,28 +446,22 @@ def _compare_rows_by_index_column(
                 )
 
                 discrepancies.append(
-                    Discrepancy(
-                        DiscrepancyType.ROW_DIFFERENCE,
-                        severity,
-                        confidence,
-                        f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' differs: {change_summary}",
-                        location={
-                            "file": filename,
-                            "version": version,
-                            "run": "both",
-                            "row": pos1
-                            + 1,  # Add backward compatibility field (1-based row number)
-                            "index_column": index_column_name,
-                            "index_value": _trim_value_for_display(str(index_value)),
-                            "position_run1": pos1,
-                            "position_run2": pos2,
-                            "changed_columns": changed_column_names,
-                            "total_field_changes": len(column_differences["indices"]),
-                        },
-                        values={
-                            "field_changes": column_differences,
-                            "change_types": column_differences["change_types"],
-                        },
+                    RowDifferenceDiscrepancy(
+                        severity=severity,
+                        confidence=confidence,
+                        description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' differs: {change_summary}",
+                        file=filename,
+                        version=version,
+                        run="both",
+                        row=pos1 + 1,  # 1-based row number
+                        index_column=index_column_name,
+                        index_value=_trim_value_for_display(str(index_value)),
+                        position_run1=pos1,
+                        position_run2=pos2,
+                        changed_columns=changed_column_names,
+                        total_field_changes=len(column_differences["indices"]),
+                        field_changes=column_differences,
+                        change_types=column_differences["change_types"],
                     )
                 )
 
@@ -500,29 +469,23 @@ def _compare_rows_by_index_column(
                 if len(row1) != len(row2):
                     missing_cols, extra_cols = analyze_column_differences(row1, row2)
                     discrepancies.append(
-                        Discrepancy(
-                            DiscrepancyType.COLUMN_COUNT_DIFFERENCE,
-                            Severity.HIGH,
-                            Confidence.HIGH,
-                            f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
-                            location={
-                                "file": filename,
-                                "version": version,
-                                "run": "both",
-                                "index_column": index_column_name,
-                                "index_value": _trim_value_for_display(
-                                    str(index_value)
-                                ),
-                                "position_run1": pos1,
-                                "position_run2": pos2,
-                                "column_difference": abs(len(row1) - len(row2)),
-                            },
-                            values={
-                                "run1_columns": len(row1),
-                                "run2_columns": len(row2),
-                                "columns_missing_in_run2": missing_cols,
-                                "columns_extra_in_run2": extra_cols,
-                            },
+                        ColumnCountDifferenceDiscrepancy(
+                            severity=Severity.HIGH,
+                            confidence=Confidence.HIGH,
+                            description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
+                            file=filename,
+                            version=version,
+                            run="both",
+                            run1_columns=len(row1),
+                            run2_columns=len(row2),
+                            columns_missing_in_run2=missing_cols,
+                            columns_extra_in_run2=extra_cols,
+                            row=pos1 + 1,  # 1-based row number
+                            index_column=index_column_name,
+                            index_value=_trim_value_for_display(str(index_value)),
+                            position_run1=pos1,
+                            position_run2=pos2,
+                            column_difference=abs(len(row1) - len(row2)),
                         )
                     )
 
@@ -532,24 +495,19 @@ def _compare_rows_by_index_column(
             pos1 = row1_info["position"]
 
             discrepancies.append(
-                Discrepancy(
-                    DiscrepancyType.MISSING_ROW,
-                    Severity.HIGH,
-                    Confidence.HIGH,
-                    f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' missing in run2",
-                    location={
-                        "file": filename,
-                        "version": version,
-                        "run": "run2",
-                        "index_column": index_column_name,
-                        "index_value": _trim_value_for_display(str(index_value)),
-                        "position_run1": pos1,
-                        "missing_from": "run2",
-                        "present_in": "run1",
-                    },
-                    values={
-                        "missing_row_data": row1,
-                    },
+                MissingRowDiscrepancy(
+                    severity=Severity.HIGH,
+                    confidence=Confidence.HIGH,
+                    description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' missing in run2",
+                    file=filename,
+                    version=version,
+                    run="run2",
+                    index_column=index_column_name,
+                    index_value=_trim_value_for_display(str(index_value)),
+                    position_run1=pos1,
+                    missing_from="run2",
+                    present_in="run1",
+                    missing_row_data=row1,
                 )
             )
 
@@ -559,48 +517,36 @@ def _compare_rows_by_index_column(
             pos2 = row2_info["position"]
 
             discrepancies.append(
-                Discrepancy(
-                    DiscrepancyType.EXTRA_ROW,
-                    Severity.HIGH,
-                    Confidence.HIGH,
-                    f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' extra in run2",
-                    location={
-                        "file": filename,
-                        "version": version,
-                        "run": "run2",
-                        "index_column": index_column_name,
-                        "index_value": _trim_value_for_display(str(index_value)),
-                        "position_run2": pos2,
-                        "missing_from": "run1",
-                        "present_in": "run2",
-                    },
-                    values={
-                        "extra_row_data": row2,
-                    },
+                ExtraRowDiscrepancy(
+                    severity=Severity.HIGH,
+                    confidence=Confidence.HIGH,
+                    description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' extra in run2",
+                    file=filename,
+                    version=version,
+                    run="run2",
+                    index_column=index_column_name,
+                    index_value=_trim_value_for_display(str(index_value)),
+                    position_run2=pos2,
+                    missing_from="run1",
+                    present_in="run2",
+                    extra_row_data=row2,
                 )
             )
 
     # Report row order differences if rows exist in both files but in different positions
     if position_differences:
         discrepancies.append(
-            Discrepancy(
-                DiscrepancyType.ROW_ORDER_DIFFERENCE,
-                Severity.LOW,
-                Confidence.HIGH,
-                f"Row order differs: {len(position_differences)} rows in different positions",
-                location={
-                    "file": filename,
-                    "version": version,
-                    "run": "both",
-                    "index_column": index_column_name,
-                    "reordered_rows": [
-                        diff["index_value"] for diff in position_differences
-                    ],
-                },
-                values={
-                    "position_differences": position_differences,
-                    "reordered_count": len(position_differences),
-                },
+            RowOrderDifferenceDiscrepancy(
+                severity=Severity.LOW,
+                confidence=Confidence.HIGH,
+                description=f"Row order differs: {len(position_differences)} rows in different positions",
+                file=filename,
+                version=version,
+                run="both",
+                index_column=index_column_name,
+                reordered_rows=[diff["index_value"] for diff in position_differences],
+                position_differences=position_differences,
+                reordered_count=len(position_differences),
             )
         )
 
@@ -632,16 +578,15 @@ def compare_proviral_files(
         report.add_discrepancy(
             version,
             "proviral_directory",
-            Discrepancy(
-                DiscrepancyType.MISSING_DIRECTORY,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                f"No proviral CSV files found for {version}",
-                location={
-                    "file": "proviral_directory",
-                    "version": version,
-                    "run": "both",
-                },
+            MissingDirectoryDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"No proviral CSV files found for {version}",
+                file="proviral_directory",
+                version=version,
+                run="both",
+                missing_from="both",
+                present_in="",
             ),
         )
         return
@@ -653,21 +598,15 @@ def compare_proviral_files(
             report.add_discrepancy(
                 version,
                 csv_name,
-                Discrepancy(
-                    DiscrepancyType.MISSING_FILE,
-                    Severity.CRITICAL,
-                    Confidence.HIGH,
-                    f"File missing in run1: {csv_name} (run2 size: {file2_info['size']} bytes)",
-                    location={
-                        "file": csv_name,
-                        "version": version,
-                        "run": "run1",
-                        "missing_from": "run1",
-                        "present_in": "run2",
-                    },
-                    values={
-                        "file_info_run2": file2_info,
-                    },
+                MissingFileDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"File missing in run1: {csv_name} (run2 size: {file2_info['size']} bytes)",
+                    file=csv_name,
+                    version=version,
+                    run="run1",
+                    missing_from="run1",
+                    present_in="run2",
                 ),
             )
             continue
@@ -678,21 +617,15 @@ def compare_proviral_files(
             report.add_discrepancy(
                 version,
                 csv_name,
-                Discrepancy(
-                    DiscrepancyType.MISSING_FILE,
-                    Severity.CRITICAL,
-                    Confidence.HIGH,
-                    f"File missing in run2: {csv_name} (run1 size: {file1_info['size']} bytes)",
-                    location={
-                        "file": csv_name,
-                        "version": version,
-                        "run": "run2",
-                        "missing_from": "run2",
-                        "present_in": "run1",
-                    },
-                    values={
-                        "file_info_run1": file1_info,
-                    },
+                MissingFileDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"File missing in run2: {csv_name} (run1 size: {file1_info['size']} bytes)",
+                    file=csv_name,
+                    version=version,
+                    run="run2",
+                    missing_from="run2",
+                    present_in="run1",
                 ),
             )
             continue
@@ -760,13 +693,15 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
         report.add_discrepancy(
             "metadata",
             "versions",
-            Discrepancy(
-                DiscrepancyType.MISSING_DIRECTORY,
-                Severity.CRITICAL,
-                Confidence.HIGH,
-                "No common versions found between the two runs",
-                location={"file": "versions", "version": "all", "run": "both"},
-                values={"run1_versions": versions1, "run2_versions": versions2},
+            MissingDirectoryDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description="No common versions found between the two runs",
+                file="versions",
+                version="all",
+                run="both",
+                missing_from="both",
+                present_in="",
             ),
         )
         return report
@@ -779,13 +714,15 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
         report.add_discrepancy(
             "metadata",
             "versions",
-            Discrepancy(
-                DiscrepancyType.MISSING_DIRECTORY,
-                Severity.MEDIUM,
-                Confidence.HIGH,
-                f"Versions only in run1: {sorted(only_in_run1)}",
-                location={"file": "versions", "version": "multiple", "run": "run1"},
-                values={"missing_versions": sorted(only_in_run1)},
+            MissingDirectoryDiscrepancy(
+                severity=Severity.MEDIUM,
+                confidence=Confidence.HIGH,
+                description=f"Versions only in run1: {sorted(only_in_run1)}",
+                file="versions",
+                version="multiple",
+                run="run1",
+                missing_from="run2",
+                present_in="run1",
             ),
         )
 
@@ -793,13 +730,15 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
         report.add_discrepancy(
             "metadata",
             "versions",
-            Discrepancy(
-                DiscrepancyType.MISSING_DIRECTORY,
-                Severity.MEDIUM,
-                Confidence.HIGH,
-                f"Versions only in run2: {sorted(only_in_run2)}",
-                location={"file": "versions", "version": "multiple", "run": "run2"},
-                values={"missing_versions": sorted(only_in_run2)},
+            MissingDirectoryDiscrepancy(
+                severity=Severity.MEDIUM,
+                confidence=Confidence.HIGH,
+                description=f"Versions only in run2: {sorted(only_in_run2)}",
+                file="versions",
+                version="multiple",
+                run="run2",
+                missing_from="run1",
+                present_in="run2",
             ),
         )
 
@@ -811,17 +750,14 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
             report.add_discrepancy(
                 version,
                 "comparison_error",
-                Discrepancy(
-                    DiscrepancyType.FILE_READ_ERROR,
-                    Severity.CRITICAL,
-                    Confidence.MEDIUM,
-                    f"Error comparing {version}: {str(e)}",
-                    location={
-                        "file": "comparison_error",
-                        "version": version,
-                        "run": "both",
-                        "error": str(e),
-                    },
+                FileReadErrorDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.MEDIUM,
+                    description=f"Error comparing {version}: {str(e)}",
+                    file="comparison_error",
+                    version=version,
+                    run="both",
+                    file_path=str(e),
                 ),
             )
 
