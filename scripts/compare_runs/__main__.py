@@ -337,6 +337,15 @@ def _determine_row_difference_severity(
     if numeric_changes > 0:
         return Severity.MEDIUM
 
+    # Check for numeric equivalent changes (lower severity than actual numeric changes)
+    numeric_equivalent_changes = sum(
+        1
+        for change in column_differences.get("field_changes", [])
+        if change["change_type"] == "numeric_equivalent"
+    )
+    if numeric_equivalent_changes > 0:
+        return Severity.LOW
+
     # Check if many fields changed
     total_changes = len(column_differences.get("indices", []))
     if total_changes > 3:

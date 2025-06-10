@@ -124,7 +124,15 @@ def classify_value_change(val1: str, val2: str) -> str:
     elif val1 and not val2:
         return "removed"
     elif is_numeric(val1) and is_numeric(val2):
-        return "numeric"
+        # Check if numeric values are equal despite string differences
+        try:
+            if float(val1) == float(val2):
+                return "numeric_equivalent"  # Same numeric value, different string representation
+            else:
+                return "numeric"  # Different numeric values
+        except ValueError:
+            # Fallback if conversion fails (shouldn't happen since is_numeric passed)
+            return "numeric"
     elif val1.lower() in {
         "success",
         "failed",
