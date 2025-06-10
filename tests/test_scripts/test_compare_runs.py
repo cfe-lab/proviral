@@ -85,8 +85,9 @@ class TestDiscrepancy:
         assert discrepancy.confidence == Confidence.HIGH
         assert discrepancy.description == "Test discrepancy"
         # Assertions for location and values properties (should still work due to base class implementation)
-        assert discrepancy.location["file"] == "test.csv"
-        assert discrepancy.location["row"] == 2
+        result_dict = discrepancy.to_dict()
+        assert result_dict["location"]["file"] == "test.csv"
+        assert result_dict["location"]["row"] == 2
 
     def test_discrepancy_to_dict(self):
         """Test conversion of discrepancy to dictionary."""
@@ -405,9 +406,10 @@ class TestCSVComparison:
         )
         assert row_count_discrepancy is not None
         assert row_count_discrepancy.severity == Severity.HIGH
-        assert row_count_discrepancy.location["file"] == "test.csv"
-        assert row_count_discrepancy.location["version"] == "version_7.15"
-        assert row_count_discrepancy.location["run"] == "both"
+        result_dict = row_count_discrepancy.to_dict()
+        assert result_dict["location"]["file"] == "test.csv"
+        assert result_dict["location"]["version"] == "version_7.15"
+        assert result_dict["location"]["run"] == "both"
 
     def test_compare_different_headers(self, tmp_path):
         """Test comparison with different headers."""
@@ -425,8 +427,9 @@ class TestCSVComparison:
         )
         assert header_discrepancy is not None
         assert header_discrepancy.severity == Severity.CRITICAL
-        assert header_discrepancy.location["file"] == "test.csv"
-        assert header_discrepancy.location["row"] == 1
+        result_dict = header_discrepancy.to_dict()
+        assert result_dict["location"]["file"] == "test.csv"
+        assert result_dict["location"]["row"] == 1
 
     def test_compare_different_data_rows(self, tmp_path):
         """Test comparison with different data rows."""
@@ -442,8 +445,9 @@ class TestCSVComparison:
             (d for d in discrepancies if isinstance(d, RowDifferenceDiscrepancy)), None
         )
         assert row_discrepancy is not None
-        assert row_discrepancy.location["file"] == "test.csv"
-        assert row_discrepancy.location["row"] == 2
+        result_dict = row_discrepancy.to_dict()
+        assert result_dict["location"]["file"] == "test.csv"
+        assert result_dict["location"]["row"] == 2
 
     def test_compare_empty_files(self, tmp_path):
         """Test comparison of empty files."""
@@ -472,7 +476,8 @@ class TestCSVComparison:
         )
         assert error_discrepancy is not None
         assert error_discrepancy.severity == Severity.CRITICAL
-        assert error_discrepancy.location["run"] == "run2"
+        result_dict = error_discrepancy.to_dict()
+        assert result_dict["location"]["run"] == "run2"
 
 
 class TestSeverityDetermination:
@@ -754,7 +759,8 @@ class TestLocationFieldStandardization:
         )
         assert no_index_discrepancy is not None
 
-        location = no_index_discrepancy.location
+        result_dict = no_index_discrepancy.to_dict()
+        location = result_dict["location"]
 
         # Check all required fields are present
         assert "file" in location
@@ -779,7 +785,8 @@ class TestLocationFieldStandardization:
             None,
         )
 
-        location = error_discrepancy.location
+        result_dict = error_discrepancy.to_dict()
+        location = result_dict["location"]
 
         # Check all required fields are present
         assert "file" in location
@@ -1169,7 +1176,8 @@ class TestIndexColumnLocationFields:
         )
 
         assert no_index_discrepancy is not None
-        location = no_index_discrepancy.location
+        result_dict = no_index_discrepancy.to_dict()
+        location = result_dict["location"]
 
         # Check all required fields are present
         assert "file" in location
@@ -1276,7 +1284,8 @@ class TestColumnValidation:
         assert "run1" in dup_discrepancy.description
 
         # Check location fields
-        location = dup_discrepancy.location
+        result_dict = dup_discrepancy.to_dict()
+        location = result_dict["location"]
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
         assert location["run"] == "run1"
@@ -1310,9 +1319,10 @@ class TestColumnValidation:
         assert dup_discrepancy is not None
         assert "Duplicate column name 'col1'" in dup_discrepancy.description
         assert "run2" in dup_discrepancy.description
-        assert dup_discrepancy.location["run"] == "run2"
-        assert dup_discrepancy.location["duplicate_column"] == "col1"
-        assert dup_discrepancy.location["positions"] == [0, 2]
+        result_dict = dup_discrepancy.to_dict()
+        assert result_dict["location"]["run"] == "run2"
+        assert result_dict["location"]["duplicate_column"] == "col1"
+        assert result_dict["location"]["positions"] == [0, 2]
 
     def test_duplicate_column_names_both_runs(self, tmp_path):
         """Test detection of duplicate column names in both runs."""
@@ -1331,16 +1341,16 @@ class TestColumnValidation:
 
         # Check that we have one for each run
         run1_discrepancy = next(
-            (d for d in dup_discrepancies if d.location["run"] == "run1"), None
+            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run1"), None
         )
         run2_discrepancy = next(
-            (d for d in dup_discrepancies if d.location["run"] == "run2"), None
+            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run2"), None
         )
 
         assert run1_discrepancy is not None
         assert run2_discrepancy is not None
-        assert run1_discrepancy.location["duplicate_column"] == "id"
-        assert run2_discrepancy.location["duplicate_column"] == "name"
+        assert run1_discrepancy.to_dict()["location"]["duplicate_column"] == "id"
+        assert run2_discrepancy.to_dict()["location"]["duplicate_column"] == "name"
 
     def test_column_order_difference(self, tmp_path):
         """Test detection of column order differences."""
@@ -1369,7 +1379,8 @@ class TestColumnValidation:
         assert "2 columns reordered" in order_discrepancy.description
 
         # Check location fields
-        location = order_discrepancy.location
+        result_dict = order_discrepancy.to_dict()
+        location = result_dict["location"]
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
         assert location["run"] == "both"

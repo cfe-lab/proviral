@@ -114,17 +114,6 @@ class DiscrepancyBase:
         self.version = version
         self.run = run
 
-    @property
-    def location(self) -> Dict[str, Any]:
-        """Get location information as a dictionary for backward compatibility."""
-        location_dict: Dict[str, Any] = {
-            "file": self.file,
-            "version": self.version,
-            "run": self.run,
-        }
-        self._add_location_fields(location_dict)
-        return location_dict
-
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
         location_dict: Dict[str, Any] = {
