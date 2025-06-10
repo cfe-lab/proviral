@@ -151,13 +151,15 @@ class DiscrepancyBase:
         # Add type-specific location and values fields
         self._add_location_fields(location_dict)
         self._add_values_fields(values_dict)
+        values = _trim_data_recursively(values_dict)
 
         return {
+            "type": self.__class__.__name__,
             "severity": self.severity.value,
             "confidence": self.confidence.value,
             "description": self.description,
             "location": _trim_data_recursively(location_dict),
-            "values": _trim_data_recursively(values_dict),
+            **values,
         }
 
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:

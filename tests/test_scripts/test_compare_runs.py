@@ -125,10 +125,10 @@ class TestDiscrepancy:
             result["location"]["missing_from"] == "run1"
         )  # Added by MissingFileDiscrepancy._add_location_fields
         assert (
-            result["values"]["missing_from"] == "run1"
+            result["missing_from"] == "run1"
         )  # Added by MissingFileDiscrepancy._add_values_fields
         assert (
-            result["values"]["present_in"] == "run2"
+            result["present_in"] == "run2"
         )  # Added by MissingFileDiscrepancy._add_values_fields
 
 
@@ -412,11 +412,7 @@ class TestCSVComparison:
 
         # Should find row count difference
         row_count_discrepancy = next(
-            (
-                d
-                for d in discrepancies
-                if isinstance(d, RowCountDifferenceDiscrepancy)
-            ),
+            (d for d in discrepancies if isinstance(d, RowCountDifferenceDiscrepancy)),
             None,
         )
         assert row_count_discrepancy is not None
