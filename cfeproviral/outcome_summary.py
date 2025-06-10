@@ -170,11 +170,21 @@ class OutcomeSummary:
             writer.writeheader()
             for sample in sorted(self.data,
                                  key=lambda x: x and int(x.rsplit('_')[-1][1:])):
-                self.data[sample] = {
+                row_data = {
                     k: v
                     for k, v in self.data[sample].items() if k in fieldnames
                 }
-                writer.writerow(self.data[sample])
+                # Convert seqlen from float to int if it's a valid number
+                if 'seqlen' in row_data and row_data['seqlen'] != '':
+                    try:
+                        # Convert to float first (in case it's a string), then to int
+                        seqlen_value = float(row_data['seqlen'])
+                        if not pd.isna(seqlen_value):
+                            row_data['seqlen'] = int(seqlen_value)
+                    except (ValueError, TypeError):
+                        # Keep original value if conversion fails
+                        pass
+                writer.writerow(row_data)
 
     def reduce(self):
         # Perform some final filtering steps
