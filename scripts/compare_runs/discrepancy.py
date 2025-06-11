@@ -3,21 +3,30 @@ Discrepancy classes for the compare_runs script.
 
 This module defines the core classes used to represent and manage
 discrepancies found during proviral analysis comparison. It uses
-a class-based approach with subclassing instead of Enums for better
-type safety and extensibility.
+a dataclass-based approach with automatic serialization for better
+type safety and cleaner code.
 
 The module provides:
 - Severity levels (Critical, High, Medium, Low) via the Severity class
 - Confidence levels (High, Medium, Low) via the Confidence class
+- Location field decorator for automatic categorization
 - Main Discrepancy and ComparisonReport classes for managing findings
 """
 
 import json
 from collections import defaultdict
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from enum import Enum
+
+
+# Location field marker for dataclass fields that should go in location subobject
+def location_field(**kwargs):
+    """Mark a dataclass field as a location field."""
+    kwargs["metadata"] = {"is_location": True}
+    return field(**kwargs)
 
 
 # Severity levels for discrepancies
@@ -94,50 +103,67 @@ def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
 
 
 # Base class for all discrepancy types
+@dataclass(frozen=True)
 class DiscrepancyBase:
     """Base class for all specific discrepancy types."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-    ):
-        self.severity = severity
-        self.confidence = confidence
-        self.description = description
-        # Common location fields
-        self.file = file
-        self.version = version
-        self.run = run
+    # Standard fields
+    severity: Severity
+    confidence: Confidence
+    description: str
+
+    # Common location fields (no defaults to avoid ordering issues)
+    file: str = location_field(default="")
+    version: str = location_field(default="")
+    run: str = location_field(default="")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
-        location_dict: Dict[str, Any] = {
-            "file": self.file,
-            "version": self.version,
-            "run": self.run,
-        }
+        location_dict: Dict[str, Any] = {}
+        top_level_dict: Dict[str, Any] = {}
 
-        # Add type-specific location fields
-        self._add_location_fields(location_dict)
+        # Traverse all dataclass fields
+        for field_info in fields(self):
+            value = getattr(self, field_info.name)
 
-        # Start with basic fields
+            # Skip None values for optional fields
+            if value is None:
+                continue
+
+            # Check if this is a location field
+            is_location = field_info.metadata.get("is_location", False)
+
+            if field_info.name in ["severity", "confidence"]:
+                # Handle enum fields
+                top_level_dict[field_info.name] = value.value
+            elif field_info.name == "description":
+                # Don't trim description
+                top_level_dict[field_info.name] = value
+            elif is_location:
+                # Add to location dict and trim
+                location_dict[field_info.name] = value
+            else:
+                # Add to top level and trim
+                top_level_dict[field_info.name] = value
+
+        # Special handling for MissingFileDiscrepancy and MissingDirectoryDiscrepancy
+        # missing_from should appear in both location and top level
+        if isinstance(self, (MissingFileDiscrepancy, MissingDirectoryDiscrepancy)):
+            if hasattr(self, "missing_from"):
+                location_dict["missing_from"] = self.missing_from
+
+        # Build final result
         result_dict = {
             "type": self.__class__.__name__,
-            "severity": self.severity.value,
-            "confidence": self.confidence.value,
-            "description": self.description,  # Don't trim description
             "location": _trim_data_recursively(location_dict),
+            **{k: v for k, v in top_level_dict.items() if k != "description"},
         }
 
-        # Add type-specific fields directly to the top level
-        self._add_top_level_fields(result_dict)
+        # Add description untrimmed
+        if "description" in top_level_dict:
+            result_dict["description"] = top_level_dict["description"]
 
-        # Trim all data except for description and location which are already handled
+        # Trim everything except description and location
         return _trim_data_recursively(
             {
                 k: v
@@ -145,639 +171,240 @@ class DiscrepancyBase:
                 if k not in ["description", "location"]
             }
         ) | {
-            "description": result_dict["description"],
+            "description": result_dict.get("description", ""),
             "location": result_dict["location"],
         }
 
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        """Add type-specific location fields. Override in subclasses."""
-        pass
 
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        """Add type-specific fields directly to the top level. Override in subclasses."""
-        pass
-
-
+@dataclass(frozen=True)
 class MissingFileDiscrepancy(DiscrepancyBase):
     """Represents a missing file discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        missing_from: str,
-        present_in: str,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.missing_from = missing_from
-        self.present_in = present_in
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["missing_from"] = self.missing_from
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["missing_from"] = self.missing_from
-        result_dict["present_in"] = self.present_in
+    missing_from: str = ""  # Top level field
+    present_in: str = ""
 
 
+@dataclass(frozen=True)
 class MissingDirectoryDiscrepancy(DiscrepancyBase):
     """Represents a missing directory discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        missing_from: str,
-        present_in: str,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.missing_from = missing_from
-        self.present_in = present_in
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["missing_from"] = self.missing_from
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["missing_from"] = self.missing_from
-        result_dict["present_in"] = self.present_in
+    missing_from: str = ""  # Top level field
+    present_in: str = ""
 
 
+@dataclass(frozen=True)
 class HeaderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a header difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        changed_headers: List[str],
-        total_header_changes: int,
-        header_changes: Dict[str, Any],
-        run1_header_count: int,
-        run2_header_count: int,
-        row: int = 1,  # Headers are typically row 1
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.changed_headers = changed_headers
-        self.total_header_changes = total_header_changes
-        self.header_changes = header_changes
-        self.run1_header_count = run1_header_count
-        self.run2_header_count = run2_header_count
-        self.row = row
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["row"] = self.row
-        location_dict["changed_headers"] = self.changed_headers
-        location_dict["total_header_changes"] = self.total_header_changes
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["header_changes"] = self.header_changes
-        result_dict["run1_header_count"] = self.run1_header_count
-        result_dict["run2_header_count"] = self.run2_header_count
+    header_changes: Dict[str, Any] = field(default_factory=dict)
+    run1_header_count: int = 0
+    run2_header_count: int = 0
+    row: int = location_field(default=1)  # Headers are typically row 1
+    changed_headers: List[str] = location_field(default_factory=list)
+    total_header_changes: int = location_field(default=0)
 
 
+@dataclass(frozen=True)
 class RowDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        row: int,
-        index_column: str,
-        index_value: str,
-        position_run1: int,
-        position_run2: int,
-        changed_columns: List[str],
-        total_field_changes: int,
-        field_changes: Dict[str, Any],
-        change_types: List[str],
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.row = row
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run1 = position_run1
-        self.position_run2 = position_run2
-        self.changed_columns = changed_columns
-        self.total_field_changes = total_field_changes
-        self.field_changes = field_changes
-        self.change_types = change_types
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["row"] = self.row
-        location_dict["index_column"] = self.index_column
-        location_dict["index_value"] = self.index_value
-        location_dict["position_run1"] = self.position_run1
-        location_dict["position_run2"] = self.position_run2
-        location_dict["changed_columns"] = self.changed_columns
-        location_dict["total_field_changes"] = self.total_field_changes
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["field_changes"] = self.field_changes
-        result_dict["change_types"] = self.change_types
+    field_changes: Dict[str, Any] = field(default_factory=dict)
+    change_types: List[str] = field(default_factory=list)
+    row: int = location_field(default=0)
+    index_column: str = location_field(default="")
+    index_value: str = location_field(default="")
+    position_run1: int = location_field(default=0)
+    position_run2: int = location_field(default=0)
+    changed_columns: List[str] = location_field(default_factory=list)
+    total_field_changes: int = location_field(default=0)
 
 
+@dataclass(frozen=True)
 class RowCountDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row count difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        run1_rows: int,
-        run2_rows: int,
-        row_difference: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.run1_rows = run1_rows
-        self.run2_rows = run2_rows
-        self.row_difference = row_difference
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["row_difference"] = self.row_difference
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["run1_rows"] = self.run1_rows
-        result_dict["run2_rows"] = self.run2_rows
-        result_dict["row_difference"] = self.row_difference
+    run1_rows: int = 0
+    run2_rows: int = 0
+    row_difference: int = location_field(default=0)
 
 
+@dataclass(frozen=True)
 class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a column count difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        run1_columns: int,
-        run2_columns: int,
-        columns_missing_in_run2: int,
-        columns_extra_in_run2: int,
-        row: Optional[int] = None,
-        index_column: Optional[str] = None,
-        index_value: Optional[str] = None,
-        position_run1: Optional[int] = None,
-        position_run2: Optional[int] = None,
-        column_difference: Optional[int] = None,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.run1_columns = run1_columns
-        self.run2_columns = run2_columns
-        self.columns_missing_in_run2 = columns_missing_in_run2
-        self.columns_extra_in_run2 = columns_extra_in_run2
-        # Optional fields for data row column count differences
-        self.row = row
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run1 = position_run1
-        self.position_run2 = position_run2
-        self.column_difference = column_difference
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        if self.row is not None:
-            location_dict["row"] = self.row
-        if self.index_column is not None:
-            location_dict["index_column"] = self.index_column
-        if self.index_value is not None:
-            location_dict["index_value"] = self.index_value
-        if self.position_run1 is not None:
-            location_dict["position_run1"] = self.position_run1
-        if self.position_run2 is not None:
-            location_dict["position_run2"] = self.position_run2
-        if self.column_difference is not None:
-            location_dict["column_difference"] = self.column_difference
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["run1_columns"] = self.run1_columns
-        result_dict["run2_columns"] = self.run2_columns
-        result_dict["columns_missing_in_run2"] = self.columns_missing_in_run2
-        result_dict["columns_extra_in_run2"] = self.columns_extra_in_run2
+    run1_columns: int = 0
+    run2_columns: int = 0
+    columns_missing_in_run2: int = 0
+    columns_extra_in_run2: int = 0
+    # Optional fields for data row column count differences
+    row: Optional[int] = location_field(default=None)
+    index_column: Optional[str] = location_field(default=None)
+    index_value: Optional[str] = location_field(default=None)
+    position_run1: Optional[int] = location_field(default=None)
+    position_run2: Optional[int] = location_field(default=None)
+    column_difference: Optional[int] = location_field(default=None)
 
 
+@dataclass(frozen=True)
 class FileReadErrorDiscrepancy(DiscrepancyBase):
     """Represents a file read error discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        file_path: str,
-        file_size: Optional[int] = None,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.file_path = file_path
-        self.file_size = file_size
+    file_path: str = ""
+    file_size: Optional[int] = None
 
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["file_path"] = self.file_path
+    def to_dict(self) -> Dict[str, Any]:
+        """Override to add file_path to location."""
+        result = super().to_dict()
+        # Add file_path to location
+        result["location"]["file_path"] = self.file_path
         if self.file_size is not None:
-            location_dict["file_size"] = self.file_size
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["file_path"] = self.file_path
-        if self.file_size is not None:
-            result_dict["file_size"] = self.file_size
+            result["location"]["file_size"] = self.file_size
+        return result
 
 
+@dataclass(frozen=True)
 class EmptyFileDiscrepancy(DiscrepancyBase):
     """Represents an empty file discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        file_path: str,
-        file_size: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.file_path = file_path
-        self.file_size = file_size
+    file_path: str = ""
+    file_size: int = 0
 
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["file_path"] = self.file_path
-        location_dict["file_size"] = self.file_size
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["file_path"] = self.file_path
-        result_dict["file_size"] = self.file_size
+    def to_dict(self) -> Dict[str, Any]:
+        """Override to add file_path and file_size to location."""
+        result = super().to_dict()
+        # Add to location
+        result["location"]["file_path"] = self.file_path
+        result["location"]["file_size"] = self.file_size
+        return result
 
 
+@dataclass(frozen=True)
 class NoIndexColumnDiscrepancy(DiscrepancyBase):
     """Represents a no index column discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        reason: str,
-        index_analysis: Optional[Dict[str, Any]],
-        has_duplicate_columns_run1: bool,
-        has_duplicate_columns_run2: bool,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.reason = reason
-        self.index_analysis = index_analysis
-        self.has_duplicate_columns_run1 = has_duplicate_columns_run1
-        self.has_duplicate_columns_run2 = has_duplicate_columns_run2
+    reason: str = ""
+    index_analysis: Optional[Dict[str, Any]] = None
+    has_duplicate_columns_run1: bool = False
+    has_duplicate_columns_run2: bool = False
 
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["reason"] = self.reason
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["index_analysis"] = self.index_analysis
-        result_dict["has_duplicate_columns_run1"] = self.has_duplicate_columns_run1
-        result_dict["has_duplicate_columns_run2"] = self.has_duplicate_columns_run2
-        result_dict["reason"] = self.reason
+    def to_dict(self) -> Dict[str, Any]:
+        """Override to add reason to location."""
+        result = super().to_dict()
+        # Add reason to location
+        result["location"]["reason"] = self.reason
+        return result
 
 
+@dataclass(frozen=True)
 class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
     """Represents a duplicate column names discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        duplicate_column: str,
-        positions: List[int],
-        all_headers: List[str],
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.duplicate_column = duplicate_column
-        self.positions = positions
-        self.all_headers = all_headers
+    all_headers: List[str] = field(default_factory=list)
+    duplicate_header: str = ""  # alias for duplicate_column
+    duplicate_column: str = ""  # Original field name
+    positions: List[int] = field(default_factory=list)
 
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["duplicate_column"] = self.duplicate_column
-        location_dict["positions"] = self.positions
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["all_headers"] = self.all_headers
-        result_dict["duplicate_header"] = self.duplicate_column
+    def to_dict(self) -> Dict[str, Any]:
+        """Override to add duplicate_column to location and handle aliasing."""
+        result = super().to_dict()
+        # Add to location
+        result["location"]["duplicate_column"] = self.duplicate_column
+        result["location"]["positions"] = self.positions
+        # Set alias field for backward compatibility
+        result["duplicate_header"] = self.duplicate_column
+        return result
 
 
+@dataclass(frozen=True)
 class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a column order difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        reordered_columns: List[str],
-        order_differences: Dict[str, Any],
-        reordered_count: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.reordered_columns = reordered_columns
-        self.order_differences = order_differences
-        self.reordered_count = reordered_count
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["reordered_columns"] = self.reordered_columns
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["order_differences"] = self.order_differences
-        result_dict["reordered_count"] = self.reordered_count
+    order_differences: Dict[str, Any] = field(default_factory=dict)
+    reordered_count: int = 0
+    reordered_columns: List[str] = location_field(default_factory=list)
 
 
+@dataclass(frozen=True)
 class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row order difference discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        index_column: str,
-        reordered_rows: List[str],
-        position_differences: List[Dict[str, Any]],
-        reordered_count: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.index_column = index_column
-        self.reordered_rows = reordered_rows
-        self.position_differences = position_differences
-        self.reordered_count = reordered_count
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["index_column"] = self.index_column
-        location_dict["reordered_rows"] = self.reordered_rows
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["position_differences"] = self.position_differences
-        result_dict["reordered_count"] = self.reordered_count
+    position_differences: List[Dict[str, Any]] = field(default_factory=list)
+    reordered_count: int = 0
+    index_column: str = location_field(default="")
+    reordered_rows: List[str] = location_field(default_factory=list)
 
 
+@dataclass(frozen=True)
 class MissingRowDiscrepancy(DiscrepancyBase):
     """Represents a missing row discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        index_column: str,
-        index_value: str,
-        position_run1: int,
-        missing_from: str,
-        present_in: str,
-        missing_row_data: List[str],
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run1 = position_run1
-        self.missing_from = missing_from
-        self.present_in = present_in
-        self.missing_row_data = missing_row_data
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["index_column"] = self.index_column
-        location_dict["index_value"] = self.index_value
-        location_dict["position_run1"] = self.position_run1
-        location_dict["missing_from"] = self.missing_from
-        location_dict["present_in"] = self.present_in
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["missing_row_data"] = self.missing_row_data
+    missing_row_data: List[str] = field(default_factory=list)
+    index_column: str = location_field(default="")
+    index_value: str = location_field(default="")
+    position_run1: int = location_field(default=0)
+    missing_from: str = location_field(default="")
+    present_in: str = location_field(default="")
 
 
+@dataclass(frozen=True)
 class ExtraRowDiscrepancy(DiscrepancyBase):
     """Represents an extra row discrepancy."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        index_column: str,
-        index_value: str,
-        position_run2: int,
-        missing_from: str,
-        present_in: str,
-        extra_row_data: List[str],
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run2 = position_run2
-        self.missing_from = missing_from
-        self.present_in = present_in
-        self.extra_row_data = extra_row_data
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["index_column"] = self.index_column
-        location_dict["index_value"] = self.index_value
-        location_dict["position_run2"] = self.position_run2
-        location_dict["missing_from"] = self.missing_from
-        location_dict["present_in"] = self.present_in
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["extra_row_data"] = self.extra_row_data
+    extra_row_data: List[str] = field(default_factory=list)
+    index_column: str = location_field(default="")
+    index_value: str = location_field(default="")
+    position_run2: int = location_field(default=0)
+    missing_from: str = location_field(default="")
+    present_in: str = location_field(default="")
 
 
+@dataclass(frozen=True)
 class FieldChangeDiscrepancy(DiscrepancyBase):
     """Represents a single field change within a row."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        row: int,
-        index_column: str,
-        index_value: str,
-        position_run1: int,
-        position_run2: int,
-        column_index: int,
-        column_name: Optional[str],
-        change_type: str,
-        value1: str,
-        value2: str,
-        value1_type: str,
-        value2_type: str,
-        value1_length: int,
-        value2_length: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.row = row
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run1 = position_run1
-        self.position_run2 = position_run2
-        self.column_index = column_index
-        self.column_name = column_name
-        self.change_type = change_type
-        self.value1 = value1
-        self.value2 = value2
-        self.value1_type = value1_type
-        self.value2_type = value2_type
-        self.value1_length = value1_length
-        self.value2_length = value2_length
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["row"] = self.row
-        location_dict["index_column"] = self.index_column
-        location_dict["index_value"] = self.index_value
-        location_dict["position_run1"] = self.position_run1
-        location_dict["position_run2"] = self.position_run2
-        location_dict["column_index"] = self.column_index
-        if self.column_name is not None:
-            location_dict["column_name"] = self.column_name
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["change_type"] = self.change_type
-        result_dict["value1"] = self.value1
-        result_dict["value2"] = self.value2
-        result_dict["value1_type"] = self.value1_type
-        result_dict["value2_type"] = self.value2_type
-        result_dict["value1_length"] = self.value1_length
-        result_dict["value2_length"] = self.value2_length
+    change_type: str = ""
+    value1: str = ""
+    value2: str = ""
+    value1_type: str = ""
+    value2_type: str = ""
+    value1_length: int = 0
+    value2_length: int = 0
+    row: int = location_field(default=0)
+    index_column: str = location_field(default="")
+    index_value: str = location_field(default="")
+    position_run1: int = location_field(default=0)
+    position_run2: int = location_field(default=0)
+    column_index: int = location_field(default=0)
+    column_name: Optional[str] = location_field(default=None)
 
 
+@dataclass(frozen=True)
 class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
     """Represents a single header field change."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        column_index: int,
-        value1: Optional[str],
-        value2: Optional[str],
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.column_index = column_index
-        self.value1 = value1
-        self.value2 = value2
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["row"] = 1  # Headers are always row 1
-        location_dict["column_index"] = self.column_index
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        result_dict["value1"] = self.value1
-        result_dict["value2"] = self.value2
+    value1: Optional[str] = None
+    value2: Optional[str] = None
+    column_index: int = location_field(default=0)
+    row: int = location_field(default=1)  # Headers are always row 1
 
 
+@dataclass(frozen=True)
 class ColumnReorderDiscrepancy(DiscrepancyBase):
     """Represents a single column being reordered."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        column_name: str,
-        position_run1: int,
-        position_run2: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.column_name = column_name
-        self.position_run1 = position_run1
-        self.position_run2 = position_run2
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["column_name"] = self.column_name
-        location_dict["position_run1"] = self.position_run1
-        location_dict["position_run2"] = self.position_run2
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        pass  # All information is in location fields
+    column_name: str = location_field(default="")
+    position_run1: int = location_field(default=0)
+    position_run2: int = location_field(default=0)
 
 
+@dataclass(frozen=True)
 class RowReorderDiscrepancy(DiscrepancyBase):
     """Represents a single row being reordered."""
 
-    def __init__(
-        self,
-        severity: Severity,
-        confidence: Confidence,
-        description: str,
-        file: str,
-        version: str,
-        run: str,
-        index_column: str,
-        index_value: str,
-        position_run1: int,
-        position_run2: int,
-    ):
-        super().__init__(severity, confidence, description, file, version, run)
-        self.index_column = index_column
-        self.index_value = index_value
-        self.position_run1 = position_run1
-        self.position_run2 = position_run2
-
-    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
-        location_dict["index_column"] = self.index_column
-        location_dict["index_value"] = self.index_value
-        location_dict["position_run1"] = self.position_run1
-        location_dict["position_run2"] = self.position_run2
-
-    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
-        pass  # All information is in location fields
+    index_column: str = location_field(default="")
+    index_value: str = location_field(default="")
+    position_run1: int = location_field(default=0)
+    position_run2: int = location_field(default=0)
 
 
 # Union type for all specific discrepancy classes
