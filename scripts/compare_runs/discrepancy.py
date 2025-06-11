@@ -281,33 +281,24 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     columns_missing_in_run2: int
     columns_extra_in_run2: int
 
-    row: Optional[int]
-    index_column: Optional[str]
-    index_value: Optional[str]
-    position_run1: Optional[int]
-    position_run2: Optional[int]
-    column_difference: Optional[int]
+    row: int
+    index_column: str
+    index_value: str
+    position_run1: int
+    position_run2: int
+    column_difference: int
 
 
-@location_fields()
+@location_fields(["file_path"])
 @dataclass(frozen=True)
 class FileReadErrorDiscrepancy(DiscrepancyBase):
     """Represents a file read error discrepancy."""
 
     file_path: str
-    file_size: Optional[int]
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Override to add file_path to location."""
-        result = super().to_dict()
-        # Add file_path to location
-        result["location"]["file_path"] = self.file_path
-        if self.file_size is not None:
-            result["location"]["file_size"] = self.file_size
-        return result
+    file_size: int
 
 
-@location_fields()
+@location_fields(["file_path"])
 @dataclass(frozen=True)
 class EmptyFileDiscrepancy(DiscrepancyBase):
     """Represents an empty file discrepancy."""
@@ -315,16 +306,7 @@ class EmptyFileDiscrepancy(DiscrepancyBase):
     file_path: str
     file_size: int
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Override to add file_path and file_size to location."""
-        result = super().to_dict()
-        # Add to location
-        result["location"]["file_path"] = self.file_path
-        result["location"]["file_size"] = self.file_size
-        return result
 
-
-@location_fields()
 @dataclass(frozen=True)
 class NoIndexColumnDiscrepancy(DiscrepancyBase):
     """Represents a no index column discrepancy."""
@@ -334,15 +316,8 @@ class NoIndexColumnDiscrepancy(DiscrepancyBase):
     has_duplicate_columns_run1: bool
     has_duplicate_columns_run2: bool
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Override to add reason to location."""
-        result = super().to_dict()
-        # Add reason to location
-        result["location"]["reason"] = self.reason
-        return result
 
-
-@location_fields()
+@location_fields(["positions"])
 @dataclass(frozen=True)
 class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
     """Represents a duplicate column names discrepancy."""
@@ -351,16 +326,6 @@ class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
     duplicate_header: str  # alias for duplicate_column
     duplicate_column: str  # Original field name
     positions: List[int]
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Override to add duplicate_column to location and handle aliasing."""
-        result = super().to_dict()
-        # Add to location
-        result["location"]["duplicate_column"] = self.duplicate_column
-        result["location"]["positions"] = self.positions
-        # Set alias field for backward compatibility
-        result["duplicate_header"] = self.duplicate_column
-        return result
 
 
 @location_fields(["reordered_columns"])

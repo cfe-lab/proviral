@@ -802,7 +802,7 @@ class TestLocationFieldStandardization:
         assert "file" in location
         assert "version" in location
         assert "run" in location
-        assert "reason" in location  # Type-specific field
+        assert "reason" in result_dict
 
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
@@ -828,7 +828,7 @@ class TestLocationFieldStandardization:
         assert "file" in location
         assert "version" in location
         assert "run" in location
-        assert "file_path" in location  # Type-specific field
+        assert "file_path" in location
 
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
@@ -1320,7 +1320,7 @@ class TestColumnValidation:
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
         assert location["run"] == "run1"
-        assert location["duplicate_column"] == "header1"
+        assert result_dict["duplicate_column"] == "header1"
         assert location["positions"] == [0, 2]  # header1 appears at positions 0 and 2
 
         # Check values
@@ -1352,7 +1352,7 @@ class TestColumnValidation:
         assert "run2" in dup_discrepancy.description
         result_dict = dup_discrepancy.to_dict()
         assert result_dict["location"]["run"] == "run2"
-        assert result_dict["location"]["duplicate_column"] == "col1"
+        assert result_dict["duplicate_column"] == "col1"
         assert result_dict["location"]["positions"] == [0, 2]
 
     def test_duplicate_column_names_both_runs(self, tmp_path):
@@ -1382,8 +1382,8 @@ class TestColumnValidation:
 
         assert run1_discrepancy is not None
         assert run2_discrepancy is not None
-        assert run1_discrepancy.to_dict()["location"]["duplicate_column"] == "id"
-        assert run2_discrepancy.to_dict()["location"]["duplicate_column"] == "name"
+        assert run1_discrepancy.to_dict()["duplicate_column"] == "id"
+        assert run2_discrepancy.to_dict()["duplicate_column"] == "name"
 
     def test_column_order_difference(self, tmp_path):
         """Test detection of column order differences."""
