@@ -205,11 +205,12 @@ class TestComparisonReport:
             version="version_7.15",
             run="both",  # Comparison of both
             # Placeholders for HeaderDifferenceDiscrepancy fields
-            changed_headers=[],
-            total_header_changes=0,
             header_changes={},
             run1_header_count=0,
             run2_header_count=0,
+            row=1,
+            changed_headers=[],
+            total_header_changes=0,
         )
         medium_discrepancy = RowDifferenceDiscrepancy(
             severity=Severity.MEDIUM,

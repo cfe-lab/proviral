@@ -139,9 +139,10 @@ def compare_csv_contents(
                 file=filename,
                 version=version,
                 run="run1",
+                all_headers=dup_check1["all_headers"],
+                duplicate_header=dup_check1["duplicate_header"],
                 duplicate_column=dup_check1["duplicate_header"],
                 positions=dup_check1["positions"],
-                all_headers=dup_check1["all_headers"],
             )
         )
 
@@ -155,9 +156,10 @@ def compare_csv_contents(
                 file=filename,
                 version=version,
                 run="run2",
+                all_headers=dup_check2["all_headers"],
+                duplicate_header=dup_check2["duplicate_header"],
                 duplicate_column=dup_check2["duplicate_header"],
                 positions=dup_check2["positions"],
-                all_headers=dup_check2["all_headers"],
             )
         )
 
@@ -231,6 +233,7 @@ def compare_csv_contents(
                     column_index=removed_header["index"],
                     value1=removed_header["value"],
                     value2=None,
+                    row=1,  # Headers are always row 1
                 )
             )
 
@@ -246,6 +249,7 @@ def compare_csv_contents(
                     column_index=added_header["index"],
                     value1=None,
                     value2=added_header["value"],
+                    row=1,  # Headers are always row 1
                 )
             )
 
@@ -258,9 +262,10 @@ def compare_csv_contents(
                     file=filename,
                     version=version,
                     run="both",
-                    column_index=modified_header["index"],
                     value1=modified_header["old_header"],
                     value2=modified_header["new_header"],
+                    column_index=modified_header["index"],
+                    row=1,  # Headers are always row 1
                 )
             )
 
@@ -279,7 +284,12 @@ def compare_csv_contents(
                     run2_columns=len(headers2),
                     columns_missing_in_run2=missing_cols,
                     columns_extra_in_run2=extra_cols,
-                    row=1,
+                    row=1,  # Header row is always row 1
+                    index_column=None,  # No index column for header differences
+                    index_value=None,   # No index value for header differences
+                    position_run1=None, # No position for header differences
+                    position_run2=None, # No position for header differences
+                    column_difference=len(headers2) - len(headers1),  # Positive if run2 has more columns
                 )
             )
 
@@ -807,6 +817,7 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                     version=version,
                     run="both",
                     file_path=str(e),
+                    file_size=None,
                 ),
             )
 

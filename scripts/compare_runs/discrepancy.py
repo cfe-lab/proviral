@@ -111,16 +111,27 @@ class DiscrepancyBase:
     severity: Severity
     confidence: Confidence
     description: str
-
-    # Common location fields (no defaults to avoid ordering issues)
-    file: str = location_field(default="")
-    version: str = location_field(default="")
-    run: str = location_field(default="")
+    file: str
+    version: str
+    run: str
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
         location_dict: Dict[str, Any] = {}
         top_level_dict: Dict[str, Any] = {}
+
+        # Standard location fields from base class
+        base_location_fields = {"file", "version", "run"}
+
+        # Additional location fields for specific discrepancy types
+        column_count_location_fields = {
+            "row",
+            "index_column",
+            "index_value",
+            "position_run1",
+            "position_run2",
+            "column_difference",
+        }
 
         # Traverse all dataclass fields
         for field_info in fields(self):
@@ -131,7 +142,14 @@ class DiscrepancyBase:
                 continue
 
             # Check if this is a location field
-            is_location = field_info.metadata.get("is_location", False)
+            is_location = (
+                field_info.metadata.get("is_location", False)
+                or field_info.name in base_location_fields
+                or (
+                    isinstance(self, ColumnCountDifferenceDiscrepancy)
+                    and field_info.name in column_count_location_fields
+                )
+            )
 
             if field_info.name in ["severity", "confidence"]:
                 # Handle enum fields
@@ -180,77 +198,77 @@ class DiscrepancyBase:
 class MissingFileDiscrepancy(DiscrepancyBase):
     """Represents a missing file discrepancy."""
 
-    missing_from: str = ""  # Top level field
-    present_in: str = ""
+    missing_from: str
+    present_in: str
 
 
 @dataclass(frozen=True)
 class MissingDirectoryDiscrepancy(DiscrepancyBase):
     """Represents a missing directory discrepancy."""
 
-    missing_from: str = ""  # Top level field
-    present_in: str = ""
+    missing_from: str
+    present_in: str
 
 
 @dataclass(frozen=True)
 class HeaderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a header difference discrepancy."""
 
-    header_changes: Dict[str, Any] = field(default_factory=dict)
-    run1_header_count: int = 0
-    run2_header_count: int = 0
-    row: int = location_field(default=1)  # Headers are typically row 1
-    changed_headers: List[str] = location_field(default_factory=list)
-    total_header_changes: int = location_field(default=0)
+    header_changes: Dict[str, Any]
+    run1_header_count: int
+    run2_header_count: int
+    row: int = location_field()
+    changed_headers: List[str] = location_field()
+    total_header_changes: int = location_field()
 
 
 @dataclass(frozen=True)
 class RowDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row difference discrepancy."""
 
-    field_changes: Dict[str, Any] = field(default_factory=dict)
-    change_types: List[str] = field(default_factory=list)
-    row: int = location_field(default=0)
-    index_column: str = location_field(default="")
-    index_value: str = location_field(default="")
-    position_run1: int = location_field(default=0)
-    position_run2: int = location_field(default=0)
-    changed_columns: List[str] = location_field(default_factory=list)
-    total_field_changes: int = location_field(default=0)
+    field_changes: Dict[str, Any]
+    change_types: List[str]
+    row: int = location_field()
+    index_column: str = location_field()
+    index_value: str = location_field()
+    position_run1: int = location_field()
+    position_run2: int = location_field()
+    changed_columns: List[str] = location_field()
+    total_field_changes: int = location_field()
 
 
 @dataclass(frozen=True)
 class RowCountDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row count difference discrepancy."""
 
-    run1_rows: int = 0
-    run2_rows: int = 0
-    row_difference: int = location_field(default=0)
+    run1_rows: int
+    run2_rows: int
+    row_difference: int = location_field()
 
 
 @dataclass(frozen=True)
 class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a column count difference discrepancy."""
 
-    run1_columns: int = 0
-    run2_columns: int = 0
-    columns_missing_in_run2: int = 0
-    columns_extra_in_run2: int = 0
+    run1_columns: int
+    run2_columns: int
+    columns_missing_in_run2: int
+    columns_extra_in_run2: int
     # Optional fields for data row column count differences
-    row: Optional[int] = location_field(default=None)
-    index_column: Optional[str] = location_field(default=None)
-    index_value: Optional[str] = location_field(default=None)
-    position_run1: Optional[int] = location_field(default=None)
-    position_run2: Optional[int] = location_field(default=None)
-    column_difference: Optional[int] = location_field(default=None)
+    row: Optional[int]
+    index_column: Optional[str]
+    index_value: Optional[str]
+    position_run1: Optional[int]
+    position_run2: Optional[int]
+    column_difference: Optional[int]
 
 
 @dataclass(frozen=True)
 class FileReadErrorDiscrepancy(DiscrepancyBase):
     """Represents a file read error discrepancy."""
 
-    file_path: str = ""
-    file_size: Optional[int] = None
+    file_path: str
+    file_size: Optional[int]
 
     def to_dict(self) -> Dict[str, Any]:
         """Override to add file_path to location."""
@@ -266,8 +284,8 @@ class FileReadErrorDiscrepancy(DiscrepancyBase):
 class EmptyFileDiscrepancy(DiscrepancyBase):
     """Represents an empty file discrepancy."""
 
-    file_path: str = ""
-    file_size: int = 0
+    file_path: str
+    file_size: int
 
     def to_dict(self) -> Dict[str, Any]:
         """Override to add file_path and file_size to location."""
@@ -282,10 +300,10 @@ class EmptyFileDiscrepancy(DiscrepancyBase):
 class NoIndexColumnDiscrepancy(DiscrepancyBase):
     """Represents a no index column discrepancy."""
 
-    reason: str = ""
-    index_analysis: Optional[Dict[str, Any]] = None
-    has_duplicate_columns_run1: bool = False
-    has_duplicate_columns_run2: bool = False
+    reason: str
+    index_analysis: Optional[Dict[str, Any]]
+    has_duplicate_columns_run1: bool
+    has_duplicate_columns_run2: bool
 
     def to_dict(self) -> Dict[str, Any]:
         """Override to add reason to location."""
@@ -299,10 +317,10 @@ class NoIndexColumnDiscrepancy(DiscrepancyBase):
 class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
     """Represents a duplicate column names discrepancy."""
 
-    all_headers: List[str] = field(default_factory=list)
-    duplicate_header: str = ""  # alias for duplicate_column
-    duplicate_column: str = ""  # Original field name
-    positions: List[int] = field(default_factory=list)
+    all_headers: List[str]
+    duplicate_header: str  # alias for duplicate_column
+    duplicate_column: str  # Original field name
+    positions: List[int]
 
     def to_dict(self) -> Dict[str, Any]:
         """Override to add duplicate_column to location and handle aliasing."""
@@ -319,92 +337,92 @@ class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
 class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a column order difference discrepancy."""
 
-    order_differences: Dict[str, Any] = field(default_factory=dict)
-    reordered_count: int = 0
-    reordered_columns: List[str] = location_field(default_factory=list)
+    order_differences: Dict[str, Any]
+    reordered_count: int
+    reordered_columns: List[str] = location_field()
 
 
 @dataclass(frozen=True)
 class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
     """Represents a row order difference discrepancy."""
 
-    position_differences: List[Dict[str, Any]] = field(default_factory=list)
-    reordered_count: int = 0
-    index_column: str = location_field(default="")
-    reordered_rows: List[str] = location_field(default_factory=list)
+    position_differences: List[Dict[str, Any]]
+    reordered_count: int
+    index_column: str = location_field()
+    reordered_rows: List[str] = location_field()
 
 
 @dataclass(frozen=True)
 class MissingRowDiscrepancy(DiscrepancyBase):
     """Represents a missing row discrepancy."""
 
-    missing_row_data: List[str] = field(default_factory=list)
-    index_column: str = location_field(default="")
-    index_value: str = location_field(default="")
-    position_run1: int = location_field(default=0)
-    missing_from: str = location_field(default="")
-    present_in: str = location_field(default="")
+    missing_row_data: List[str]
+    index_column: str = location_field()
+    index_value: str = location_field()
+    position_run1: int = location_field()
+    missing_from: str = location_field()
+    present_in: str = location_field()
 
 
 @dataclass(frozen=True)
 class ExtraRowDiscrepancy(DiscrepancyBase):
     """Represents an extra row discrepancy."""
 
-    extra_row_data: List[str] = field(default_factory=list)
-    index_column: str = location_field(default="")
-    index_value: str = location_field(default="")
-    position_run2: int = location_field(default=0)
-    missing_from: str = location_field(default="")
-    present_in: str = location_field(default="")
+    extra_row_data: List[str]
+    index_column: str = location_field()
+    index_value: str = location_field()
+    position_run2: int = location_field()
+    missing_from: str = location_field()
+    present_in: str = location_field()
 
 
 @dataclass(frozen=True)
 class FieldChangeDiscrepancy(DiscrepancyBase):
     """Represents a single field change within a row."""
 
-    change_type: str = ""
-    value1: str = ""
-    value2: str = ""
-    value1_type: str = ""
-    value2_type: str = ""
-    value1_length: int = 0
-    value2_length: int = 0
-    row: int = location_field(default=0)
-    index_column: str = location_field(default="")
-    index_value: str = location_field(default="")
-    position_run1: int = location_field(default=0)
-    position_run2: int = location_field(default=0)
-    column_index: int = location_field(default=0)
-    column_name: Optional[str] = location_field(default=None)
+    change_type: str
+    value1: str
+    value2: str
+    value1_type: str
+    value2_type: str
+    value1_length: int
+    value2_length: int
+    row: int = location_field()
+    index_column: str = location_field()
+    index_value: str = location_field()
+    position_run1: int = location_field()
+    position_run2: int = location_field()
+    column_index: int = location_field()
+    column_name: Optional[str] = location_field()
 
 
 @dataclass(frozen=True)
 class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
     """Represents a single header field change."""
 
-    value1: Optional[str] = None
-    value2: Optional[str] = None
-    column_index: int = location_field(default=0)
-    row: int = location_field(default=1)  # Headers are always row 1
+    value1: Optional[str]
+    value2: Optional[str]
+    column_index: int = location_field()
+    row: int = location_field()  # Headers are always row 1
 
 
 @dataclass(frozen=True)
 class ColumnReorderDiscrepancy(DiscrepancyBase):
     """Represents a single column being reordered."""
 
-    column_name: str = location_field(default="")
-    position_run1: int = location_field(default=0)
-    position_run2: int = location_field(default=0)
+    column_name: str = location_field()
+    position_run1: int = location_field()
+    position_run2: int = location_field()
 
 
 @dataclass(frozen=True)
 class RowReorderDiscrepancy(DiscrepancyBase):
     """Represents a single row being reordered."""
 
-    index_column: str = location_field(default="")
-    index_value: str = location_field(default="")
-    position_run1: int = location_field(default=0)
-    position_run2: int = location_field(default=0)
+    index_column: str = location_field()
+    index_value: str = location_field()
+    position_run1: int = location_field()
+    position_run2: int = location_field()
 
 
 # Union type for all specific discrepancy classes
