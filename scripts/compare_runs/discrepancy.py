@@ -111,17 +111,14 @@ class DiscrepancyBase:
     severity: Severity
     confidence: Confidence
     description: str
-    file: str
-    version: str
-    run: str
+    file: str = location_field()
+    version: str = location_field()
+    run: str = location_field()
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
         location_dict: Dict[str, Any] = {}
         top_level_dict: Dict[str, Any] = {}
-
-        # Standard location fields from base class
-        base_location_fields = {"file", "version", "run"}
 
         # Additional location fields for specific discrepancy types
         column_count_location_fields = {
@@ -144,7 +141,6 @@ class DiscrepancyBase:
             # Check if this is a location field
             is_location = (
                 field_info.metadata.get("is_location", False)
-                or field_info.name in base_location_fields
                 or (
                     isinstance(self, ColumnCountDifferenceDiscrepancy)
                     and field_info.name in column_count_location_fields
