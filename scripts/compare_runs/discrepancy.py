@@ -120,16 +120,6 @@ class DiscrepancyBase:
         location_dict: Dict[str, Any] = {}
         top_level_dict: Dict[str, Any] = {}
 
-        # Additional location fields for specific discrepancy types
-        column_count_location_fields = {
-            "row",
-            "index_column",
-            "index_value",
-            "position_run1",
-            "position_run2",
-            "column_difference",
-        }
-
         # Traverse all dataclass fields
         for field_info in fields(self):
             value = getattr(self, field_info.name)
@@ -139,13 +129,7 @@ class DiscrepancyBase:
                 continue
 
             # Check if this is a location field
-            is_location = (
-                field_info.metadata.get("is_location", False)
-                or (
-                    isinstance(self, ColumnCountDifferenceDiscrepancy)
-                    and field_info.name in column_count_location_fields
-                )
-            )
+            is_location = field_info.metadata.get("is_location", False)
 
             if field_info.name in ["severity", "confidence"]:
                 # Handle enum fields
@@ -250,13 +234,13 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     run2_columns: int
     columns_missing_in_run2: int
     columns_extra_in_run2: int
-    # Optional fields for data row column count differences
-    row: Optional[int]
-    index_column: Optional[str]
-    index_value: Optional[str]
-    position_run1: Optional[int]
-    position_run2: Optional[int]
-    column_difference: Optional[int]
+
+    row: Optional[int] = location_field()
+    index_column: Optional[str] = location_field()
+    index_value: Optional[str] = location_field()
+    position_run1: Optional[int] = location_field()
+    position_run2: Optional[int] = location_field()
+    column_difference: Optional[int] = location_field()
 
 
 @dataclass(frozen=True)
