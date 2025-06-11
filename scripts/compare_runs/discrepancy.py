@@ -36,12 +36,18 @@ class Severity(Enum):
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 # Confidence levels for discrepancies
 class Confidence(Enum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 def _trim_value_for_display(value: str, max_length: int = 20) -> str:
@@ -94,6 +100,8 @@ def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
         return _trim_value_for_display(data, max_length)
     elif isinstance(data, list):
         return [_trim_data_recursively(item, max_length) for item in data]
+    elif isinstance(data, Enum):
+        return data.value  # Use the enum value directly
     elif isinstance(data, dict):
         return {
             key: _trim_data_recursively(value, max_length)
@@ -130,14 +138,7 @@ class DiscrepancyBase:
 
             # Check if this is a location field
             is_location = field_info.metadata.get("is_location", False)
-
-            if field_info.name in ["severity", "confidence"]:
-                # Handle enum fields
-                top_level_dict[field_info.name] = value.value
-            elif field_info.name == "description":
-                # Don't trim description
-                top_level_dict[field_info.name] = value
-            elif is_location:
+            if is_location:
                 # Add to location dict and trim
                 location_dict[field_info.name] = value
             else:
@@ -490,7 +491,7 @@ class ComparisonReport:
             for file_results in version_results.values():
                 for discrepancy in file_results.get("discrepancies", []):
                     summary["total_discrepancies"] += 1
-                    severity = discrepancy["severity"].lower()
+                    severity = str(discrepancy["severity"]).lower()
                     summary_key = f"{severity}_discrepancies"
                     if summary_key in summary:
                         summary[summary_key] += 1
