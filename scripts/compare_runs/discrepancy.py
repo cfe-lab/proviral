@@ -121,28 +121,40 @@ class DiscrepancyBase:
             "version": self.version,
             "run": self.run,
         }
-        values_dict: Dict[str, Any] = {}
 
-        # Add type-specific location and values fields
+        # Add type-specific location fields
         self._add_location_fields(location_dict)
-        self._add_values_fields(values_dict)
-        values = _trim_data_recursively(values_dict)
 
-        return {
+        # Start with basic fields
+        result_dict = {
             "type": self.__class__.__name__,
             "severity": self.severity.value,
             "confidence": self.confidence.value,
-            "description": self.description,
+            "description": self.description,  # Don't trim description
             "location": _trim_data_recursively(location_dict),
-            **values,
+        }
+
+        # Add type-specific fields directly to the top level
+        self._add_top_level_fields(result_dict)
+
+        # Trim all data except for description and location which are already handled
+        return _trim_data_recursively(
+            {
+                k: v
+                for k, v in result_dict.items()
+                if k not in ["description", "location"]
+            }
+        ) | {
+            "description": result_dict["description"],
+            "location": result_dict["location"],
         }
 
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         """Add type-specific location fields. Override in subclasses."""
         pass
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        """Add type-specific values fields. Override in subclasses."""
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        """Add type-specific fields directly to the top level. Override in subclasses."""
         pass
 
 
@@ -167,9 +179,9 @@ class MissingFileDiscrepancy(DiscrepancyBase):
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         location_dict["missing_from"] = self.missing_from
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["missing_from"] = self.missing_from
-        values_dict["present_in"] = self.present_in
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["missing_from"] = self.missing_from
+        result_dict["present_in"] = self.present_in
 
 
 class MissingDirectoryDiscrepancy(DiscrepancyBase):
@@ -193,9 +205,9 @@ class MissingDirectoryDiscrepancy(DiscrepancyBase):
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         location_dict["missing_from"] = self.missing_from
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["missing_from"] = self.missing_from
-        values_dict["present_in"] = self.present_in
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["missing_from"] = self.missing_from
+        result_dict["present_in"] = self.present_in
 
 
 class HeaderDifferenceDiscrepancy(DiscrepancyBase):
@@ -229,10 +241,10 @@ class HeaderDifferenceDiscrepancy(DiscrepancyBase):
         location_dict["changed_headers"] = self.changed_headers
         location_dict["total_header_changes"] = self.total_header_changes
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["header_changes"] = self.header_changes
-        values_dict["run1_header_count"] = self.run1_header_count
-        values_dict["run2_header_count"] = self.run2_header_count
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["header_changes"] = self.header_changes
+        result_dict["run1_header_count"] = self.run1_header_count
+        result_dict["run2_header_count"] = self.run2_header_count
 
 
 class RowDifferenceDiscrepancy(DiscrepancyBase):
@@ -276,9 +288,9 @@ class RowDifferenceDiscrepancy(DiscrepancyBase):
         location_dict["changed_columns"] = self.changed_columns
         location_dict["total_field_changes"] = self.total_field_changes
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["field_changes"] = self.field_changes
-        values_dict["change_types"] = self.change_types
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["field_changes"] = self.field_changes
+        result_dict["change_types"] = self.change_types
 
 
 class RowCountDifferenceDiscrepancy(DiscrepancyBase):
@@ -304,10 +316,10 @@ class RowCountDifferenceDiscrepancy(DiscrepancyBase):
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         location_dict["row_difference"] = self.row_difference
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["run1_rows"] = self.run1_rows
-        values_dict["run2_rows"] = self.run2_rows
-        values_dict["row_difference"] = self.row_difference
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["run1_rows"] = self.run1_rows
+        result_dict["run2_rows"] = self.run2_rows
+        result_dict["row_difference"] = self.row_difference
 
 
 class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
@@ -359,11 +371,11 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
         if self.column_difference is not None:
             location_dict["column_difference"] = self.column_difference
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["run1_columns"] = self.run1_columns
-        values_dict["run2_columns"] = self.run2_columns
-        values_dict["columns_missing_in_run2"] = self.columns_missing_in_run2
-        values_dict["columns_extra_in_run2"] = self.columns_extra_in_run2
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["run1_columns"] = self.run1_columns
+        result_dict["run2_columns"] = self.run2_columns
+        result_dict["columns_missing_in_run2"] = self.columns_missing_in_run2
+        result_dict["columns_extra_in_run2"] = self.columns_extra_in_run2
 
 
 class FileReadErrorDiscrepancy(DiscrepancyBase):
@@ -389,10 +401,10 @@ class FileReadErrorDiscrepancy(DiscrepancyBase):
         if self.file_size is not None:
             location_dict["file_size"] = self.file_size
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["file_path"] = self.file_path
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["file_path"] = self.file_path
         if self.file_size is not None:
-            values_dict["file_size"] = self.file_size
+            result_dict["file_size"] = self.file_size
 
 
 class EmptyFileDiscrepancy(DiscrepancyBase):
@@ -417,9 +429,9 @@ class EmptyFileDiscrepancy(DiscrepancyBase):
         location_dict["file_path"] = self.file_path
         location_dict["file_size"] = self.file_size
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["file_path"] = self.file_path
-        values_dict["file_size"] = self.file_size
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["file_path"] = self.file_path
+        result_dict["file_size"] = self.file_size
 
 
 class NoIndexColumnDiscrepancy(DiscrepancyBase):
@@ -447,11 +459,11 @@ class NoIndexColumnDiscrepancy(DiscrepancyBase):
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         location_dict["reason"] = self.reason
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["index_analysis"] = self.index_analysis
-        values_dict["has_duplicate_columns_run1"] = self.has_duplicate_columns_run1
-        values_dict["has_duplicate_columns_run2"] = self.has_duplicate_columns_run2
-        values_dict["reason"] = self.reason
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["index_analysis"] = self.index_analysis
+        result_dict["has_duplicate_columns_run1"] = self.has_duplicate_columns_run1
+        result_dict["has_duplicate_columns_run2"] = self.has_duplicate_columns_run2
+        result_dict["reason"] = self.reason
 
 
 class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
@@ -478,9 +490,9 @@ class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
         location_dict["duplicate_column"] = self.duplicate_column
         location_dict["positions"] = self.positions
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["all_headers"] = self.all_headers
-        values_dict["duplicate_header"] = self.duplicate_column
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["all_headers"] = self.all_headers
+        result_dict["duplicate_header"] = self.duplicate_column
 
 
 class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
@@ -506,9 +518,9 @@ class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
     def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
         location_dict["reordered_columns"] = self.reordered_columns
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["order_differences"] = self.order_differences
-        values_dict["reordered_count"] = self.reordered_count
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["order_differences"] = self.order_differences
+        result_dict["reordered_count"] = self.reordered_count
 
 
 class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
@@ -537,9 +549,9 @@ class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
         location_dict["index_column"] = self.index_column
         location_dict["reordered_rows"] = self.reordered_rows
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["position_differences"] = self.position_differences
-        values_dict["reordered_count"] = self.reordered_count
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["position_differences"] = self.position_differences
+        result_dict["reordered_count"] = self.reordered_count
 
 
 class MissingRowDiscrepancy(DiscrepancyBase):
@@ -575,8 +587,8 @@ class MissingRowDiscrepancy(DiscrepancyBase):
         location_dict["missing_from"] = self.missing_from
         location_dict["present_in"] = self.present_in
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["missing_row_data"] = self.missing_row_data
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["missing_row_data"] = self.missing_row_data
 
 
 class ExtraRowDiscrepancy(DiscrepancyBase):
@@ -612,8 +624,8 @@ class ExtraRowDiscrepancy(DiscrepancyBase):
         location_dict["missing_from"] = self.missing_from
         location_dict["present_in"] = self.present_in
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["extra_row_data"] = self.extra_row_data
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["extra_row_data"] = self.extra_row_data
 
 
 class FieldChangeDiscrepancy(DiscrepancyBase):
@@ -668,14 +680,14 @@ class FieldChangeDiscrepancy(DiscrepancyBase):
         if self.column_name is not None:
             location_dict["column_name"] = self.column_name
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["change_type"] = self.change_type
-        values_dict["value1"] = self.value1
-        values_dict["value2"] = self.value2
-        values_dict["value1_type"] = self.value1_type
-        values_dict["value2_type"] = self.value2_type
-        values_dict["value1_length"] = self.value1_length
-        values_dict["value2_length"] = self.value2_length
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["change_type"] = self.change_type
+        result_dict["value1"] = self.value1
+        result_dict["value2"] = self.value2
+        result_dict["value1_type"] = self.value1_type
+        result_dict["value2_type"] = self.value2_type
+        result_dict["value1_length"] = self.value1_length
+        result_dict["value2_length"] = self.value2_length
 
 
 class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
@@ -702,9 +714,9 @@ class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
         location_dict["row"] = 1  # Headers are always row 1
         location_dict["column_index"] = self.column_index
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
-        values_dict["value1"] = self.value1
-        values_dict["value2"] = self.value2
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
+        result_dict["value1"] = self.value1
+        result_dict["value2"] = self.value2
 
 
 class ColumnReorderDiscrepancy(DiscrepancyBase):
@@ -732,7 +744,7 @@ class ColumnReorderDiscrepancy(DiscrepancyBase):
         location_dict["position_run1"] = self.position_run1
         location_dict["position_run2"] = self.position_run2
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
         pass  # All information is in location fields
 
 
@@ -764,7 +776,7 @@ class RowReorderDiscrepancy(DiscrepancyBase):
         location_dict["position_run1"] = self.position_run1
         location_dict["position_run2"] = self.position_run2
 
-    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+    def _add_top_level_fields(self, result_dict: Dict[str, Any]) -> None:
         pass  # All information is in location fields
 
 
