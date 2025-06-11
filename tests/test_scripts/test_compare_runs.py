@@ -28,10 +28,10 @@ from scripts.compare_runs.__main__ import (
     _determine_row_difference_severity,
     _determine_row_difference_confidence,
 )
+from scripts.compare_runs.comparison_report import ComparisonReport
 from scripts.compare_runs.discrepancy import (
     Severity,
     Confidence,
-    ComparisonReport,
     RowDifferenceDiscrepancy,
     MissingFileDiscrepancy,
     MissingDirectoryDiscrepancy,

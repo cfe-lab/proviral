@@ -17,10 +17,10 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Any, TypeAlias
 
+from .comparison_report import ComparisonReport
 from .discrepancy import (
     Severity,
     Confidence,
-    ComparisonReport,
     _trim_value_for_display,
     Discrepancy as ImportedDiscrepancy,
     # Import all specific discrepancy classes
