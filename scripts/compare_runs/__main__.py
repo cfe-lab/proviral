@@ -68,7 +68,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-Discrepancy: TypeAlias = ImportedDiscrepancy # type: ignore[assignment]
+Discrepancy: TypeAlias = ImportedDiscrepancy  # type: ignore[assignment]
 
 
 def compare_csv_contents(
@@ -89,40 +89,36 @@ def compare_csv_contents(
     content1 = read_csv_file(file1)
     content2 = read_csv_file(file2)
 
-    discrepancies: List[Discrepancy] = [] # type: ignore[assignment]
+    discrepancies: List[Discrepancy] = []  # type: ignore[assignment]
 
     # Check if either file is empty or failed to read
     if not content1 and not content2:
         return discrepancies  # Both empty, no discrepancies
 
     if not content1:
-        file_size1 = file1.stat().st_size if file1.exists() else 0
         discrepancies.append(
             FileReadErrorDiscrepancy(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
-                description=f"First file is empty or failed to read (size: {file_size1} bytes)",
+                description="First file is empty or failed to read",
                 file=filename,
                 version=version,
                 run="run1",
                 file_path=str(file1),
-                file_size=file_size1,
             )
         )
         return discrepancies
 
     if not content2:
-        file_size2 = file2.stat().st_size if file2.exists() else 0
         discrepancies.append(
             FileReadErrorDiscrepancy(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
-                description=f"Second file is empty or failed to read (size: {file_size2} bytes)",
+                description="Second file is empty or failed to read",
                 file=filename,
                 version=version,
                 run="run2",
                 file_path=str(file2),
-                file_size=file_size2,
             )
         )
         return discrepancies
@@ -287,11 +283,7 @@ def compare_csv_contents(
                     run2_columns=len(headers2),
                     columns_missing_in_run2=missing_cols,
                     columns_extra_in_run2=extra_cols,
-                    row=1,  # Header row is always row 1
-                    index_column=None,  # No index column for header differences
-                    index_value=None,  # No index value for header differences
-                    position_run1=None,  # No position for header differences
-                    position_run2=None,  # No position for header differences
+                    row=1,  # Headers are always row 1
                     column_difference=len(headers2)
                     - len(headers1),  # Positive if run2 has more columns
                 )
@@ -542,10 +534,6 @@ def _compare_rows_by_index_column(
                             columns_missing_in_run2=missing_cols,
                             columns_extra_in_run2=extra_cols,
                             row=pos1 + 1,  # 1-based row number
-                            index_column=index_column_name,
-                            index_value=_trim_value_for_display(str(index_value)),
-                            position_run1=pos1,
-                            position_run2=pos2,
                             column_difference=abs(len(row1) - len(row2)),
                         )
                     )
@@ -821,7 +809,6 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
                     version=version,
                     run="both",
                     file_path=str(e),
-                    file_size=None,
                 ),
             )
 

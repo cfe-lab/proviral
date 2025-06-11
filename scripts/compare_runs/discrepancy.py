@@ -13,10 +13,7 @@ The module provides:
 - Main Discrepancy and ComparisonReport classes for managing findings
 """
 
-import json
 from dataclasses import dataclass, fields
-from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Type
 from enum import Enum
 
@@ -280,12 +277,7 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     run2_columns: int
     columns_missing_in_run2: int
     columns_extra_in_run2: int
-
     row: int
-    index_column: str
-    index_value: str
-    position_run1: int
-    position_run2: int
     column_difference: int
 
 
@@ -295,7 +287,6 @@ class FileReadErrorDiscrepancy(DiscrepancyBase):
     """Represents a file read error discrepancy."""
 
     file_path: str
-    file_size: int
 
 
 @location_fields(["file_path"])
