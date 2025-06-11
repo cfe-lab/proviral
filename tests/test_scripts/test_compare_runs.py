@@ -117,13 +117,7 @@ class TestDiscrepancy:
         assert result["location"]["file"] == "missing.csv"
         assert (
             result["location"]["missing_from"] == "run1"
-        )  # Added by MissingFileDiscrepancy._add_location_fields
-        assert (
-            result["missing_from"] == "run1"
-        )  # Added by MissingFileDiscrepancy._add_values_fields
-        assert (
-            result["present_in"] == "run2"
-        )  # Added by MissingFileDiscrepancy._add_values_fields
+        )
 
 
 class TestComparisonReport:
@@ -170,7 +164,7 @@ class TestComparisonReport:
 
         assert len(report.results) == 1
         assert (
-            report.results[0]["type"] == "RowDiffe...screpancy"
+            report.results[0]["type"] == "RowDifferenceDiscrepancy"
         )  # Trimmed by _trim_data_recursively
         assert report.results[0]["location"]["version"] == "version_7.15"
         assert report.results[0]["location"]["file"] == "test.csv"

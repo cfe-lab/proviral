@@ -15,14 +15,14 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, TypeAlias
 
 from .discrepancy import (
     Severity,
     Confidence,
     ComparisonReport,
     _trim_value_for_display,
-    Discrepancy,
+    Discrepancy as ImportedDiscrepancy,
     # Import all specific discrepancy classes
     FileReadErrorDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
@@ -68,6 +68,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+Discrepancy: TypeAlias = ImportedDiscrepancy # type: ignore[assignment]
+
+
 def compare_csv_contents(
     file1: Path, file2: Path, version: str, filename: str
 ) -> List[Discrepancy]:
@@ -86,7 +89,7 @@ def compare_csv_contents(
     content1 = read_csv_file(file1)
     content2 = read_csv_file(file2)
 
-    discrepancies: List[Discrepancy] = []
+    discrepancies: List[Discrepancy] = [] # type: ignore[assignment]
 
     # Check if either file is empty or failed to read
     if not content1 and not content2:
@@ -286,10 +289,11 @@ def compare_csv_contents(
                     columns_extra_in_run2=extra_cols,
                     row=1,  # Header row is always row 1
                     index_column=None,  # No index column for header differences
-                    index_value=None,   # No index value for header differences
-                    position_run1=None, # No position for header differences
-                    position_run2=None, # No position for header differences
-                    column_difference=len(headers2) - len(headers1),  # Positive if run2 has more columns
+                    index_value=None,  # No index value for header differences
+                    position_run1=None,  # No position for header differences
+                    position_run2=None,  # No position for header differences
+                    column_difference=len(headers2)
+                    - len(headers1),  # Positive if run2 has more columns
                 )
             )
 
