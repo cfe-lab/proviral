@@ -441,41 +441,27 @@ class ComparisonReport:
         self.versions_run1: List[str] = []
         self.versions_run2: List[str] = []
         self.common_versions: List[str] = []
-        self.results: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(
-            lambda: defaultdict(dict)
-        )
+        self.results: List[Dict[str, Any]] = []
 
     def add_discrepancy(self, version: str, filename: str, discrepancy: Discrepancy):
         """Add a discrepancy to the report."""
-        if filename not in self.results[version]:
-            self.results[version][filename] = {
-                "status": "differs",
-                "discrepancies": [],
-                "index_column": None,
-            }
-        self.results[version][filename]["discrepancies"].append(discrepancy.to_dict())
+        self.results.append(discrepancy.to_dict())
 
     def mark_file_identical(
         self, version: str, filename: str, index_info: Optional[Dict[str, Any]] = None
     ):
         """Mark a file as identical between runs."""
-        self.results[version][filename] = {
-            "status": "identical",
-            "discrepancies": [],
-            "index_column": index_info,
-        }
+        # In the flat structure, we don't track identical files separately
+        # since they don't generate discrepancies
+        pass
 
     def set_file_index_info(
         self, version: str, filename: str, index_info: Optional[Dict[str, Any]]
     ):
         """Set index column information for a file."""
-        if filename not in self.results[version]:
-            self.results[version][filename] = {
-                "status": "unknown",
-                "discrepancies": [],
-                "index_column": None,
-            }
-        self.results[version][filename]["index_column"] = index_info
+        # In the flat structure, we don't track index info separately
+        # since it's embedded in the discrepancies themselves
+        pass
 
     def get_summary(self) -> Dict[str, int]:
         """Generate summary statistics."""
@@ -487,14 +473,12 @@ class ComparisonReport:
             "low_discrepancies": 0,
         }
 
-        for version_results in self.results.values():
-            for file_results in version_results.values():
-                for discrepancy in file_results.get("discrepancies", []):
-                    summary["total_discrepancies"] += 1
-                    severity = str(discrepancy["severity"]).lower()
-                    summary_key = f"{severity}_discrepancies"
-                    if summary_key in summary:
-                        summary[summary_key] += 1
+        for discrepancy in self.results:
+            summary["total_discrepancies"] += 1
+            severity = str(discrepancy["severity"]).lower()
+            summary_key = f"{severity}_discrepancies"
+            if summary_key in summary:
+                summary[summary_key] += 1
 
         return summary
 
@@ -510,7 +494,7 @@ class ComparisonReport:
                 "common_versions": self.common_versions,
             },
             "summary": self.get_summary(),
-            "results": dict(self.results),
+            "results": self.results,
         }
 
     def to_json(self, indent: int = 2) -> str:

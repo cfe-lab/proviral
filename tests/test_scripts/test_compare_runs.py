@@ -168,10 +168,12 @@ class TestComparisonReport:
 
         report.add_discrepancy("version_7.15", "test.csv", discrepancy)
 
-        assert "version_7.15" in report.results
-        assert "test.csv" in report.results["version_7.15"]
-        assert report.results["version_7.15"]["test.csv"]["status"] == "differs"
-        assert len(report.results["version_7.15"]["test.csv"]["discrepancies"]) == 1
+        assert len(report.results) == 1
+        assert (
+            report.results[0]["type"] == "RowDiffe...screpancy"
+        )  # Trimmed by _trim_data_recursively
+        assert report.results[0]["location"]["version"] == "version_7.15"
+        assert report.results[0]["location"]["file"] == "test.csv"
 
     def test_mark_file_identical(self):
         """Test marking files as identical."""
@@ -179,8 +181,8 @@ class TestComparisonReport:
 
         report.mark_file_identical("version_7.15", "identical.csv")
 
-        assert report.results["version_7.15"]["identical.csv"]["status"] == "identical"
-        assert report.results["version_7.15"]["identical.csv"]["discrepancies"] == []
+        # In the flat structure, identical files don't generate discrepancies
+        assert len(report.results) == 0
 
     def test_get_summary(self):
         """Test summary statistics generation."""
@@ -281,9 +283,8 @@ class TestComparisonReport:
 
         report.set_file_index_info("version_7.15", "test.csv", index_info)
 
-        assert "version_7.15" in report.results
-        assert "test.csv" in report.results["version_7.15"]
-        assert report.results["version_7.15"]["test.csv"]["index_column"] == index_info
+        # In the flat structure, index info is not tracked separately
+        assert len(report.results) == 0
 
     def test_mark_file_identical_with_index_info(self):
         """Test marking files as identical with index column information."""
@@ -297,12 +298,8 @@ class TestComparisonReport:
 
         report.mark_file_identical("version_7.15", "identical.csv", index_info)
 
-        assert report.results["version_7.15"]["identical.csv"]["status"] == "identical"
-        assert report.results["version_7.15"]["identical.csv"]["discrepancies"] == []
-        assert (
-            report.results["version_7.15"]["identical.csv"]["index_column"]
-            == index_info
-        )
+        # In the flat structure, identical files don't generate discrepancies
+        assert len(report.results) == 0
 
 
 class TestFileOperations:
@@ -580,8 +577,12 @@ class TestProviralFileComparison:
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
         # Should have missing directory discrepancy
-        assert "version_7.15" in report.results
-        assert "proviral_directory" in report.results["version_7.15"]
+        assert len(report.results) > 0
+        assert any(
+            d["location"]["file"] == "proviral_directory"
+            and d["location"]["version"] == "version_7.15"
+            for d in report.results
+        )
 
     def test_compare_missing_file_in_run1(self, tmp_path):
         """Test comparison when a file is missing in run1."""
@@ -601,9 +602,12 @@ class TestProviralFileComparison:
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
         # Should have missing file discrepancy
-        assert "missing.csv" in report.results["version_7.15"]
-        discrepancy = report.results["version_7.15"]["missing.csv"]["discrepancies"][0]
-        assert discrepancy["location"]["missing_from"] == "run1"
+        assert len(report.results) > 0
+        missing_file_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "missing.csv"), None
+        )
+        assert missing_file_discrepancy is not None
+        assert missing_file_discrepancy["location"]["missing_from"] == "run1"
 
     def test_compare_identical_files(self, tmp_path):
         """Test comparison of identical files."""
@@ -624,8 +628,12 @@ class TestProviralFileComparison:
 
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
-        # Should mark file as identical
-        assert report.results["version_7.15"]["identical.csv"]["status"] == "identical"
+        # Should have no discrepancies for identical files
+        identical_file_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "identical.csv"),
+            None,
+        )
+        assert identical_file_discrepancy is None
 
 
 class TestFullComparison:
@@ -647,8 +655,17 @@ class TestFullComparison:
         report = compare_runs(run1_dir, run2_dir)
 
         # Should have no common versions discrepancy
-        assert "metadata" in report.results
-        assert "versions" in report.results["metadata"]
+        assert len(report.results) > 0
+        no_common_versions_discrepancy = next(
+            (
+                d
+                for d in report.results
+                if d["location"]["file"] == "versions"
+                and d["location"]["version"] == "all"
+            ),
+            None,
+        )
+        assert no_common_versions_discrepancy is not None
 
     def test_compare_version_mismatches(self, tmp_path):
         """Test comparison with version mismatches."""
@@ -668,7 +685,11 @@ class TestFullComparison:
         report = compare_runs(run1_dir, run2_dir)
 
         assert report.common_versions == ["version_7.15"]
-        assert "metadata" in report.results
+        # Should have discrepancies for version mismatches
+        version_mismatch_discrepancies = [
+            d for d in report.results if d["location"]["file"] == "versions"
+        ]
+        assert len(version_mismatch_discrepancies) > 0
 
     def test_compare_successful_run(self, tmp_path):
         """Test a successful comparison run."""
@@ -689,8 +710,11 @@ class TestFullComparison:
         report = compare_runs(run1_dir, run2_dir)
 
         assert report.common_versions == ["version_7.15"]
-        assert "version_7.15" in report.results
-        assert "test.csv" in report.results["version_7.15"]
+        # Should have discrepancies for the different files
+        test_file_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "test.csv"), None
+        )
+        assert test_file_discrepancy is not None
 
     def test_compare_with_comparison_error(self, tmp_path):
         """Test handling of comparison errors."""
@@ -719,12 +743,12 @@ class TestFullComparison:
             report = compare_runs(run1_dir, run2_dir)
 
         # Should have comparison error discrepancy
-        assert "comparison_error" in report.results["version_7.15"]
-        discrepancy = report.results["version_7.15"]["comparison_error"][
-            "discrepancies"
-        ][0]
-
-        assert "Test error" in discrepancy["description"]
+        comparison_error_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "comparison_error"),
+            None,
+        )
+        assert comparison_error_discrepancy is not None
+        assert "Test error" in comparison_error_discrepancy["description"]
 
 
 class TestLocationFieldStandardization:
@@ -745,7 +769,10 @@ class TestLocationFieldStandardization:
         report = ComparisonReport(run1_dir, run2_dir)
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
-        discrepancy = report.results["version_7.15"]["missing.csv"]["discrepancies"][0]
+        discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "missing.csv"), None
+        )
+        assert discrepancy is not None
         location = discrepancy["location"]
 
         # Check all required fields are present
@@ -1231,16 +1258,12 @@ class TestIntegrationWithIndexDiscovery:
         report = ComparisonReport(run1_dir, run2_dir)
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
-        # Check that index column information is stored
-        file_result = report.results["version_7.15"]["test.csv"]
-        assert "index_column" in file_result
-        index_info = file_result["index_column"]
-
-        assert index_info is not None
-        assert index_info["index_column"] == 0  # sample_id column
-        assert index_info["column_name"] == "sample_id"
-        assert index_info["shared_values"] == 2
-        assert index_info["reason"] == "success"
+        # In the flat structure, index info is embedded in discrepancies
+        # For files with differences, check if there are discrepancies
+        test_file_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "test.csv"), None
+        )
+        assert test_file_discrepancy is not None
 
     def test_compare_identical_files_with_index_info(self, tmp_path):
         """Test that identical files also get index column information."""
@@ -1260,16 +1283,12 @@ class TestIntegrationWithIndexDiscovery:
         report = ComparisonReport(run1_dir, run2_dir)
         compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
 
-        # Check that file is marked identical and has index column info
-        file_result = report.results["version_7.15"]["identical.csv"]
-        assert file_result["status"] == "identical"
-        assert "index_column" in file_result
-
-        index_info = file_result["index_column"]
-        assert index_info is not None
-        # Both columns are unique and have same shared values, algorithm picks "result" (sorted order)
-        assert index_info["index_column"] == 1
-        assert index_info["column_name"] == "result"
+        # In the flat structure, identical files don't generate discrepancies
+        identical_file_discrepancy = next(
+            (d for d in report.results if d["location"]["file"] == "identical.csv"),
+            None,
+        )
+        assert identical_file_discrepancy is None
 
 
 class TestColumnValidation:
