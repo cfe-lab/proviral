@@ -44,6 +44,11 @@ from scripts.compare_runs.discrepancy import (
     ColumnOrderDifferenceDiscrepancy,
     MissingRowDiscrepancy,
     ExtraRowDiscrepancy,
+    # New flat discrepancy types
+    FieldChangeDiscrepancy,
+    HeaderFieldChangeDiscrepancy,
+    ColumnReorderDiscrepancy,
+    RowReorderDiscrepancy,
 )
 from scripts.compare_runs.index_discovery import (
     find_unique_value_columns,
@@ -420,16 +425,20 @@ class TestCSVComparison:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should find header difference
-        header_discrepancy = next(
-            (d for d in discrepancies if isinstance(d, HeaderDifferenceDiscrepancy)),
-            None,
-        )
-        assert header_discrepancy is not None
+        # Should find header field changes
+        header_discrepancies = [
+            d for d in discrepancies if isinstance(d, HeaderFieldChangeDiscrepancy)
+        ]
+        assert len(header_discrepancies) == 1  # header2 -> header3 change
+
+        header_discrepancy = header_discrepancies[0]
         assert header_discrepancy.severity == Severity.CRITICAL
         result_dict = header_discrepancy.to_dict()
         assert result_dict["location"]["file"] == "test.csv"
         assert result_dict["location"]["row"] == 1
+        assert result_dict["location"]["column_index"] == 1  # Second column
+        assert result_dict["value1"] == "header2"
+        assert result_dict["value2"] == "header3"
 
     def test_compare_different_data_rows(self, tmp_path):
         """Test comparison with different data rows."""
@@ -440,14 +449,19 @@ class TestCSVComparison:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should find row difference
-        row_discrepancy = next(
-            (d for d in discrepancies if isinstance(d, RowDifferenceDiscrepancy)), None
-        )
-        assert row_discrepancy is not None
-        result_dict = row_discrepancy.to_dict()
+        # Should find field change discrepancies
+        field_discrepancies = [
+            d for d in discrepancies if isinstance(d, FieldChangeDiscrepancy)
+        ]
+        assert len(field_discrepancies) == 1  # One field changed: header2 column
+
+        field_discrepancy = field_discrepancies[0]
+        result_dict = field_discrepancy.to_dict()
         assert result_dict["location"]["file"] == "test.csv"
         assert result_dict["location"]["row"] == 2
+        assert result_dict["location"]["column_index"] == 1  # Second column
+        assert result_dict["value1"] == "value2"
+        assert result_dict["value2"] == "different"
 
     def test_compare_empty_files(self, tmp_path):
         """Test comparison of empty files."""
@@ -1143,12 +1157,15 @@ class TestCSVComparisonWithIndexDiscovery:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should find row difference but no NO_INDEX_COLUMN discrepancy
-        row_discrepancy = next(
-            (d for d in discrepancies if isinstance(d, RowDifferenceDiscrepancy)),
-            None,
-        )
-        assert row_discrepancy is not None
+        # Should find field change discrepancy but no NO_INDEX_COLUMN discrepancy
+        field_discrepancies = [
+            d for d in discrepancies if isinstance(d, FieldChangeDiscrepancy)
+        ]
+        assert len(field_discrepancies) == 1  # One field changed: S002 result
+
+        field_discrepancy = field_discrepancies[0]
+        assert field_discrepancy.value1 == "fail"
+        assert field_discrepancy.value2 == "pass"
 
         no_index_discrepancy = next(
             (d for d in discrepancies if isinstance(d, NoIndexColumnDiscrepancy)),
@@ -1341,10 +1358,12 @@ class TestColumnValidation:
 
         # Check that we have one for each run
         run1_discrepancy = next(
-            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run1"), None
+            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run1"),
+            None,
         )
         run2_discrepancy = next(
-            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run2"), None
+            (d for d in dup_discrepancies if d.to_dict()["location"]["run"] == "run2"),
+            None,
         )
 
         assert run1_discrepancy is not None
@@ -1363,47 +1382,36 @@ class TestColumnValidation:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should find column order difference
-        order_discrepancy = next(
-            (
-                d
-                for d in discrepancies
-                if isinstance(d, ColumnOrderDifferenceDiscrepancy)
-            ),
-            None,
-        )
-        assert order_discrepancy is not None
-        assert order_discrepancy.severity == Severity.MEDIUM
-        assert order_discrepancy.confidence == Confidence.HIGH
-        assert "Column order differs" in order_discrepancy.description
-        assert "2 columns reordered" in order_discrepancy.description
+        # Should find column reorder discrepancies
+        reorder_discrepancies = [
+            d for d in discrepancies if isinstance(d, ColumnReorderDiscrepancy)
+        ]
+        assert len(reorder_discrepancies) == 2  # id and name both moved
+
+        # Check that we got the expected column reorders
+        reorder_cols = {d.column_name: d for d in reorder_discrepancies}
+        assert "id" in reorder_cols
+        assert "name" in reorder_cols
+
+        # id moved from position 0 to 1
+        id_discrepancy = reorder_cols["id"]
+        assert id_discrepancy.severity == Severity.MEDIUM
+        assert id_discrepancy.confidence == Confidence.HIGH
+        assert id_discrepancy.position_run1 == 0
+        assert id_discrepancy.position_run2 == 1
+
+        # name moved from position 1 to 0
+        name_discrepancy = reorder_cols["name"]
+        assert name_discrepancy.position_run1 == 1
+        assert name_discrepancy.position_run2 == 0
 
         # Check location fields
-        result_dict = order_discrepancy.to_dict()
+        result_dict = id_discrepancy.to_dict()
         location = result_dict["location"]
         assert location["file"] == "test.csv"
         assert location["version"] == "version_7.15"
         assert location["run"] == "both"
-        assert "reordered_columns" in location
-        assert set(location["reordered_columns"]) == {
-            "id",
-            "name",
-        }  # Both id and name changed positions
-
-        # Check values
-        assert order_discrepancy.reordered_count == 2
-
-        assert order_discrepancy.order_differences["headers_run1"] == [
-            "id",
-            "name",
-            "value",
-        ]
-        assert order_discrepancy.order_differences["headers_run2"] == [
-            "name",
-            "id",
-            "value",
-        ]
-        assert len(order_discrepancy.order_differences["reordered_columns"]) == 2
+        assert location["column_name"] == "id"
 
     def test_column_order_no_difference_same_order(self, tmp_path):
         """Test that no column order discrepancy is reported when order is the same."""
@@ -1437,23 +1445,17 @@ class TestColumnValidation:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        # Should not find column order difference (different columns, not just reordered)
-        order_discrepancy = next(
-            (
-                d
-                for d in discrepancies
-                if isinstance(d, ColumnOrderDifferenceDiscrepancy)
-            ),
-            None,
-        )
-        assert order_discrepancy is None
+        # Should not find column reorder discrepancies (different columns, not just reordered)
+        reorder_discrepancies = [
+            d for d in discrepancies if isinstance(d, ColumnReorderDiscrepancy)
+        ]
+        assert len(reorder_discrepancies) == 0
 
-        # But should find header difference
-        header_discrepancy = next(
-            (d for d in discrepancies if isinstance(d, HeaderDifferenceDiscrepancy)),
-            None,
-        )
-        assert header_discrepancy is not None
+        # But should find header field changes
+        header_discrepancies = [
+            d for d in discrepancies if isinstance(d, HeaderFieldChangeDiscrepancy)
+        ]
+        assert len(header_discrepancies) >= 1  # At least one header change
 
     def test_no_column_mapping_when_duplicates_exist(self, tmp_path):
         """Test that column mappings are not created when duplicate column names exist."""
@@ -1492,25 +1494,17 @@ class TestColumnValidation:
 
         discrepancies = compare_csv_contents(file1, file2, "version_7.15", "test.csv")
 
-        order_discrepancy = next(
-            (
-                d
-                for d in discrepancies
-                if isinstance(d, ColumnOrderDifferenceDiscrepancy)
-            ),
-            None,
-        )
-        assert order_discrepancy is not None
-
-        reordered_columns = order_discrepancy.order_differences["reordered_columns"]
+        reorder_discrepancies = [
+            d for d in discrepancies if isinstance(d, ColumnReorderDiscrepancy)
+        ]
 
         # All columns except 'b' should be reordered
-        assert len(reordered_columns) == 3  # a, c, d moved positions
+        assert len(reorder_discrepancies) == 3  # a, c, d moved positions
 
         # Check specific position changes
         column_positions = {
-            col["column"]: (col["position_run1"], col["position_run2"])
-            for col in reordered_columns
+            d.column_name: (d.position_run1, d.position_run2)
+            for d in reorder_discrepancies
         }
 
         assert column_positions["a"] == (0, 2)  # a moved from position 0 to 2

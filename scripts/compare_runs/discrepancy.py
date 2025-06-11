@@ -256,9 +256,7 @@ class RowDifferenceDiscrepancy(DiscrepancyBase):
         field_changes: Dict[str, Any],
         change_types: List[str],
     ):
-        super().__init__(
-            severity, confidence, description, file, version, run
-        )
+        super().__init__(severity, confidence, description, file, version, run)
         self.row = row
         self.index_column = index_column
         self.index_value = index_value
@@ -618,22 +616,180 @@ class ExtraRowDiscrepancy(DiscrepancyBase):
         values_dict["extra_row_data"] = self.extra_row_data
 
 
+class FieldChangeDiscrepancy(DiscrepancyBase):
+    """Represents a single field change within a row."""
+
+    def __init__(
+        self,
+        severity: Severity,
+        confidence: Confidence,
+        description: str,
+        file: str,
+        version: str,
+        run: str,
+        row: int,
+        index_column: str,
+        index_value: str,
+        position_run1: int,
+        position_run2: int,
+        column_index: int,
+        column_name: Optional[str],
+        change_type: str,
+        value1: str,
+        value2: str,
+        value1_type: str,
+        value2_type: str,
+        value1_length: int,
+        value2_length: int,
+    ):
+        super().__init__(severity, confidence, description, file, version, run)
+        self.row = row
+        self.index_column = index_column
+        self.index_value = index_value
+        self.position_run1 = position_run1
+        self.position_run2 = position_run2
+        self.column_index = column_index
+        self.column_name = column_name
+        self.change_type = change_type
+        self.value1 = value1
+        self.value2 = value2
+        self.value1_type = value1_type
+        self.value2_type = value2_type
+        self.value1_length = value1_length
+        self.value2_length = value2_length
+
+    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
+        location_dict["row"] = self.row
+        location_dict["index_column"] = self.index_column
+        location_dict["index_value"] = self.index_value
+        location_dict["position_run1"] = self.position_run1
+        location_dict["position_run2"] = self.position_run2
+        location_dict["column_index"] = self.column_index
+        if self.column_name is not None:
+            location_dict["column_name"] = self.column_name
+
+    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+        values_dict["change_type"] = self.change_type
+        values_dict["value1"] = self.value1
+        values_dict["value2"] = self.value2
+        values_dict["value1_type"] = self.value1_type
+        values_dict["value2_type"] = self.value2_type
+        values_dict["value1_length"] = self.value1_length
+        values_dict["value2_length"] = self.value2_length
+
+
+class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
+    """Represents a single header field change."""
+
+    def __init__(
+        self,
+        severity: Severity,
+        confidence: Confidence,
+        description: str,
+        file: str,
+        version: str,
+        run: str,
+        column_index: int,
+        value1: Optional[str],
+        value2: Optional[str],
+    ):
+        super().__init__(severity, confidence, description, file, version, run)
+        self.column_index = column_index
+        self.value1 = value1
+        self.value2 = value2
+
+    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
+        location_dict["row"] = 1  # Headers are always row 1
+        location_dict["column_index"] = self.column_index
+
+    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+        values_dict["value1"] = self.value1
+        values_dict["value2"] = self.value2
+
+
+class ColumnReorderDiscrepancy(DiscrepancyBase):
+    """Represents a single column being reordered."""
+
+    def __init__(
+        self,
+        severity: Severity,
+        confidence: Confidence,
+        description: str,
+        file: str,
+        version: str,
+        run: str,
+        column_name: str,
+        position_run1: int,
+        position_run2: int,
+    ):
+        super().__init__(severity, confidence, description, file, version, run)
+        self.column_name = column_name
+        self.position_run1 = position_run1
+        self.position_run2 = position_run2
+
+    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
+        location_dict["column_name"] = self.column_name
+        location_dict["position_run1"] = self.position_run1
+        location_dict["position_run2"] = self.position_run2
+
+    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+        pass  # All information is in location fields
+
+
+class RowReorderDiscrepancy(DiscrepancyBase):
+    """Represents a single row being reordered."""
+
+    def __init__(
+        self,
+        severity: Severity,
+        confidence: Confidence,
+        description: str,
+        file: str,
+        version: str,
+        run: str,
+        index_column: str,
+        index_value: str,
+        position_run1: int,
+        position_run2: int,
+    ):
+        super().__init__(severity, confidence, description, file, version, run)
+        self.index_column = index_column
+        self.index_value = index_value
+        self.position_run1 = position_run1
+        self.position_run2 = position_run2
+
+    def _add_location_fields(self, location_dict: Dict[str, Any]) -> None:
+        location_dict["index_column"] = self.index_column
+        location_dict["index_value"] = self.index_value
+        location_dict["position_run1"] = self.position_run1
+        location_dict["position_run2"] = self.position_run2
+
+    def _add_values_fields(self, values_dict: Dict[str, Any]) -> None:
+        pass  # All information is in location fields
+
+
 # Union type for all specific discrepancy classes
 Discrepancy = Union[
     MissingFileDiscrepancy,
     MissingDirectoryDiscrepancy,
-    HeaderDifferenceDiscrepancy,
-    RowDifferenceDiscrepancy,
     RowCountDifferenceDiscrepancy,
     ColumnCountDifferenceDiscrepancy,
     FileReadErrorDiscrepancy,
     EmptyFileDiscrepancy,
     NoIndexColumnDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
-    ColumnOrderDifferenceDiscrepancy,
-    RowOrderDifferenceDiscrepancy,
     MissingRowDiscrepancy,
     ExtraRowDiscrepancy,
+    # New flat discrepancy types (preferred)
+    FieldChangeDiscrepancy,
+    HeaderFieldChangeDiscrepancy,
+    ColumnReorderDiscrepancy,
+    RowReorderDiscrepancy,
+    # Legacy aggregated types (kept for backward compatibility, but flattened in practice)
+    HeaderDifferenceDiscrepancy,
+    RowDifferenceDiscrepancy,
+    ColumnOrderDifferenceDiscrepancy,
+    RowOrderDifferenceDiscrepancy,
 ]
 
 

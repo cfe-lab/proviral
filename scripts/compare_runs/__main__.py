@@ -26,17 +26,18 @@ from .discrepancy import (
     # Import all specific discrepancy classes
     FileReadErrorDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
-    ColumnOrderDifferenceDiscrepancy,
-    HeaderDifferenceDiscrepancy,
     ColumnCountDifferenceDiscrepancy,
     RowCountDifferenceDiscrepancy,
     NoIndexColumnDiscrepancy,
-    RowDifferenceDiscrepancy,
     MissingRowDiscrepancy,
     ExtraRowDiscrepancy,
-    RowOrderDifferenceDiscrepancy,
     MissingFileDiscrepancy,
     MissingDirectoryDiscrepancy,
+    # New flat discrepancy types
+    FieldChangeDiscrepancy,
+    HeaderFieldChangeDiscrepancy,
+    ColumnReorderDiscrepancy,
+    RowReorderDiscrepancy,
 )
 from .csv_utils import (
     get_file_metadata,
@@ -51,10 +52,6 @@ from .index_discovery import (
 from .row_comparison import (
     analyze_header_differences,
     analyze_row_differences,
-    get_header_change_summary,
-    get_row_change_summary,
-    extract_column_names_from_changes,
-    extract_header_names_from_changes,
 )
 from .file_operations import (
     find_versions,
@@ -167,21 +164,21 @@ def compare_csv_contents(
     # Check for column order differences (only if no duplicate names and same columns)
     order_diff = compare_column_orders(headers1, headers2)
     if order_diff:
-        discrepancies.append(
-            ColumnOrderDifferenceDiscrepancy(
-                severity=Severity.MEDIUM,
-                confidence=Confidence.HIGH,
-                description=f"Column order differs: {len(order_diff['reordered_columns'])} columns reordered",
-                file=filename,
-                version=version,
-                run="both",
-                reordered_columns=[
-                    col["column"] for col in order_diff["reordered_columns"]
-                ],
-                order_differences=order_diff,
-                reordered_count=len(order_diff["reordered_columns"]),
+        # Create individual discrepancies for each reordered column
+        for reordered_col in order_diff["reordered_columns"]:
+            discrepancies.append(
+                ColumnReorderDiscrepancy(
+                    severity=Severity.MEDIUM,
+                    confidence=Confidence.HIGH,
+                    description=f"Column '{reordered_col['column']}' moved from position {reordered_col['position_run1']} to {reordered_col['position_run2']}",
+                    file=filename,
+                    version=version,
+                    run="both",
+                    column_name=reordered_col["column"],
+                    position_run1=reordered_col["position_run1"],
+                    position_run2=reordered_col["position_run2"],
+                )
             )
-        )
 
     # Create column mappings for name-based access (if no duplicates)
     column_map1 = create_column_mapping(headers1) if not dup_check1 else {}
@@ -220,27 +217,52 @@ def compare_csv_contents(
     if headers1 != headers2:
         # Identify specific header differences
         changed_headers = analyze_header_differences(headers1, headers2)
-        header_details = get_header_change_summary(changed_headers)
-        changed_header_names = extract_header_names_from_changes(
-            changed_headers, headers1, headers2
-        )
 
-        discrepancies.append(
-            HeaderDifferenceDiscrepancy(
-                severity=Severity.CRITICAL,
-                confidence=Confidence.HIGH,
-                description=f"Header row differs: {header_details}",
-                file=filename,
-                version=version,
-                run="both",
-                changed_headers=changed_header_names,
-                total_header_changes=len(changed_headers["indices"]),
-                header_changes=changed_headers,
-                run1_header_count=len(headers1),
-                run2_header_count=len(headers2),
-                row=1,
+        # Create individual discrepancies for each header field change
+        for removed_header in changed_headers["removed"]:
+            discrepancies.append(
+                HeaderFieldChangeDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"Header '{removed_header['value']}' removed at position {removed_header['index']}",
+                    file=filename,
+                    version=version,
+                    run="run1",  # Present in run1, missing in run2
+                    column_index=removed_header["index"],
+                    value1=removed_header["value"],
+                    value2=None,
+                )
             )
-        )
+
+        for added_header in changed_headers["added"]:
+            discrepancies.append(
+                HeaderFieldChangeDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"Header '{added_header['value']}' added at position {added_header['index']}",
+                    file=filename,
+                    version=version,
+                    run="run2",  # Missing in run1, present in run2
+                    column_index=added_header["index"],
+                    value1=None,
+                    value2=added_header["value"],
+                )
+            )
+
+        for modified_header in changed_headers["modified"]:
+            discrepancies.append(
+                HeaderFieldChangeDiscrepancy(
+                    severity=Severity.CRITICAL,
+                    confidence=Confidence.HIGH,
+                    description=f"Header changed at position {modified_header['index']}: '{modified_header['old_header']}' → '{modified_header['new_header']}'",
+                    file=filename,
+                    version=version,
+                    run="both",
+                    column_index=modified_header["index"],
+                    value1=modified_header["old_header"],
+                    value2=modified_header["new_header"],
+                )
+            )
 
         # Check for column count differences in header
         if len(headers1) != len(headers2):
@@ -317,6 +339,18 @@ def compare_csv_contents(
         )
 
     return discrepancies
+
+
+def _determine_field_change_severity(change_type: str) -> Severity:
+    """Determine severity of individual field change based on change type."""
+    if change_type == "outcome":
+        return Severity.HIGH
+    elif change_type == "numeric":
+        return Severity.MEDIUM
+    elif change_type == "numeric_equivalent":
+        return Severity.LOW
+    else:
+        return Severity.MEDIUM  # Default for text changes
 
 
 def _determine_row_difference_severity(
@@ -441,36 +475,42 @@ def _compare_rows_by_index_column(
                     row1, row2, headers1, headers2, column_map1, column_map2
                 )
 
-                # Determine severity based on content analysis
-                severity = _determine_row_difference_severity(
-                    row1, row2, pos1, column_differences
-                )
-                confidence = _determine_row_difference_confidence(row1, row2)
-
-                change_summary = get_row_change_summary(column_differences)
-                changed_column_names = extract_column_names_from_changes(
-                    column_differences
-                )
-
-                discrepancies.append(
-                    RowDifferenceDiscrepancy(
-                        severity=severity,
-                        confidence=confidence,
-                        description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' differs: {change_summary}",
-                        file=filename,
-                        version=version,
-                        run="both",
-                        row=pos1 + 1,  # 1-based row number
-                        index_column=index_column_name,
-                        index_value=_trim_value_for_display(str(index_value)),
-                        position_run1=pos1,
-                        position_run2=pos2,
-                        changed_columns=changed_column_names,
-                        total_field_changes=len(column_differences["indices"]),
-                        field_changes=column_differences,
-                        change_types=column_differences["change_types"],
+                # Create individual discrepancies for each field change
+                for field_change in column_differences["field_changes"]:
+                    field_severity = _determine_field_change_severity(
+                        field_change["change_type"]
                     )
-                )
+                    field_confidence = _determine_row_difference_confidence(row1, row2)
+
+                    col_name = (
+                        field_change["column_name"]
+                        or f"column_{field_change['column_index']}"
+                    )
+
+                    discrepancies.append(
+                        FieldChangeDiscrepancy(
+                            severity=field_severity,
+                            confidence=field_confidence,
+                            description=f"Field '{col_name}' differs in row with {index_column_name}='{_trim_value_for_display(str(index_value))}': '{field_change['value1']}' → '{field_change['value2']}'",
+                            file=filename,
+                            version=version,
+                            run="both",
+                            row=pos1 + 1,  # 1-based row number
+                            index_column=index_column_name,
+                            index_value=_trim_value_for_display(str(index_value)),
+                            position_run1=pos1,
+                            position_run2=pos2,
+                            column_index=field_change["column_index"],
+                            column_name=field_change["column_name"],
+                            change_type=field_change["change_type"],
+                            value1=field_change["value1"],
+                            value2=field_change["value2"],
+                            value1_type=field_change["value1_type"],
+                            value2_type=field_change["value2_type"],
+                            value1_length=field_change["value1_length"],
+                            value2_length=field_change["value2_length"],
+                        )
+                    )
 
                 # Check for column count differences in data rows
                 if len(row1) != len(row2):
@@ -542,20 +582,22 @@ def _compare_rows_by_index_column(
 
     # Report row order differences if rows exist in both files but in different positions
     if position_differences:
-        discrepancies.append(
-            RowOrderDifferenceDiscrepancy(
-                severity=Severity.LOW,
-                confidence=Confidence.HIGH,
-                description=f"Row order differs: {len(position_differences)} rows in different positions",
-                file=filename,
-                version=version,
-                run="both",
-                index_column=index_column_name,
-                reordered_rows=[diff["index_value"] for diff in position_differences],
-                position_differences=position_differences,
-                reordered_count=len(position_differences),
+        # Create individual discrepancies for each reordered row
+        for position_diff in position_differences:
+            discrepancies.append(
+                RowReorderDiscrepancy(
+                    severity=Severity.LOW,
+                    confidence=Confidence.HIGH,
+                    description=f"Row with {index_column_name}='{_trim_value_for_display(position_diff['index_value'])}' moved from position {position_diff['position_run1']} to {position_diff['position_run2']}",
+                    file=filename,
+                    version=version,
+                    run="both",
+                    index_column=index_column_name,
+                    index_value=_trim_value_for_display(position_diff["index_value"]),
+                    position_run1=position_diff["position_run1"],
+                    position_run2=position_diff["position_run2"],
+                )
             )
-        )
 
     return discrepancies
 
