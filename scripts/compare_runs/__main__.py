@@ -915,7 +915,7 @@ def main():
 
     parser.add_argument(
         "--indexes",
-        required=True,
+        default='.*/sample|.*/samp_name',
         help="Regex pattern to match index columns in format 'filename/columnname'. Examples: '.*/sample' or 'file1.csv/id|file2.csv/sample_id'",
     )
 
