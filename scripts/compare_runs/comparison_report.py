@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from datetime import datetime
@@ -16,10 +15,16 @@ class ComparisonReport:
         self.versions_run2: List[str] = []
         self.common_versions: List[str] = []
         self.results: List[Dict[str, Any]] = []
+        # Processing errors during comparison (exceptions, etc.)
+        self.errors: List[Dict[str, Any]] = []
 
     def add_discrepancy(self, version: str, filename: str, discrepancy):
         """Add a discrepancy to the report."""
         self.results.append(discrepancy.to_dict())
+
+    def add_error(self, error):
+        """Add a processing error to the report."""
+        self.errors.append(error.to_dict())
 
     def mark_file_identical(
         self, version: str, filename: str, index_info: Optional[Dict[str, Any]] = None
@@ -58,7 +63,7 @@ class ComparisonReport:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert report to dictionary for JSON output."""
-        return {
+        output: Dict[str, Any] = {
             "metadata": {
                 "timestamp": self.timestamp,
                 "run1_dir": str(self.run1_dir),
@@ -70,6 +75,10 @@ class ComparisonReport:
             "summary": self.get_summary(),
             "results": self.results,
         }
+        # Include processing errors if any
+        if self.errors:
+            output["errors"] = self.errors
+        return output
 
     def to_json(self, indent: int = 2) -> str:
         """Convert report to JSON string."""

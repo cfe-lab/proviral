@@ -13,9 +13,36 @@ The module provides:
 - Main Discrepancy and ComparisonReport classes for managing findings
 """
 
+# Import core functionality and processing errors for re-export
 from dataclasses import dataclass, fields
-from typing import Any, Dict, List, Optional, Union, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from enum import Enum
+from .errors import (
+    FileReadErrorDiscrepancy,
+    EmptyFileDiscrepancy,
+    NoIndexColumnDiscrepancy,
+)  # noqa: F401
+
+
+# Severity levels for discrepancies
+class Severity(Enum):
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+# Confidence levels for discrepancies
+class Confidence(Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 # Helper function to mark location fields on dataclasses
@@ -62,27 +89,6 @@ def location_fields(locations: Optional[List[str]] = None):
         return _mark_location_fields(cls, locations)
 
     return decorator
-
-
-# Severity levels for discrepancies
-class Severity(Enum):
-    CRITICAL = "CRITICAL"
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-# Confidence levels for discrepancies
-class Confidence(Enum):
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 def _trim_value_for_display(value: str, max_length: int = 20) -> str:
@@ -281,33 +287,6 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
     column_difference: int
 
 
-@location_fields(["file_path"])
-@dataclass(frozen=True)
-class FileReadErrorDiscrepancy(DiscrepancyBase):
-    """Represents a file read error discrepancy."""
-
-    file_path: str
-
-
-@location_fields(["file_path"])
-@dataclass(frozen=True)
-class EmptyFileDiscrepancy(DiscrepancyBase):
-    """Represents an empty file discrepancy."""
-
-    file_path: str
-    file_size: int
-
-
-@dataclass(frozen=True)
-class NoIndexColumnDiscrepancy(DiscrepancyBase):
-    """Represents a no index column discrepancy."""
-
-    reason: str
-    index_analysis: Optional[Dict[str, Any]]
-    has_duplicate_columns_run1: bool
-    has_duplicate_columns_run2: bool
-
-
 @location_fields(["positions"])
 @dataclass(frozen=True)
 class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
@@ -437,22 +416,21 @@ class RowReorderDiscrepancy(DiscrepancyBase):
 Discrepancy = Union[
     MissingFileDiscrepancy,
     MissingDirectoryDiscrepancy,
+    HeaderDifferenceDiscrepancy,
+    RowDifferenceDiscrepancy,
     RowCountDifferenceDiscrepancy,
     ColumnCountDifferenceDiscrepancy,
+    # Processing error types
     FileReadErrorDiscrepancy,
     EmptyFileDiscrepancy,
     NoIndexColumnDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
+    ColumnOrderDifferenceDiscrepancy,
+    RowOrderDifferenceDiscrepancy,
     MissingRowDiscrepancy,
     ExtraRowDiscrepancy,
-    # New flat discrepancy types (preferred)
     FieldChangeDiscrepancy,
     HeaderFieldChangeDiscrepancy,
     ColumnReorderDiscrepancy,
     RowReorderDiscrepancy,
-    # Legacy aggregated types (kept for backward compatibility, but flattened in practice)
-    HeaderDifferenceDiscrepancy,
-    RowDifferenceDiscrepancy,
-    ColumnOrderDifferenceDiscrepancy,
-    RowOrderDifferenceDiscrepancy,
 ]
