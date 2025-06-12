@@ -1,7 +1,13 @@
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, TypeAlias
+
+from .discrepancy import Discrepancy as ImportedDiscrepancy
+from .errors import ComparisonError
+
+
+Discrepancy: TypeAlias = ImportedDiscrepancy  # type: ignore[assignment]
 
 
 class ComparisonReport:
@@ -14,32 +20,22 @@ class ComparisonReport:
         self.versions_run1: List[str] = []
         self.versions_run2: List[str] = []
         self.common_versions: List[str] = []
-        self.results: List[Dict[str, Any]] = []
+        self.results: List[Discrepancy] = []
         # Processing errors during comparison (exceptions, etc.)
-        self.errors: List[Dict[str, Any]] = []
+        self.errors: List[ComparisonError] = []
 
-    def add_discrepancy(self, version: str, filename: str, discrepancy):
+    def add_discrepancy(self, discrepancy: Discrepancy):
         """Add a discrepancy to the report."""
-        self.results.append(discrepancy.to_dict())
+        self.results.append(discrepancy)
 
-    def add_error(self, error):
+    def add_error(self, error: ComparisonError):
         """Add a processing error to the report."""
-        self.errors.append(error.to_dict())
+        self.errors.append(error)
 
-    def mark_file_identical(
-        self, version: str, filename: str, index_info: Optional[Dict[str, Any]] = None
-    ):
+    def mark_file_identical(self):
         """Mark a file as identical between runs."""
         # In the flat structure, we don't track identical files separately
         # since they don't generate discrepancies
-        pass
-
-    def set_file_index_info(
-        self, version: str, filename: str, index_info: Optional[Dict[str, Any]]
-    ):
-        """Set index column information for a file."""
-        # In the flat structure, we don't track index info separately
-        # since it's embedded in the discrepancies themselves
         pass
 
     def get_summary(self) -> Dict[str, int]:
@@ -54,7 +50,7 @@ class ComparisonReport:
 
         for discrepancy in self.results:
             summary["total_discrepancies"] += 1
-            severity = str(discrepancy["severity"]).lower()
+            severity = str(discrepancy.severity).lower()
             summary_key = f"{severity}_discrepancies"
             if summary_key in summary:
                 summary[summary_key] += 1
@@ -63,6 +59,8 @@ class ComparisonReport:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert report to dictionary for JSON output."""
+        results = [discrepancy.to_dict() for discrepancy in self.results]
+        errors = [error.to_dict() for error in self.errors]
         output: Dict[str, Any] = {
             "metadata": {
                 "timestamp": self.timestamp,
@@ -73,11 +71,9 @@ class ComparisonReport:
                 "common_versions": self.common_versions,
             },
             "summary": self.get_summary(),
-            "results": self.results,
+            "results": results,
+            "errors": errors,
         }
-        # Include processing errors if any
-        if self.errors:
-            output["errors"] = self.errors
         return output
 
     def to_json(self, indent: int = 2) -> str:
