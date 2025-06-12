@@ -36,25 +36,25 @@ from scripts.compare_runs.comparison_report import ComparisonReport
 
 # Import all discrepancy class types and error types referenced in tests
 from scripts.compare_runs.discrepancy import (
-    MissingFileDiscrepancy,
-    MissingDirectoryDiscrepancy,
-    HeaderDifferenceDiscrepancy,
-    RowDifferenceDiscrepancy,
-    RowCountDifferenceDiscrepancy,
-    ColumnCountDifferenceDiscrepancy,
-    DuplicateColumnNamesDiscrepancy,
-    ColumnOrderDifferenceDiscrepancy,
-    RowOrderDifferenceDiscrepancy,
-    MissingRowDiscrepancy,
-    ExtraRowDiscrepancy,
-    FieldChangeDiscrepancy,
-    HeaderFieldChangeDiscrepancy,
-    ColumnReorderDiscrepancy,
-    RowReorderDiscrepancy,
+    MissingFile,
+    MissingDirectory,
+    HeaderDifference,
+    RowDifference,
+    RowCountDifference,
+    ColumnCountDifference,
+    DuplicateColumnNames,
+    ColumnOrderDifference,
+    RowOrderDifference,
+    MissingRow,
+    ExtraRow,
+    FieldChange,
+    HeaderFieldChange,
+    ColumnReorder,
+    RowReorder,
 )
 from scripts.compare_runs.errors import (
-    FileReadErrorDiscrepancy,
-    NoIndexColumnDiscrepancy,
+    FileReadError,
+    NoIndexColumn,
 )
 
 
@@ -82,7 +82,7 @@ class TestDiscrepancy:
     def test_discrepancy_creation(self):
         """Test basic discrepancy creation."""
         # Changed to use a specific discrepancy type: RowDifferenceDiscrepancy
-        discrepancy = RowDifferenceDiscrepancy(
+        discrepancy = RowDifference(
             severity=Severity.HIGH,
             confidence=Confidence.HIGH,
             description="Test discrepancy",
@@ -103,7 +103,7 @@ class TestDiscrepancy:
             change_types=["text"],
         )
 
-        assert isinstance(discrepancy, RowDifferenceDiscrepancy)
+        assert isinstance(discrepancy, RowDifference)
         assert discrepancy.severity == Severity.HIGH
         assert discrepancy.confidence == Confidence.HIGH
         assert discrepancy.description == "Test discrepancy"
@@ -115,7 +115,7 @@ class TestDiscrepancy:
     def test_discrepancy_to_dict(self):
         """Test conversion of discrepancy to dictionary."""
         # Changed to use a specific discrepancy type: MissingFileDiscrepancy
-        discrepancy = MissingFileDiscrepancy(
+        discrepancy = MissingFile(
             severity=Severity.CRITICAL,
             confidence=Confidence.HIGH,
             description="File missing",
@@ -156,7 +156,7 @@ class TestComparisonReport:
         """Test adding discrepancies to report."""
         report = ComparisonReport(Path("/fake/run1"), Path("/fake/run2"))
         # Changed to use a specific discrepancy type: RowDifferenceDiscrepancy
-        discrepancy = RowDifferenceDiscrepancy(
+        discrepancy = RowDifference(
             severity=Severity.MEDIUM,
             confidence=Confidence.HIGH,
             description="Row differs",
@@ -181,7 +181,7 @@ class TestComparisonReport:
         assert len([d.to_dict() for d in report.results]) == 1
         assert [d.to_dict() for d in report.results][0][
             "type"
-        ] == "RowDifferenceDiscrepancy"  # Trimmed by _trim_data_recursively
+        ] == "RowDifference"  # Trimmed by _trim_data_recursively
         assert [d.to_dict() for d in report.results][0]["location"][
             "version"
         ] == "version_7.15"
@@ -203,7 +203,7 @@ class TestComparisonReport:
         report = ComparisonReport(Path("/fake/run1"), Path("/fake/run2"))
 
         # Add various discrepancies using specific types
-        critical_discrepancy = MissingFileDiscrepancy(
+        critical_discrepancy = MissingFile(
             severity=Severity.CRITICAL,
             confidence=Confidence.HIGH,
             description="Critical",
@@ -213,7 +213,7 @@ class TestComparisonReport:
             missing_from="run1",
             present_in="run2",  # Placeholders
         )
-        high_discrepancy = HeaderDifferenceDiscrepancy(
+        high_discrepancy = HeaderDifference(
             severity=Severity.HIGH,
             confidence=Confidence.HIGH,
             description="High",
@@ -228,7 +228,7 @@ class TestComparisonReport:
             changed_headers=[],
             total_header_changes=0,
         )
-        medium_discrepancy = RowDifferenceDiscrepancy(
+        medium_discrepancy = RowDifference(
             severity=Severity.MEDIUM,
             confidence=Confidence.MEDIUM,
             description="Medium",
@@ -396,7 +396,7 @@ class TestCSVComparison:
             (
                 d
                 for d in discrepancies
-                if d.get("type") == "RowCountDifferenceDiscrepancy"
+                if d.get("type") == "RowCountDifference"
             ),
             None,
         )
@@ -420,7 +420,7 @@ class TestCSVComparison:
 
         # Should find header field changes
         header_discrepancies = [
-            d for d in discrepancies if d.get("type") == "HeaderFieldChangeDiscrepancy"
+            d for d in discrepancies if d.get("type") == "HeaderFieldChange"
         ]
         assert len(header_discrepancies) == 1  # header2 -> header3 change
 
@@ -446,7 +446,7 @@ class TestCSVComparison:
 
         # Should find field change discrepancies
         field_discrepancies = [
-            d for d in discrepancies if d.get("type") == "FieldChangeDiscrepancy"
+            d for d in discrepancies if d.get("type") == "FieldChange"
         ]
         assert len(field_discrepancies) == 1  # One field changed: header2 column
 
@@ -484,7 +484,7 @@ class TestCSVComparison:
 
         # Should find file read error
         error_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "FileReadErrorDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "FileReadError"),
             None,
         )
         assert error_discrepancy is not None
@@ -815,7 +815,7 @@ class TestLocationFieldStandardization:
 
         # Should find NO_INDEX_COLUMN discrepancy instead of row differences
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
         assert no_index_discrepancy is not None
@@ -844,7 +844,7 @@ class TestLocationFieldStandardization:
             file1, file2, "version_7.15", "test.csv"
         )
         error_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "FileReadErrorDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "FileReadError"),
             None,
         )
 
@@ -1018,7 +1018,7 @@ class TestCSVComparisonWithIndexDiscovery:
 
         # Should find NO_INDEX_COLUMN discrepancy
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
         assert no_index_discrepancy is not None
@@ -1045,7 +1045,7 @@ class TestCSVComparisonWithIndexDiscovery:
 
         # Should find NO_INDEX_COLUMN discrepancy since no columns match the pattern
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
         assert no_index_discrepancy is not None
@@ -1067,7 +1067,7 @@ class TestCSVComparisonWithIndexDiscovery:
 
         # Should find field change discrepancy but no NO_INDEX_COLUMN discrepancy
         field_discrepancies = [
-            d for d in discrepancies if d.get("type") == "FieldChangeDiscrepancy"
+            d for d in discrepancies if d.get("type") == "FieldChange"
         ]
         assert len(field_discrepancies) == 1  # One field changed: S002 result
 
@@ -1076,7 +1076,7 @@ class TestCSVComparisonWithIndexDiscovery:
         assert field_discrepancy["value2"] == "pass"
 
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
         assert (
@@ -1099,7 +1099,7 @@ class TestIndexColumnLocationFields:
             file1, file2, "version_7.15", "test.csv", "missing/.*"
         )
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
 
@@ -1208,7 +1208,7 @@ class TestColumnValidation:
             (
                 d
                 for d in discrepancies
-                if d.get("type") == "DuplicateColumnNamesDiscrepancy"
+                if d.get("type") == "DuplicateColumnNames"
             ),
             None,
         )
@@ -1249,7 +1249,7 @@ class TestColumnValidation:
             (
                 d
                 for d in discrepancies
-                if d.get("type") == "DuplicateColumnNamesDiscrepancy"
+                if d.get("type") == "DuplicateColumnNames"
             ),
             None,
         )
@@ -1276,7 +1276,7 @@ class TestColumnValidation:
         dup_discrepancies = [
             d
             for d in discrepancies
-            if d.get("type") == "DuplicateColumnNamesDiscrepancy"
+            if d.get("type") == "DuplicateColumnNames"
         ]
         assert len(dup_discrepancies) == 2
 
@@ -1310,7 +1310,7 @@ class TestColumnValidation:
 
         # Should find column reorder discrepancies
         reorder_discrepancies = [
-            d for d in discrepancies if d.get("type") == "ColumnReorderDiscrepancy"
+            d for d in discrepancies if d.get("type") == "ColumnReorder"
         ]
         assert len(reorder_discrepancies) == 2  # id and name both moved
 
@@ -1356,7 +1356,7 @@ class TestColumnValidation:
             (
                 d
                 for d in discrepancies
-                if d.get("type") == "ColumnOrderDifferenceDiscrepancy"
+                if d.get("type") == "ColumnOrderDifference"
             ),
             None,
         )
@@ -1377,13 +1377,13 @@ class TestColumnValidation:
 
         # Should not find column reorder discrepancies (different columns, not just reordered)
         reorder_discrepancies = [
-            d for d in discrepancies if d.get("type") == "ColumnReorderDiscrepancy"
+            d for d in discrepancies if d.get("type") == "ColumnReorder"
         ]
         assert len(reorder_discrepancies) == 0
 
         # But should find header field changes
         header_discrepancies = [
-            d for d in discrepancies if d.get("type") == "HeaderFieldChangeDiscrepancy"
+            d for d in discrepancies if d.get("type") == "HeaderFieldChange"
         ]
         assert len(header_discrepancies) >= 1  # At least one header change
 
@@ -1403,7 +1403,7 @@ class TestColumnValidation:
             (
                 d
                 for d in discrepancies
-                if d.get("type") == "DuplicateColumnNamesDiscrepancy"
+                if d.get("type") == "DuplicateColumnNames"
             ),
             None,
         )
@@ -1411,7 +1411,7 @@ class TestColumnValidation:
 
         # Should find NO_INDEX_COLUMN discrepancy instead of row differences
         no_index_discrepancy = next(
-            (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
+            (d for d in discrepancies if d.get("type") == "NoIndexColumn"),
             None,
         )
         assert no_index_discrepancy is not None
@@ -1429,7 +1429,7 @@ class TestColumnValidation:
         )
 
         reorder_discrepancies = [
-            d for d in discrepancies if d.get("type") == "ColumnReorderDiscrepancy"
+            d for d in discrepancies if d.get("type") == "ColumnReorder"
         ]
 
         # All columns except 'b' should be reordered

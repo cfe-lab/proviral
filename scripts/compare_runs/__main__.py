@@ -20,9 +20,9 @@ from typing import Dict, List, Any, TypeAlias
 
 from .comparison_report import ComparisonReport
 from .errors import (
-    FileReadErrorDiscrepancy,
-    NoIndexColumnDiscrepancy,
-    MultipleIndexColumnsDiscrepancy,
+    FileReadError,
+    NoIndexColumn,
+    MultipleIndexColumns,
 )
 from .discrepancy import (
     Severity,
@@ -30,18 +30,18 @@ from .discrepancy import (
     _trim_value_for_display,
     Discrepancy as ImportedDiscrepancy,
     # Import all specific discrepancy classes
-    DuplicateColumnNamesDiscrepancy,
-    ColumnCountDifferenceDiscrepancy,
-    RowCountDifferenceDiscrepancy,
-    MissingRowDiscrepancy,
-    ExtraRowDiscrepancy,
-    MissingFileDiscrepancy,
-    MissingDirectoryDiscrepancy,
+    DuplicateColumnNames,
+    ColumnCountDifference,
+    RowCountDifference,
+    MissingRow,
+    ExtraRow,
+    MissingFile,
+    MissingDirectory,
     # New flat discrepancy types
-    FieldChangeDiscrepancy,
-    HeaderFieldChangeDiscrepancy,
-    ColumnReorderDiscrepancy,
-    RowReorderDiscrepancy,
+    FieldChange,
+    HeaderFieldChange,
+    ColumnReorder,
+    RowReorder,
 )
 from .csv_utils import (
     get_file_metadata,
@@ -107,7 +107,7 @@ def compare_csv_contents(
 
     if not content1:
         report.add_error(
-            FileReadErrorDiscrepancy(
+            FileReadError(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description="First file is empty or failed to read",
@@ -121,7 +121,7 @@ def compare_csv_contents(
 
     if not content2:
         report.add_error(
-            FileReadErrorDiscrepancy(
+            FileReadError(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description="Second file is empty or failed to read",
@@ -141,7 +141,7 @@ def compare_csv_contents(
     dup_check1 = validate_column_names(content1)
     if dup_check1:
         report.add_discrepancy(
-            DuplicateColumnNamesDiscrepancy(
+            DuplicateColumnNames(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"Duplicate column name '{dup_check1['duplicate_header']}' at positions {dup_check1['positions']} in run1",
@@ -158,7 +158,7 @@ def compare_csv_contents(
     dup_check2 = validate_column_names(content2)
     if dup_check2:
         report.add_discrepancy(
-            DuplicateColumnNamesDiscrepancy(
+            DuplicateColumnNames(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"Duplicate column name '{dup_check2['duplicate_header']}' at positions {dup_check2['positions']} in run2",
@@ -178,7 +178,7 @@ def compare_csv_contents(
         # Create individual discrepancies for each reordered column
         for reordered_col in order_diff["reordered_columns"]:
             report.add_discrepancy(
-                ColumnReorderDiscrepancy(
+                ColumnReorder(
                     severity=Severity.MEDIUM,
                     confidence=Confidence.HIGH,
                     description=f"Column '{reordered_col['column']}' moved from position {reordered_col['position_run1']} to {reordered_col['position_run2']}",
@@ -209,7 +209,7 @@ def compare_csv_contents(
     elif index_result["status"] == "multiple_matches":
         # Report error for multiple matching columns
         report.add_error(
-            MultipleIndexColumnsDiscrepancy(
+            MultipleIndexColumns(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"Multiple columns match pattern '{index_pattern}' for file {filename}: {', '.join(index_result['matching_columns'])}. Please use a more specific pattern.",
@@ -225,7 +225,7 @@ def compare_csv_contents(
     elif index_result["status"] == "error":
         # Report error for regex or other issues
         report.add_error(
-            FileReadErrorDiscrepancy(
+            FileReadError(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"Error resolving index column: {index_result['error_message']}",
@@ -245,7 +245,7 @@ def compare_csv_contents(
     # Check if files have same number of rows
     if len(content1) != len(content2):
         report.add_discrepancy(
-            RowCountDifferenceDiscrepancy(
+            RowCountDifference(
                 severity=Severity.HIGH,
                 confidence=Confidence.HIGH,
                 description=f"Row count differs: {len(content1)} vs {len(content2)} (difference: {abs(len(content1) - len(content2))} rows)",
@@ -266,7 +266,7 @@ def compare_csv_contents(
         # Create individual discrepancies for each header field change
         for removed_header in changed_headers["removed"]:
             report.add_discrepancy(
-                HeaderFieldChangeDiscrepancy(
+                HeaderFieldChange(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"Header '{removed_header['value']}' removed at position {removed_header['index']}",
@@ -282,7 +282,7 @@ def compare_csv_contents(
 
         for added_header in changed_headers["added"]:
             report.add_discrepancy(
-                HeaderFieldChangeDiscrepancy(
+                HeaderFieldChange(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"Header '{added_header['value']}' added at position {added_header['index']}",
@@ -298,7 +298,7 @@ def compare_csv_contents(
 
         for modified_header in changed_headers["modified"]:
             report.add_discrepancy(
-                HeaderFieldChangeDiscrepancy(
+                HeaderFieldChange(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"Header changed at position {modified_header['index']}: '{modified_header['old_header']}' → '{modified_header['new_header']}'",
@@ -316,7 +316,7 @@ def compare_csv_contents(
         if len(headers1) != len(headers2):
             missing_cols, extra_cols = analyze_column_differences(headers1, headers2)
             report.add_discrepancy(
-                ColumnCountDifferenceDiscrepancy(
+                ColumnCountDifference(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({missing_cols} missing, {extra_cols} extra in run2)",
@@ -369,7 +369,7 @@ def compare_csv_contents(
             reason = "no_index_available"
 
         report.add_error(
-            NoIndexColumnDiscrepancy(
+            NoIndexColumn(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"Row comparison skipped: No suitable index column available ({reason})",
@@ -536,7 +536,7 @@ def _compare_rows_by_index_column(
                     )
 
                     discrepancies.append(
-                        FieldChangeDiscrepancy(
+                        FieldChange(
                             severity=field_severity,
                             confidence=field_confidence,
                             description=f"Field '{col_name}' differs in row with {index_column_name}='{_trim_value_for_display(str(index_value))}': '{field_change['value1']}' → '{field_change['value2']}'",
@@ -564,7 +564,7 @@ def _compare_rows_by_index_column(
                 if len(row1) != len(row2):
                     missing_cols, extra_cols = analyze_column_differences(row1, row2)
                     discrepancies.append(
-                        ColumnCountDifferenceDiscrepancy(
+                        ColumnCountDifference(
                             severity=Severity.HIGH,
                             confidence=Confidence.HIGH,
                             description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({missing_cols} missing, {extra_cols} extra in run2)",
@@ -586,7 +586,7 @@ def _compare_rows_by_index_column(
             pos1 = row1_info["position"]
 
             discrepancies.append(
-                MissingRowDiscrepancy(
+                MissingRow(
                     severity=Severity.HIGH,
                     confidence=Confidence.HIGH,
                     description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' missing in run2",
@@ -608,7 +608,7 @@ def _compare_rows_by_index_column(
             pos2 = row2_info["position"]
 
             discrepancies.append(
-                ExtraRowDiscrepancy(
+                ExtraRow(
                     severity=Severity.HIGH,
                     confidence=Confidence.HIGH,
                     description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' extra in run2",
@@ -629,7 +629,7 @@ def _compare_rows_by_index_column(
         # Create individual discrepancies for each reordered row
         for position_diff in position_differences:
             discrepancies.append(
-                RowReorderDiscrepancy(
+                RowReorder(
                     severity=Severity.LOW,
                     confidence=Confidence.HIGH,
                     description=f"Row with {index_column_name}='{_trim_value_for_display(position_diff['index_value'])}' moved from position {position_diff['position_run1']} to {position_diff['position_run2']}",
@@ -673,7 +673,7 @@ def compare_proviral_files(
 
     if not all_csv_names:
         report.add_discrepancy(
-            MissingDirectoryDiscrepancy(
+            MissingDirectory(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description=f"No proviral CSV files found for {version}",
@@ -691,7 +691,7 @@ def compare_proviral_files(
             # Get file info from run2
             file2_info = get_file_metadata(csv_files2[csv_name])
             report.add_discrepancy(
-                MissingFileDiscrepancy(
+                MissingFile(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"File missing in run1: {csv_name} (run2 size: {file2_info['size']} bytes)",
@@ -708,7 +708,7 @@ def compare_proviral_files(
             # Get file info from run1
             file1_info = get_file_metadata(csv_files1[csv_name])
             report.add_discrepancy(
-                MissingFileDiscrepancy(
+                MissingFile(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
                     description=f"File missing in run2: {csv_name} (run1 size: {file1_info['size']} bytes)",
@@ -766,7 +766,7 @@ def compare_runs(
     if not common_versions:
         # Add discrepancy for no common versions
         report.add_discrepancy(
-            MissingDirectoryDiscrepancy(
+            MissingDirectory(
                 severity=Severity.CRITICAL,
                 confidence=Confidence.HIGH,
                 description="No common versions found between the two runs",
@@ -785,7 +785,7 @@ def compare_runs(
 
     if only_in_run1:
         report.add_discrepancy(
-            MissingDirectoryDiscrepancy(
+            MissingDirectory(
                 severity=Severity.MEDIUM,
                 confidence=Confidence.HIGH,
                 description=f"Versions only in run1: {sorted(only_in_run1)}",
@@ -799,7 +799,7 @@ def compare_runs(
 
     if only_in_run2:
         report.add_discrepancy(
-            MissingDirectoryDiscrepancy(
+            MissingDirectory(
                 severity=Severity.MEDIUM,
                 confidence=Confidence.HIGH,
                 description=f"Versions only in run2: {sorted(only_in_run2)}",
@@ -817,7 +817,7 @@ def compare_runs(
             compare_proviral_files(run1_dir, run2_dir, version, report, index_pattern)
         except Exception as e:
             report.add_error(
-                FileReadErrorDiscrepancy(
+                FileReadError(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.MEDIUM,
                     description=f"Error comparing {version}: {str(e)}",

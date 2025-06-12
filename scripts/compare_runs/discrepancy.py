@@ -175,7 +175,7 @@ class DiscrepancyBase:
 
 @location_fields()
 @dataclass(frozen=True)
-class MissingFileDiscrepancy(DiscrepancyBase):
+class MissingFile(DiscrepancyBase):
     """Represents a missing file discrepancy."""
 
     missing_from: str
@@ -184,7 +184,7 @@ class MissingFileDiscrepancy(DiscrepancyBase):
 
 @location_fields()
 @dataclass(frozen=True)
-class MissingDirectoryDiscrepancy(DiscrepancyBase):
+class MissingDirectory(DiscrepancyBase):
     """Represents a missing directory discrepancy."""
 
     missing_from: str
@@ -193,7 +193,7 @@ class MissingDirectoryDiscrepancy(DiscrepancyBase):
 
 @location_fields(["row", "changed_headers", "total_header_changes"])
 @dataclass(frozen=True)
-class HeaderDifferenceDiscrepancy(DiscrepancyBase):
+class HeaderDifference(DiscrepancyBase):
     """Represents a header difference discrepancy."""
 
     header_changes: Dict[str, Any]
@@ -216,7 +216,7 @@ class HeaderDifferenceDiscrepancy(DiscrepancyBase):
     ]
 )
 @dataclass(frozen=True)
-class RowDifferenceDiscrepancy(DiscrepancyBase):
+class RowDifference(DiscrepancyBase):
     """Represents a row difference discrepancy."""
 
     field_changes: Dict[str, Any]
@@ -232,7 +232,7 @@ class RowDifferenceDiscrepancy(DiscrepancyBase):
 
 @location_fields(["row_difference"])
 @dataclass(frozen=True)
-class RowCountDifferenceDiscrepancy(DiscrepancyBase):
+class RowCountDifference(DiscrepancyBase):
     """Represents a row count difference discrepancy."""
 
     run1_rows: int
@@ -251,7 +251,7 @@ class RowCountDifferenceDiscrepancy(DiscrepancyBase):
     ]
 )
 @dataclass(frozen=True)
-class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
+class ColumnCountDifference(DiscrepancyBase):
     """Represents a column count difference discrepancy."""
 
     run1_columns: int
@@ -264,7 +264,7 @@ class ColumnCountDifferenceDiscrepancy(DiscrepancyBase):
 
 @location_fields(["positions"])
 @dataclass(frozen=True)
-class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
+class DuplicateColumnNames(DiscrepancyBase):
     """Represents a duplicate column names discrepancy."""
 
     all_headers: List[str]
@@ -275,7 +275,7 @@ class DuplicateColumnNamesDiscrepancy(DiscrepancyBase):
 
 @location_fields(["reordered_columns"])
 @dataclass(frozen=True)
-class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
+class ColumnOrderDifference(DiscrepancyBase):
     """Represents a column order difference discrepancy."""
 
     order_differences: Dict[str, Any]
@@ -285,7 +285,7 @@ class ColumnOrderDifferenceDiscrepancy(DiscrepancyBase):
 
 @location_fields(["index_column", "reordered_rows"])
 @dataclass(frozen=True)
-class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
+class RowOrderDifference(DiscrepancyBase):
     """Represents a row order difference discrepancy."""
 
     position_differences: List[Dict[str, Any]]
@@ -298,7 +298,7 @@ class RowOrderDifferenceDiscrepancy(DiscrepancyBase):
     ["index_column", "index_value", "position_run1", "missing_from", "present_in"]
 )
 @dataclass(frozen=True)
-class MissingRowDiscrepancy(DiscrepancyBase):
+class MissingRow(DiscrepancyBase):
     """Represents a missing row discrepancy."""
 
     missing_row_data: List[str]
@@ -313,7 +313,7 @@ class MissingRowDiscrepancy(DiscrepancyBase):
     ["index_column", "index_value", "position_run1", "missing_from", "present_in"]
 )
 @dataclass(frozen=True)
-class ExtraRowDiscrepancy(DiscrepancyBase):
+class ExtraRow(DiscrepancyBase):
     """Represents an extra row discrepancy."""
 
     extra_row_data: List[str]
@@ -336,7 +336,7 @@ class ExtraRowDiscrepancy(DiscrepancyBase):
     ],
 )
 @dataclass(frozen=True)
-class FieldChangeDiscrepancy(DiscrepancyBase):
+class FieldChange(DiscrepancyBase):
     """Represents a single field change within a row."""
 
     change_type: str
@@ -357,7 +357,7 @@ class FieldChangeDiscrepancy(DiscrepancyBase):
 
 @location_fields(["row", "column_index"])
 @dataclass(frozen=True)
-class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
+class HeaderFieldChange(DiscrepancyBase):
     """Represents a single header field change."""
 
     value1: Optional[str]
@@ -368,7 +368,7 @@ class HeaderFieldChangeDiscrepancy(DiscrepancyBase):
 
 @location_fields(["column_name", "position_run1", "position_run2"])
 @dataclass(frozen=True)
-class ColumnReorderDiscrepancy(DiscrepancyBase):
+class ColumnReorder(DiscrepancyBase):
     """Represents a single column being reordered."""
 
     column_name: str
@@ -378,7 +378,7 @@ class ColumnReorderDiscrepancy(DiscrepancyBase):
 
 @location_fields(["index_column", "index_value", "position_run1", "position_run2"])
 @dataclass(frozen=True)
-class RowReorderDiscrepancy(DiscrepancyBase):
+class RowReorder(DiscrepancyBase):
     """Represents a single row being reordered."""
 
     index_column: str
@@ -389,19 +389,19 @@ class RowReorderDiscrepancy(DiscrepancyBase):
 
 # Union type for all specific discrepancy classes
 Discrepancy = Union[
-    MissingFileDiscrepancy,
-    MissingDirectoryDiscrepancy,
-    HeaderDifferenceDiscrepancy,
-    RowDifferenceDiscrepancy,
-    RowCountDifferenceDiscrepancy,
-    ColumnCountDifferenceDiscrepancy,
-    DuplicateColumnNamesDiscrepancy,
-    ColumnOrderDifferenceDiscrepancy,
-    RowOrderDifferenceDiscrepancy,
-    MissingRowDiscrepancy,
-    ExtraRowDiscrepancy,
-    FieldChangeDiscrepancy,
-    HeaderFieldChangeDiscrepancy,
-    ColumnReorderDiscrepancy,
-    RowReorderDiscrepancy,
+    MissingFile,
+    MissingDirectory,
+    HeaderDifference,
+    RowDifference,
+    RowCountDifference,
+    ColumnCountDifference,
+    DuplicateColumnNames,
+    ColumnOrderDifference,
+    RowOrderDifference,
+    MissingRow,
+    ExtraRow,
+    FieldChange,
+    HeaderFieldChange,
+    ColumnReorder,
+    RowReorder,
 ]

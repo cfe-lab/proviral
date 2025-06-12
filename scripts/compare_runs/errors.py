@@ -7,7 +7,7 @@ from .confidence import Confidence
 
 
 @dataclass(frozen=True)
-class FileReadErrorDiscrepancy:
+class FileReadError:
     severity: Severity
     confidence: Confidence
     description: str
@@ -32,7 +32,7 @@ class FileReadErrorDiscrepancy:
 
 
 @dataclass(frozen=True)
-class EmptyFileDiscrepancy:
+class EmptyFile:
     severity: Severity
     confidence: Confidence
     description: str
@@ -59,7 +59,7 @@ class EmptyFileDiscrepancy:
 
 
 @dataclass(frozen=True)
-class NoIndexColumnDiscrepancy:
+class NoIndexColumn:
     severity: Severity
     confidence: Confidence
     description: str
@@ -90,7 +90,7 @@ class NoIndexColumnDiscrepancy:
 
 
 @dataclass(frozen=True)
-class MultipleIndexColumnsDiscrepancy:
+class MultipleIndexColumns:
     severity: Severity
     confidence: Confidence
     description: str
@@ -120,8 +120,8 @@ class MultipleIndexColumnsDiscrepancy:
 
 # Union type for processing error classes
 ComparisonError = Union[
-    FileReadErrorDiscrepancy,
-    EmptyFileDiscrepancy,
-    NoIndexColumnDiscrepancy,
-    MultipleIndexColumnsDiscrepancy,
+    FileReadError,
+    EmptyFile,
+    NoIndexColumn,
+    MultipleIndexColumns,
 ]
