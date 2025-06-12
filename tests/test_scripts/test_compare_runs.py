@@ -28,18 +28,21 @@ from scripts.compare_runs.__main__ import (
     _determine_row_difference_severity,
     _determine_row_difference_confidence,
 )
+from scripts.compare_runs.severity import Severity
+from scripts.compare_runs.confidence import Confidence
 from scripts.compare_runs.comparison_report import ComparisonReport
+from scripts.compare_runs.errors import (
+    FileReadErrorDiscrepancy,
+    EmptyFileDiscrepancy,
+    NoIndexColumnDiscrepancy,
+)
 from scripts.compare_runs.discrepancy import (
-    Severity,
-    Confidence,
     RowDifferenceDiscrepancy,
     MissingFileDiscrepancy,
     MissingDirectoryDiscrepancy,
     HeaderDifferenceDiscrepancy,
     RowCountDifferenceDiscrepancy,
     ColumnCountDifferenceDiscrepancy,
-    FileReadErrorDiscrepancy,
-    NoIndexColumnDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
     ColumnOrderDifferenceDiscrepancy,
     MissingRowDiscrepancy,
@@ -115,9 +118,7 @@ class TestDiscrepancy:
         assert result["confidence"] == "HIGH"
         assert result["description"] == "File missing"
         assert result["location"]["file"] == "missing.csv"
-        assert (
-            result["location"]["missing_from"] == "run1"
-        )
+        assert result["location"]["missing_from"] == "run1"
 
 
 class TestComparisonReport:

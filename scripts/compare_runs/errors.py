@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 from typing import Union
 
-from .enums import Severity, Confidence
+from .severity import Severity
+from .confidence import Confidence
 
 
 @dataclass(frozen=True)

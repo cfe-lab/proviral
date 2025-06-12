@@ -13,36 +13,11 @@ The module provides:
 - Main Discrepancy and ComparisonReport classes for managing findings
 """
 
-# Import core functionality and processing errors for re-export
+# Import core functionality
 from dataclasses import dataclass, fields
 from typing import Any, Dict, List, Optional, Type, Union
-from enum import Enum
-from .errors import (
-    FileReadErrorDiscrepancy,
-    EmptyFileDiscrepancy,
-    NoIndexColumnDiscrepancy,
-)  # noqa: F401
-
-
-# Severity levels for discrepancies
-class Severity(Enum):
-    CRITICAL = "CRITICAL"
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-# Confidence levels for discrepancies
-class Confidence(Enum):
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
-
-    def __str__(self) -> str:
-        return self.value
+from .severity import Severity
+from .confidence import Confidence
 
 
 # Helper function to mark location fields on dataclasses
@@ -141,7 +116,7 @@ def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
         return _trim_value_for_display(data, max_length)
     elif isinstance(data, list):
         return [_trim_data_recursively(item, max_length) for item in data]
-    elif isinstance(data, Enum):
+    elif isinstance(data, (Severity, Confidence)):
         return data.value  # Use the enum value directly
     elif isinstance(data, dict):
         return {
@@ -420,10 +395,6 @@ Discrepancy = Union[
     RowDifferenceDiscrepancy,
     RowCountDifferenceDiscrepancy,
     ColumnCountDifferenceDiscrepancy,
-    # Processing error types
-    FileReadErrorDiscrepancy,
-    EmptyFileDiscrepancy,
-    NoIndexColumnDiscrepancy,
     DuplicateColumnNamesDiscrepancy,
     ColumnOrderDifferenceDiscrepancy,
     RowOrderDifferenceDiscrepancy,
