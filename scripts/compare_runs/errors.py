@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from typing import Union
 
 from .severity import Severity
@@ -89,9 +89,39 @@ class NoIndexColumnDiscrepancy:
         }
 
 
+@dataclass(frozen=True)
+class MultipleIndexColumnsDiscrepancy:
+    severity: Severity
+    confidence: Confidence
+    description: str
+    file: str
+    version: str
+    run: str
+    pattern: str
+    matching_columns: List[str]
+    matching_pairs: List[tuple]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "type": self.__class__.__name__,
+            "description": self.description,
+            "severity": str(self.severity),
+            "confidence": str(self.confidence),
+            "pattern": self.pattern,
+            "matching_columns": self.matching_columns,
+            "matching_pairs": self.matching_pairs,
+            "location": {
+                "file": self.file,
+                "version": self.version,
+                "run": self.run,
+            },
+        }
+
+
 # Union type for processing error classes
 ComparisonError = Union[
     FileReadErrorDiscrepancy,
     EmptyFileDiscrepancy,
     NoIndexColumnDiscrepancy,
+    MultipleIndexColumnsDiscrepancy,
 ]

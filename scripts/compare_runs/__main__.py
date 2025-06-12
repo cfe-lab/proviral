@@ -13,6 +13,7 @@ Examples:
 
 import argparse
 import logging
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Any, TypeAlias
@@ -21,6 +22,7 @@ from .comparison_report import ComparisonReport
 from .errors import (
     FileReadErrorDiscrepancy,
     NoIndexColumnDiscrepancy,
+    MultipleIndexColumnsDiscrepancy,
 )
 from .discrepancy import (
     Severity,
@@ -48,9 +50,10 @@ from .csv_utils import (
     analyze_column_differences,
     compare_column_orders,
 )
-from .index_discovery import (
-    discover_index_column,
-)
+
+# from .index_discovery import (
+#     discover_index_column,  # Replaced with regex-based approach
+# )
 from .row_comparison import (
     analyze_header_differences,
     analyze_row_differences,
@@ -74,7 +77,12 @@ Discrepancy: TypeAlias = ImportedDiscrepancy  # type: ignore[assignment]
 
 
 def compare_csv_contents(
-    report: ComparisonReport, file1: Path, file2: Path, version: str, filename: str
+    report: ComparisonReport,
+    file1: Path,
+    file2: Path,
+    version: str,
+    filename: str,
+    index_pattern: str,
 ) -> int:
     """
     Compare the contents of two CSV files and return number of discrepancies and errors.
@@ -187,17 +195,51 @@ def compare_csv_contents(
     column_map1 = create_column_mapping(headers1) if not dup_check1 else {}
     column_map2 = create_column_mapping(headers2) if not dup_check2 else {}
 
-    # Discover index column for better comparison
-    index_info = discover_index_column(content1, content2)
+    # Resolve index column using regex pattern matching
+    index_result = resolve_index_column_by_regex(
+        content1, content2, filename, index_pattern
+    )
 
-    # Log index column discovery results
-    if index_info and index_info.get("index_column") is not None:
+    # Log index column resolution results and handle different outcomes
+    if index_result["status"] == "success":
+        index_column_name = index_result["column_name"]
         logger.debug(
-            f"Found index column for {filename}: {index_info['column_name']} (shared values: {index_info['shared_values']})"
+            f"Found index column for {filename}: {index_column_name} (matched pattern: {index_pattern})"
         )
-    else:
+    elif index_result["status"] == "multiple_matches":
+        # Report error for multiple matching columns
+        report.add_error(
+            MultipleIndexColumnsDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Multiple columns match pattern '{index_pattern}' for file {filename}: {', '.join(index_result['matching_columns'])}. Please use a more specific pattern.",
+                file=filename,
+                version=version,
+                run="both",
+                pattern=index_pattern,
+                matching_columns=index_result["matching_columns"],
+                matching_pairs=index_result["matching_pairs"],
+            )
+        )
+        return len(report.results) + len(report.errors) - initial
+    elif index_result["status"] == "error":
+        # Report error for regex or other issues
+        report.add_error(
+            FileReadErrorDiscrepancy(
+                severity=Severity.CRITICAL,
+                confidence=Confidence.HIGH,
+                description=f"Error resolving index column: {index_result['error_message']}",
+                file=filename,
+                version=version,
+                run="both",
+                file_path=f"Pattern: {index_pattern}",
+            )
+        )
+        return len(report.results) + len(report.errors) - initial
+    else:  # status == "no_match"
+        index_column_name = None
         logger.debug(
-            f"No suitable index column found for {filename}: {index_info.get('reason', 'unknown') if index_info else 'no analysis'}"
+            f"No index column found for {filename} with pattern: {index_pattern}"
         )
 
     # Check if files have same number of rows
@@ -292,14 +334,8 @@ def compare_csv_contents(
             )
 
     # Use index-column-based comparison if available, otherwise report error
-    if (
-        index_info
-        and index_info.get("index_column") is not None
-        and not dup_check1
-        and not dup_check2
-    ):
+    if index_column_name is not None and not dup_check1 and not dup_check2:
         # Use index-column-based row comparison (skip header row since already compared)
-        index_column_name = index_info["column_name"]
         logger.debug(
             f"Using index-column-based comparison with column: {index_column_name}"
         )
@@ -327,10 +363,10 @@ def compare_csv_contents(
         reason = "unknown"
         if dup_check1 or dup_check2:
             reason = "duplicate_column_names"
-        elif index_info:
-            reason = index_info.get("reason", "no_index_column")
+        elif not index_column_name:
+            reason = "no_regex_match"
         else:
-            reason = "no_index_analysis"
+            reason = "no_index_available"
 
         report.add_error(
             NoIndexColumnDiscrepancy(
@@ -341,7 +377,10 @@ def compare_csv_contents(
                 version=version,
                 run="both",
                 reason=reason,
-                index_analysis=index_info,
+                index_analysis={
+                    "pattern": index_pattern,
+                    "column_found": index_column_name,
+                },
                 has_duplicate_columns_run1=bool(dup_check1),
                 has_duplicate_columns_run2=bool(dup_check2),
             )
@@ -608,7 +647,11 @@ def _compare_rows_by_index_column(
 
 
 def compare_proviral_files(
-    run1_dir: Path, run2_dir: Path, version: str, report: ComparisonReport
+    run1_dir: Path,
+    run2_dir: Path,
+    version: str,
+    report: ComparisonReport,
+    index_pattern: str,
 ) -> None:
     """
     Compare proviral CSV files between two runs for a specific version.
@@ -680,14 +723,21 @@ def compare_proviral_files(
 
         # Compare the files
         count = compare_csv_contents(
-            report, csv_files1[csv_name], csv_files2[csv_name], version, csv_name
+            report,
+            csv_files1[csv_name],
+            csv_files2[csv_name],
+            version,
+            csv_name,
+            index_pattern,
         )
 
         if not count:
             report.mark_file_identical()
 
 
-def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
+def compare_runs(
+    run1_dir: Path, run2_dir: Path, index_pattern: str
+) -> ComparisonReport:
     """
     Compare proviral analysis results between two runs.
 
@@ -764,7 +814,7 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
     # Compare each common version
     for version in sorted(common_versions):
         try:
-            compare_proviral_files(run1_dir, run2_dir, version, report)
+            compare_proviral_files(run1_dir, run2_dir, version, report, index_pattern)
         except Exception as e:
             report.add_error(
                 FileReadErrorDiscrepancy(
@@ -781,11 +831,92 @@ def compare_runs(run1_dir: Path, run2_dir: Path) -> ComparisonReport:
     return report
 
 
+def resolve_index_column_by_regex(
+    content1: List[List[str]],
+    content2: List[List[str]],
+    filename: str,
+    index_pattern: str,
+) -> Dict[str, Any]:
+    """
+    Resolve index column using regex pattern matching against filename/columnname.
+
+    Args:
+        content1: First CSV data
+        content2: Second CSV data
+        filename: Name of the CSV file being compared
+        index_pattern: Regex pattern to match against filename/columnname
+
+    Returns:
+        Dictionary with resolution results:
+        - status: "success", "no_match", "multiple_matches", "error"
+        - column_name: str (if status == "success")
+        - matching_columns: List[str] (if status == "multiple_matches")
+        - matching_pairs: List[str] (if status == "multiple_matches")
+        - error_message: str (if status == "error")
+    """
+    if not content1 or not content2:
+        return {"status": "error", "error_message": "Empty or missing CSV data"}
+
+    headers1 = content1[0] if content1 else []
+    headers2 = content2[0] if content2 else []
+
+    # Compile the regex pattern
+    try:
+        pattern = re.compile(index_pattern)
+    except re.error as e:
+        logger.error(f"Invalid regex pattern: {index_pattern}")
+        return {"status": "error", "error_message": f"Invalid regex pattern: {e}"}
+
+    # Check each column name against the pattern and collect all matches
+    # We need to find columns that exist in both files and match the pattern
+    matching_columns = []
+    matching_pairs = []
+
+    # Find columns that exist in both files
+    common_columns = set(headers1) & set(headers2)
+
+    for col_name in common_columns:
+        match_string = f"{filename}/{col_name}"
+        if pattern.search(match_string):
+            matching_columns.append(col_name)
+            matching_pairs.append(match_string)
+            logger.debug(
+                f"Index column match found: {match_string} matches pattern {index_pattern}"
+            )
+
+    if len(matching_columns) == 0:
+        logger.debug(
+            f"No index column match found for file {filename} with pattern {index_pattern}"
+        )
+        return {"status": "no_match"}
+    elif len(matching_columns) == 1:
+        return {
+            "status": "success",
+            "column_name": matching_columns[0],
+            "match_string": matching_pairs[0],
+        }
+    else:
+        logger.warning(
+            f"Multiple index columns match pattern {index_pattern} for file {filename}: {matching_columns}"
+        )
+        return {
+            "status": "multiple_matches",
+            "matching_columns": matching_columns,
+            "matching_pairs": matching_pairs,
+        }
+
+
 def main():
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(
         description="Compare proviral analysis results between different pipeline runs",
-        epilog="Example: ws-compare-runs /path/to/run1 /path/to/run2",
+        epilog="Example: ws-compare-runs --indexes '.*/sample' /path/to/run1 /path/to/run2",
+    )
+
+    parser.add_argument(
+        "--indexes",
+        required=True,
+        help="Regex pattern to match index columns in format 'filename/columnname'. Examples: '.*/sample' or 'file1.csv/id|file2.csv/sample_id'",
     )
 
     parser.add_argument("run1_dir", type=Path, help="Path to first run directory")
@@ -832,7 +963,7 @@ def main():
 
     # Perform the comparison
     try:
-        report = compare_runs(args.run1_dir, args.run2_dir)
+        report = compare_runs(args.run1_dir, args.run2_dir, args.indexes)
 
         # Generate JSON output
         indent = None if args.compact else 2

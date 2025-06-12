@@ -30,9 +30,6 @@ from scripts.compare_runs.file_operations import (
     get_proviral_csv_files,
     read_csv_file,
 )
-from scripts.compare_runs.index_discovery import (
-    _count_shared_values,
-)
 from scripts.compare_runs.severity import Severity
 from scripts.compare_runs.confidence import Confidence
 from scripts.compare_runs.comparison_report import ComparisonReport
@@ -59,18 +56,19 @@ from scripts.compare_runs.errors import (
     FileReadErrorDiscrepancy,
     NoIndexColumnDiscrepancy,
 )
-from scripts.compare_runs.index_discovery import (
-    find_unique_value_columns,
-    count_shared_values,
-    discover_index_column,
-)
 
 
 # Helper function to wrap the new compare_csv_contents for backward compatibility
-def legacy_compare_csv_contents(file1: Path, file2: Path, version: str, filename: str):
+def legacy_compare_csv_contents(
+    file1: Path,
+    file2: Path,
+    version: str,
+    filename: str,
+    index_pattern: str = ".*/header1",
+):
     """Wrapper for compare_csv_contents that returns discrepancies like the old signature."""
     report = ComparisonReport(file1.parent, file2.parent)
-    compare_csv_contents(report, file1, file2, version, filename)
+    compare_csv_contents(report, file1, file2, version, filename, index_pattern)
     # Return both discrepancies and errors as one list for backward compatibility
     all_items = []
     all_items.extend([discrepancy.to_dict() for discrepancy in report.results])
@@ -376,7 +374,7 @@ class TestCSVComparison:
         file2.write_text(content)
         report = ComparisonReport(tmp_path / "run1", tmp_path / "run2")
 
-        compare_csv_contents(report, file1, file2, "version_7.15", "test.csv")
+        compare_csv_contents(report, file1, file2, "version_7.15", "test.csv", ".*/.*")
 
         assert [d.to_dict() for d in report.results] == []
 
@@ -388,7 +386,9 @@ class TestCSVComparison:
         file2.write_text("header1,header2\nvalue1,value2\nvalue3,value4\n")
         report = ComparisonReport(tmp_path / "run1", tmp_path / "run2")
 
-        compare_csv_contents(report, file1, file2, "version_7.15", "test.csv")
+        compare_csv_contents(
+            report, file1, file2, "version_7.15", "test.csv", ".*/header1"
+        )
         discrepancies = [d.to_dict() for d in report.results]
 
         # Should find row count difference
@@ -415,7 +415,7 @@ class TestCSVComparison:
         file2.write_text("header1,header3\nvalue1,value2\n")
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/header1"
         )
 
         # Should find header field changes
@@ -575,7 +575,7 @@ class TestProviralFileComparison:
 
         report = ComparisonReport(run1_dir, run2_dir)
 
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report, ".*/.*")
 
         # Should have missing directory discrepancy
         assert len([d.to_dict() for d in report.results]) > 0
@@ -600,7 +600,7 @@ class TestProviralFileComparison:
 
         report = ComparisonReport(run1_dir, run2_dir)
 
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report, ".*/.*")
 
         # Should have missing file discrepancy
         assert len([d.to_dict() for d in report.results]) > 0
@@ -632,7 +632,7 @@ class TestProviralFileComparison:
 
         report = ComparisonReport(run1_dir, run2_dir)
 
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report, ".*/.*")
 
         # Should have no discrepancies for identical files
         identical_file_discrepancy = next(
@@ -662,7 +662,7 @@ class TestFullComparison:
         (results1 / "version_7.15").mkdir()
         (results2 / "version_7.17").mkdir()
 
-        report = compare_runs(run1_dir, run2_dir)
+        report = compare_runs(run1_dir, run2_dir, ".*/.*")
 
         # Should have no common versions discrepancy
         assert len([d.to_dict() for d in report.results]) > 0
@@ -692,7 +692,7 @@ class TestFullComparison:
         (results2 / "version_7.15").mkdir()
         (results2 / "version_7.17").mkdir()
 
-        report = compare_runs(run1_dir, run2_dir)
+        report = compare_runs(run1_dir, run2_dir, ".*/.*")
 
         assert report.common_versions == ["version_7.15"]
         # Should have discrepancies for version mismatches
@@ -719,7 +719,7 @@ class TestFullComparison:
             "header\ndifferent\n"
         )
 
-        report = compare_runs(run1_dir, run2_dir)
+        report = compare_runs(run1_dir, run2_dir, ".*/.*")
 
         assert report.common_versions == ["version_7.15"]
         # Should have errors for the files that can't be compared due to no index column
@@ -751,7 +751,7 @@ class TestFullComparison:
             "scripts.compare_runs.__main__.compare_proviral_files",
             side_effect=Exception("Test error"),
         ):
-            report = compare_runs(run1_dir, run2_dir)
+            report = compare_runs(run1_dir, run2_dir, ".*/.*")
 
         # Should have comparison error discrepancy in errors list
         comparison_error_discrepancy = next(
@@ -778,7 +778,7 @@ class TestLocationFieldStandardization:
         (proviral2 / "missing.csv").write_text("header\nvalue\n")
 
         report = ComparisonReport(run1_dir, run2_dir)
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report, ".*/.*")
 
         discrepancy = next(
             (
@@ -802,14 +802,15 @@ class TestLocationFieldStandardization:
         assert location["run"] == "run1"
 
     def test_row_difference_location_fields(self, tmp_path):
-        """Test that NO_INDEX_COLUMN discrepancies are reported when no suitable index column is available."""
+        """Test that NO_INDEX_COLUMN discrepancies are reported when regex doesn't match any columns."""
         file1 = tmp_path / "file1.csv"
         file2 = tmp_path / "file2.csv"
         file1.write_text("header\nvalue1\n")
         file2.write_text("header\nvalue2\n")
 
+        # Use a regex that doesn't match any columns to force NO_INDEX_COLUMN error
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", "nomatch/.*"
         )
 
         # Should find NO_INDEX_COLUMN discrepancy instead of row differences
@@ -870,7 +871,10 @@ class TestMainFunction:
         existing = tmp_path / "existing"
         existing.mkdir()
 
-        with patch("sys.argv", ["compare_runs", str(nonexistent), str(existing)]):
+        with patch(
+            "sys.argv",
+            ["compare_runs", "--indexes", ".*/.*", str(nonexistent), str(existing)],
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1
@@ -886,7 +890,10 @@ class TestMainFunction:
             proviral_dir.mkdir(parents=True)
             (proviral_dir / "test.csv").write_text("header\nvalue\n")
 
-        with patch("sys.argv", ["compare_runs", str(run1_dir), str(run2_dir)]):
+        with patch(
+            "sys.argv",
+            ["compare_runs", "--indexes", ".*/.*", str(run1_dir), str(run2_dir)],
+        ):
             main()
 
         captured = capsys.readouterr()
@@ -910,7 +917,15 @@ class TestMainFunction:
 
         with patch(
             "sys.argv",
-            ["compare_runs", str(run1_dir), str(run2_dir), "-o", str(output_file)],
+            [
+                "compare_runs",
+                "--indexes",
+                ".*/.*",
+                str(run1_dir),
+                str(run2_dir),
+                "-o",
+                str(output_file),
+            ],
         ):
             main()
 
@@ -918,7 +933,7 @@ class TestMainFunction:
         output = json.loads(output_file.read_text())
         assert "metadata" in output
 
-    def test_main_with_compact_output(self, tmp_path, capsys):
+    def test_main_with_comact_output(self, tmp_path, capsys):
         """Test main function with compact JSON output."""
         # Setup directories
         run1_dir = tmp_path / "run1"
@@ -930,7 +945,15 @@ class TestMainFunction:
             (proviral_dir / "test.csv").write_text("header\nvalue\n")
 
         with patch(
-            "sys.argv", ["compare_runs", str(run1_dir), str(run2_dir), "--compact"]
+            "sys.argv",
+            [
+                "compare_runs",
+                "--indexes",
+                ".*/.*",
+                str(run1_dir),
+                str(run2_dir),
+                "--compact",
+            ],
         ):
             main()
 
@@ -953,186 +976,13 @@ class TestMainFunction:
             "scripts.compare_runs.__main__.compare_runs",
             side_effect=KeyboardInterrupt(),
         ):
-            with patch("sys.argv", ["compare_runs", str(run1_dir), str(run2_dir)]):
+            with patch(
+                "sys.argv",
+                ["compare_runs", "--indexes", ".*/.*", str(run1_dir), str(run2_dir)],
+            ):
                 with pytest.raises(SystemExit) as exc_info:
                     main()
                 assert exc_info.value.code == 1
-
-
-class TestIndexColumnDiscovery:
-    """Test index column discovery functionality."""
-
-    def test_find_unique_value_columns_empty_data(self):
-        """Test find_unique_value_columns with empty data."""
-        assert find_unique_value_columns([]) == []
-        assert find_unique_value_columns([["header"]]) == []  # Only header, no data
-
-    def test_find_unique_value_columns_all_unique(self):
-        """Test find_unique_value_columns with all unique columns."""
-        csv_data = [
-            ["id", "name", "value"],
-            ["1", "alice", "100"],
-            ["2", "bob", "200"],
-            ["3", "charlie", "300"],
-        ]
-        unique_columns = find_unique_value_columns(csv_data)
-        # All columns should be unique
-        assert sorted(unique_columns) == ["id", "name", "value"]
-
-    def test_find_unique_value_columns_with_duplicates(self):
-        """Test find_unique_value_columns with some duplicate values."""
-        csv_data = [
-            ["id", "category", "value"],
-            ["1", "A", "100"],
-            ["2", "A", "200"],  # category "A" is duplicate
-            ["3", "B", "300"],
-        ]
-        unique_columns = find_unique_value_columns(csv_data)
-        # Only id and value columns should be unique
-        assert sorted(unique_columns) == ["id", "value"]
-
-    def test_find_unique_value_columns_with_empty_values(self):
-        """Test find_unique_value_columns ignoring empty values."""
-        csv_data = [
-            ["id", "optional", "value"],
-            ["1", "", "100"],
-            ["2", "data", "200"],
-            ["3", "", "300"],
-        ]
-        unique_columns = find_unique_value_columns(csv_data)
-        # All columns should be unique (empty values are ignored)
-        assert sorted(unique_columns) == ["id", "optional", "value"]
-
-    def test_count_shared_values_no_shared(self):
-        """Test count_shared_values with no shared values."""
-        csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"]]
-        csv_data2 = [["id", "value"], ["3", "C"], ["4", "D"]]
-        shared_count = count_shared_values(csv_data1, csv_data2, "id")
-        assert shared_count == 0
-
-    def test_count_shared_values_some_shared(self):
-        """Test count_shared_values with some shared values."""
-        csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"], ["3", "C"]]
-        csv_data2 = [
-            ["id", "value"],
-            ["2", "X"],  # id "2" is shared
-            ["3", "Y"],  # id "3" is shared
-            ["4", "Z"],
-        ]
-        shared_count = count_shared_values(csv_data1, csv_data2, "id")
-        assert shared_count == 2
-
-    def test_count_shared_values_with_empty_values(self):
-        """Test count_shared_values ignoring empty values."""
-        csv_data1 = [
-            ["id", "value"],
-            ["1", "A"],
-            ["", "B"],  # Empty id should be ignored
-            ["3", "C"],
-        ]
-        csv_data2 = [
-            ["id", "value"],
-            ["1", "X"],  # id "1" is shared
-            ["", "Y"],  # Empty id should be ignored
-            ["4", "Z"],
-        ]
-        shared_count = _count_shared_values(csv_data1, csv_data2, "id")
-        assert shared_count == 1
-
-    def test_discover_index_column_empty_data(self):
-        """Test discover_index_column with empty data."""
-        assert discover_index_column([], []) is None
-        assert discover_index_column([["header"]], []) is None
-        assert discover_index_column([], [["header"]]) is None
-
-    def test_discover_index_column_no_unique_columns(self):
-        """Test discover_index_column when no columns are unique in both files."""
-        csv_data1 = [
-            ["id", "category"],
-            ["1", "A"],
-            ["1", "A"],  # id is duplicate
-        ]
-        csv_data2 = [
-            ["id", "category"],
-            ["2", "B"],
-            ["2", "B"],  # id is duplicate
-        ]
-        result = discover_index_column(csv_data1, csv_data2)
-        assert result is None
-
-    def test_discover_index_column_no_shared_values(self):
-        """Test discover_index_column when unique columns exist but no shared values."""
-        csv_data1 = [["id", "value"], ["1", "A"], ["2", "B"]]
-        csv_data2 = [
-            ["id", "value"],
-            ["3", "C"],  # Different ids, no shared values
-            ["4", "D"],
-        ]
-        result = discover_index_column(csv_data1, csv_data2)
-
-        assert result is not None
-        assert result["index_column"] is None
-        assert result["shared_values"] == 0
-        assert result["reason"] == "no_shared_values"
-        assert result["candidate_columns"] == 2  # Both id and value are unique
-
-    def test_discover_index_column_successful_discovery(self):
-        """Test discover_index_column with successful index column discovery."""
-        csv_data1 = [
-            ["sample_id", "batch", "result"],
-            ["S001", "B1", "pass"],
-            ["S002", "B1", "fail"],
-            ["S003", "B2", "pass"],
-        ]
-        csv_data2 = [
-            ["sample_id", "batch", "result"],
-            ["S001", "B1", "pass"],  # S001 shared
-            ["S002", "B1", "pass"],  # S002 shared (different result)
-            ["S004", "B2", "fail"],  # S004 not shared
-        ]
-        result = discover_index_column(csv_data1, csv_data2)
-
-        assert result is not None
-        assert result["index_column"] == 0  # sample_id column
-        assert result["column_name"] == "sample_id"
-        assert result["shared_values"] == 2  # S001 and S002
-        assert result["reason"] == "success"
-        assert "column_analysis" in result
-
-    def test_discover_index_column_chooses_best_column(self):
-        """Test discover_index_column chooses column with most shared values."""
-        csv_data1 = [
-            ["id1", "id2", "value"],
-            ["A1", "X1", "100"],
-            ["A2", "X2", "200"],
-            ["A3", "X3", "300"],
-        ]
-        csv_data2 = [
-            ["id1", "id2", "value"],
-            ["A1", "Y1", "150"],  # id1 shared: A1, id2 not shared
-            ["A2", "Y2", "250"],  # id1 shared: A2, id2 not shared
-            ["B3", "X3", "350"],  # id1 not shared, id2 shared: X3
-        ]
-        result = discover_index_column(csv_data1, csv_data2)
-
-        assert result is not None
-        assert result["index_column"] == 0  # id1 has more shared values (2 vs 1)
-        assert result["column_name"] == "id1"
-        assert result["shared_values"] == 2
-
-    def test_discover_index_column_with_mismatched_headers(self):
-        """Test discover_index_column with different headers between files."""
-        csv_data1 = [["sample_id", "result"], ["S001", "pass"], ["S002", "fail"]]
-        csv_data2 = [
-            ["id", "outcome"],  # Different header names
-            ["S001", "unique_value"],  # Make result column have fewer shared values
-            ["S003", "another_value"],
-        ]
-        result = discover_index_column(csv_data1, csv_data2)
-
-        # When headers don't match, we cannot safely determine column correspondence
-        # by name, so no index column should be discovered
-        assert result is None
 
 
 class TestCSVComparisonWithIndexDiscovery:
@@ -1147,22 +997,23 @@ class TestCSVComparisonWithIndexDiscovery:
         file2.write_text(content)
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/sample_id"
         )
 
         # Should be no discrepancies for identical files
         assert discrepancies == []
 
     def test_compare_csv_with_no_index_column_discrepancy(self, tmp_path):
-        """Test CSV comparison generates NO_INDEX_COLUMN discrepancy when appropriate."""
-        # Create files with unique columns but no shared values
+        """Test CSV comparison generates NO_INDEX_COLUMN discrepancy when no columns match the regex pattern."""
+        # Create files with columns that won't match a specific pattern
         file1 = tmp_path / "file1.csv"
         file2 = tmp_path / "file2.csv"
         file1.write_text("id,value\n1,A\n2,B\n")
         file2.write_text("id,value\n3,C\n4,D\n")
 
+        # Use a regex that won't match any columns
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", "nonexistent/.*"
         )
 
         # Should find NO_INDEX_COLUMN discrepancy
@@ -1176,8 +1027,8 @@ class TestCSVComparisonWithIndexDiscovery:
         assert "Row comparison skipped" in no_index_discrepancy["description"]
 
     def test_compare_csv_no_index_discrepancy_when_no_unique_columns(self, tmp_path):
-        """Test that NO_INDEX_COLUMN discrepancy is not generated when no unique columns exist."""
-        # Create files with no unique columns - all columns have duplicate values
+        """Test that NO_INDEX_COLUMN discrepancy is generated when regex doesn't match any columns."""
+        # Create files with duplicate columns - doesn't matter for regex matching
         file1 = tmp_path / "file1.csv"
         file2 = tmp_path / "file2.csv"
         file1.write_text(
@@ -1187,11 +1038,12 @@ class TestCSVComparisonWithIndexDiscovery:
             "category,status\nB,pending\nB,pending\n"
         )  # Both columns have duplicates
 
+        # Use a regex that doesn't match any columns
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", "missing_file/.*"
         )
 
-        # Should find NO_INDEX_COLUMN discrepancy since no suitable index column is available
+        # Should find NO_INDEX_COLUMN discrepancy since no columns match the pattern
         no_index_discrepancy = next(
             (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
             None,
@@ -1210,7 +1062,7 @@ class TestCSVComparisonWithIndexDiscovery:
         )
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/sample_id"
         )
 
         # Should find field change discrepancy but no NO_INDEX_COLUMN discrepancy
@@ -1242,8 +1094,9 @@ class TestIndexColumnLocationFields:
         file1.write_text("id,value\n1,A\n2,B\n")
         file2.write_text("id,value\n3,C\n4,D\n")
 
+        # Use a regex that doesn't match any columns to force NO_INDEX_COLUMN error
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", "missing/.*"
         )
         no_index_discrepancy = next(
             (d for d in discrepancies if d.get("type") == "NoIndexColumnDiscrepancy"),
@@ -1286,7 +1139,9 @@ class TestIntegrationWithIndexDiscovery:
         (proviral2 / "test.csv").write_text(content2)
 
         report = ComparisonReport(run1_dir, run2_dir)
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(
+            run1_dir, run2_dir, "version_7.15", report, ".*/sample_id"
+        )
 
         # In the flat structure, index info is embedded in discrepancies
         # For files with differences, check if there are discrepancies
@@ -1316,7 +1171,9 @@ class TestIntegrationWithIndexDiscovery:
         (proviral2 / "identical.csv").write_text(content)
 
         report = ComparisonReport(run1_dir, run2_dir)
-        compare_proviral_files(run1_dir, run2_dir, "version_7.15", report)
+        compare_proviral_files(
+            run1_dir, run2_dir, "version_7.15", report, ".*/sample_id"
+        )
 
         # In the flat structure, identical files don't generate discrepancies
         identical_file_discrepancy = next(
@@ -1515,7 +1372,7 @@ class TestColumnValidation:
         )  # Different columns
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/id"
         )
 
         # Should not find column reorder discrepancies (different columns, not just reordered)
@@ -1538,7 +1395,7 @@ class TestColumnValidation:
         file2.write_text("id,name,value\n1,alice,100\n")
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/name"
         )
 
         # Should find duplicate column names
@@ -1568,7 +1425,7 @@ class TestColumnValidation:
         file2.write_text("d,b,a,c\n1,2,3,4\n")  # Completely reordered
 
         discrepancies = legacy_compare_csv_contents(
-            file1, file2, "version_7.15", "test.csv"
+            file1, file2, "version_7.15", "test.csv", ".*/a"
         )
 
         reorder_discrepancies = [
