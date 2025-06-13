@@ -41,6 +41,27 @@ def _mark_location_fields(cls: Type, locations: Optional[List[str]] = None) -> T
     return cls
 
 
+# Helper function to mark trimmable fields on dataclasses
+def _mark_trimmable_fields(cls: Type, trimmable: Optional[List[str]] = None) -> Type:
+    """
+    Mark trimmable fields in the class metadata.
+
+    Args:
+        cls: The dataclass to mark
+        trimmable: List of field names that should be trimmed for display
+    """
+    if trimmable is None:
+        trimmable = []
+
+    # Mark trimmable fields in the class metadata
+    if not hasattr(cls, "_trimmable_fields"):
+        cls._trimmable_fields = set(trimmable)
+    else:
+        cls._trimmable_fields.update(trimmable)
+
+    return cls
+
+
 def location_fields(locations: Optional[List[str]] = None):
     """
     Decorator to mark location fields on a dataclass.
@@ -62,6 +83,30 @@ def location_fields(locations: Optional[List[str]] = None):
 
     def decorator(cls: Type) -> Type:
         return _mark_location_fields(cls, locations)
+
+    return decorator
+
+
+def trimmable_fields(trimmable: Optional[List[str]] = None):
+    """
+    Decorator to mark trimmable fields on a dataclass.
+
+    This decorator should be applied before @dataclass to mark which fields
+    should be trimmed for display purposes when serializing to dict.
+
+    Args:
+        trimmable: List of field names that should be trimmed for display
+
+    Example:
+        @dataclass(frozen=True)
+        class MyDiscrepancy(DiscrepancyBase):
+            value1: str
+            value2: str
+            other_field: str
+    """
+
+    def decorator(cls: Type) -> Type:
+        return _mark_trimmable_fields(cls, trimmable)
 
     return decorator
 
@@ -146,8 +191,9 @@ class DiscrepancyBase:
             "type": self.__class__.__name__,
         }
 
-        # Get location fields from class metadata
+        # Get location fields and trimmable fields from class metadata
         location_fields: set = getattr(self.__class__, "_location_fields", set())
+        trimmable_fields: set = getattr(self.__class__, "_trimmable_fields", set())
 
         # Traverse all dataclass fields
         for field_info in fields(self):
@@ -156,6 +202,10 @@ class DiscrepancyBase:
             # Skip None values for optional fields
             if value is None:
                 continue
+
+            # Apply trimming if this field is marked as trimmable
+            if field_info.name in trimmable_fields and isinstance(value, str):
+                value = _trim_value_for_display(value)
 
             # Check if this is a location field
             if field_info.name in location_fields:
@@ -321,6 +371,7 @@ class ExtraRow(DiscrepancyBase):
     present_in: str
 
 
+@trimmable_fields(["value1", "value2"])
 @location_fields(
     [
         "row",
