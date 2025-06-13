@@ -15,7 +15,7 @@ The module provides:
 
 # Import core functionality
 from dataclasses import dataclass, fields
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union, TypeAlias
 from .severity import Severity
 from .confidence import Confidence
 
@@ -108,22 +108,21 @@ def _trim_value_for_display(value: str, max_length: int = 20) -> str:
     return f"{prefix}...{suffix}"
 
 
-def _trim_data_recursively(data: Any, max_length: int = 20) -> Any:
+Serialized: TypeAlias = Union[int, float, bool, str, List["Serialized"]]
+
+
+def serialize_value(value: object) -> Union[Serialized]:
     """
-    Recursively trim string values in a data structure (dict, list, or string).
+    Serialize a value for JSON output.
+    Converts basic types to their JSON-compatible representations.
     """
-    if isinstance(data, str):
-        return _trim_value_for_display(data, max_length)
-    elif isinstance(data, list):
-        return [_trim_data_recursively(item, max_length) for item in data]
-    elif isinstance(data, (Severity, Confidence)):
-        return data.value  # Use the enum value directly
-    elif isinstance(data, dict):
-        return {
-            key: _trim_data_recursively(value, max_length)
-            for key, value in data.items()
-        }
-    return data
+
+    if isinstance(value, (int, float, bool)):
+        return value
+    elif isinstance(value, list):
+        return [serialize_value(item) for item in value]
+    else:
+        return str(value)
 
 
 # Base class for all discrepancy types
@@ -143,7 +142,9 @@ class DiscrepancyBase:
     def to_dict(self) -> Dict[str, Any]:
         """Convert discrepancy to dictionary for JSON output."""
         location_dict: Dict[str, Any] = {}
-        top_level_dict: Dict[str, Any] = {}
+        top_level_dict: Dict[str, Any] = {
+            "type": self.__class__.__name__,
+        }
 
         # Get location fields from class metadata
         location_fields: set = getattr(self.__class__, "_location_fields", set())
@@ -159,18 +160,14 @@ class DiscrepancyBase:
             # Check if this is a location field
             if field_info.name in location_fields:
                 # Add to location dict
-                location_dict[field_info.name] = value
+                location_dict[field_info.name] = serialize_value(value)
             else:
                 # Add to top level
-                top_level_dict[field_info.name] = value
+                top_level_dict[field_info.name] = serialize_value(value)
 
         top_level_dict["location"] = location_dict
-        trimmed = _trim_data_recursively(top_level_dict)
-        return {
-            **trimmed,
-            "type": self.__class__.__name__,
-            "description": self.description,
-        }
+
+        return top_level_dict
 
 
 @location_fields()
