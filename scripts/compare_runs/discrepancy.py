@@ -42,7 +42,7 @@ def _mark_location_fields(cls: Type, locations: Optional[List[str]] = None) -> T
 
 
 # Helper function to mark trimmable fields on dataclasses
-def _mark_trimmable_fields(cls: Type, trimmable: Optional[List[str]] = None) -> Type:
+def _mark_trimmable_fields(cls: Type, trimmable: List[str]) -> Type:
     """
     Mark trimmable fields in the class metadata.
 
@@ -50,8 +50,6 @@ def _mark_trimmable_fields(cls: Type, trimmable: Optional[List[str]] = None) -> 
         cls: The dataclass to mark
         trimmable: List of field names that should be trimmed for display
     """
-    if trimmable is None:
-        trimmable = []
 
     # Mark trimmable fields in the class metadata
     if not hasattr(cls, "_trimmable_fields"):
@@ -62,7 +60,7 @@ def _mark_trimmable_fields(cls: Type, trimmable: Optional[List[str]] = None) -> 
     return cls
 
 
-def location_fields(locations: Optional[List[str]] = None):
+def location_fields(locations: List[str]):
     """
     Decorator to mark location fields on a dataclass.
 
@@ -87,7 +85,7 @@ def location_fields(locations: Optional[List[str]] = None):
     return decorator
 
 
-def trimmable_fields(trimmable: Optional[List[str]] = None):
+def trimmable_fields(trimmable: List[str]):
     """
     Decorator to mark trimmable fields on a dataclass.
 
@@ -199,10 +197,6 @@ class DiscrepancyBase:
         for field_info in fields(self):
             value = getattr(self, field_info.name)
 
-            # Skip None values for optional fields
-            if value is None:
-                continue
-
             # Apply trimming if this field is marked as trimmable
             if field_info.name in trimmable_fields and isinstance(value, str):
                 value = _trim_value_for_display(value)
@@ -220,7 +214,6 @@ class DiscrepancyBase:
         return top_level_dict
 
 
-@location_fields()
 @dataclass(frozen=True)
 class MissingFile(DiscrepancyBase):
     """Represents a missing file discrepancy."""
@@ -229,7 +222,6 @@ class MissingFile(DiscrepancyBase):
     present_in: str
 
 
-@location_fields()
 @dataclass(frozen=True)
 class MissingDirectory(DiscrepancyBase):
     """Represents a missing directory discrepancy."""
