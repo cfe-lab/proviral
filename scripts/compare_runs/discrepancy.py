@@ -109,7 +109,7 @@ def trimmable_fields(trimmable: List[str]):
     return decorator
 
 
-def _trim_value_for_display(value: str, max_length: int = 20) -> str:
+def _trim_value_for_display(value: str, max_length: int = 50) -> str:
     """
     Trim a value for display purposes if it exceeds the maximum length.
 
@@ -118,7 +118,7 @@ def _trim_value_for_display(value: str, max_length: int = 20) -> str:
 
     Args:
         value: The string value to potentially trim
-        max_length: Maximum allowed length (default: 20)
+        max_length: Maximum allowed length (default: 50)
 
     Returns:
         The original value if <= max_length, otherwise a trimmed version
@@ -126,8 +126,8 @@ def _trim_value_for_display(value: str, max_length: int = 20) -> str:
     Examples:
         >>> _trim_value_for_display("short")
         'short'
-        >>> _trim_value_for_display("this_is_a_very_long_value_that_exceeds_twenty_characters")
-        'this_is_...characters'
+        >>> _trim_value_for_display("this_is_a_very_long_value_that_exceeds_fifty_characters")
+        'this_is_a_...characters'
     """
     if not isinstance(value, str):
         value = str(value)
