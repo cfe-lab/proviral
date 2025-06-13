@@ -539,13 +539,13 @@ def _compare_rows_by_index_column(
                         FieldChange(
                             severity=field_severity,
                             confidence=field_confidence,
-                            description=f"Field '{col_name}' differs in row with {index_column_name}='{_trim_value_for_display(str(index_value))}': '{field_change['value1']}' → '{field_change['value2']}'",
+                            description=f"Field '{col_name}' differs in row with {index_column_name}='{_trim_value_for_display(str(index_value))}': '{_trim_value_for_display(field_change['value1'])}' → '{_trim_value_for_display(field_change['value2'])}'",
                             file=filename,
                             version=version,
                             run="both",
                             row=pos1 + 1,  # 1-based row number
                             index_column=index_column_name,
-                            index_value=_trim_value_for_display(str(index_value)),
+                            index_value=str(index_value),
                             position_run1=pos1,
                             position_run2=pos2,
                             column_index=field_change["column_index"],
@@ -594,7 +594,7 @@ def _compare_rows_by_index_column(
                     version=version,
                     run="run2",
                     index_column=index_column_name,
-                    index_value=_trim_value_for_display(str(index_value)),
+                    index_value=str(index_value),
                     position_run1=pos1,
                     missing_from="run2",
                     present_in="run1",
@@ -616,7 +616,7 @@ def _compare_rows_by_index_column(
                     version=version,
                     run="run2",
                     index_column=index_column_name,
-                    index_value=_trim_value_for_display(str(index_value)),
+                    index_value=str(index_value),
                     position_run2=pos2,
                     missing_from="run1",
                     present_in="run2",
@@ -637,7 +637,7 @@ def _compare_rows_by_index_column(
                     version=version,
                     run="both",
                     index_column=index_column_name,
-                    index_value=_trim_value_for_display(position_diff["index_value"]),
+                    index_value=position_diff["index_value"],
                     position_run1=position_diff["position_run1"],
                     position_run2=position_diff["position_run2"],
                 )
@@ -915,7 +915,7 @@ def main():
 
     parser.add_argument(
         "--indexes",
-        default='.*/sample|.*/samp_name',
+        default=".*/sample|.*/samp_name",
         help="Regex pattern to match index columns in format 'filename/columnname'. Examples: '.*/sample' or 'file1.csv/id|file2.csv/sample_id'",
     )
 

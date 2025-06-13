@@ -243,6 +243,7 @@ class HeaderDifference(DiscrepancyBase):
     total_header_changes: int
 
 
+@trimmable_fields(["index_value"])
 @location_fields(
     [
         "row",
@@ -279,6 +280,7 @@ class RowCountDifference(DiscrepancyBase):
     row_difference: int
 
 
+@trimmable_fields(["index_value"])
 @location_fields(
     [
         "row",
@@ -333,6 +335,7 @@ class RowOrderDifference(DiscrepancyBase):
     reordered_rows: List[str]
 
 
+@trimmable_fields(["index_value"])
 @location_fields(
     ["index_column", "index_value", "position_run1", "missing_from", "present_in"]
 )
@@ -348,6 +351,7 @@ class MissingRow(DiscrepancyBase):
     present_in: str
 
 
+@trimmable_fields(["index_value"])
 @location_fields(
     ["index_column", "index_value", "position_run1", "missing_from", "present_in"]
 )
@@ -363,7 +367,7 @@ class ExtraRow(DiscrepancyBase):
     present_in: str
 
 
-@trimmable_fields(["value1", "value2"])
+@trimmable_fields(["value1", "value2", "index_value"])
 @location_fields(
     [
         "row",
