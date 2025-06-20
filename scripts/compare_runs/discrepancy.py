@@ -298,7 +298,7 @@ class ColumnCountDifference(DiscrepancyBase):
     run1_columns: int
     run2_columns: int
     columns_missing_in_run2: List[str]
-    columns_extra_in_run2: int
+    columns_extra_in_run2: List[str]
     row: int
     column_difference: int
 

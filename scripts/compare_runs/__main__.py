@@ -319,7 +319,7 @@ def compare_csv_contents(
                 ColumnCountDifference(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
-                    description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({len(missing_cols)} missing, {extra_cols} extra in run2)",
+                    description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({len(missing_cols)} missing, {len(extra_cols)} extra in run2)",
                     file=filename,
                     version=version,
                     run="both",
@@ -562,13 +562,13 @@ def _compare_rows_by_index_column(
 
                 # Check for column count differences in data rows
                 if len(row1) != len(row2):
-                    # For data rows, missing_cols will be []
+                    # For data rows, missing_cols and extra_cols will be []
                     missing_cols, extra_cols = analyze_column_differences(row1, row2)
                     discrepancies.append(
                         ColumnCountDifference(
                             severity=Severity.HIGH,
                             confidence=Confidence.HIGH,
-                            description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({len(missing_cols)} missing, {extra_cols} extra in run2)",
+                            description=f"Row with {index_column_name}='{_trim_value_for_display(str(index_value))}' column count differs: {len(row1)} vs {len(row2)} ({len(missing_cols)} missing, {len(extra_cols)} extra in run2)",
                             file=filename,
                             version=version,
                             run="both",
