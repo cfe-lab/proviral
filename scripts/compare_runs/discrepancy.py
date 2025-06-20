@@ -230,17 +230,14 @@ class MissingDirectory(DiscrepancyBase):
     present_in: str
 
 
-@location_fields(["row", "changed_headers", "total_header_changes"])
 @dataclass(frozen=True)
 class HeaderDifference(DiscrepancyBase):
     """Represents a header difference discrepancy."""
 
-    header_changes: Dict[str, Any]
+    columns_missing_in_run2: List[str]
+    columns_extra_in_run2: List[str]
     run1_header_count: int
     run2_header_count: int
-    row: int
-    changed_headers: List[str]
-    total_header_changes: int
 
 
 @trimmable_fields(["index_value"])
