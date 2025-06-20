@@ -280,15 +280,9 @@ class RowCountDifference(DiscrepancyBase):
     row_difference: int
 
 
-@trimmable_fields(["index_value"])
 @location_fields(
     [
         "row",
-        "index_column",
-        "index_value",
-        "position_run1",
-        "position_run2",
-        "column_difference",
     ]
 )
 @dataclass(frozen=True)
