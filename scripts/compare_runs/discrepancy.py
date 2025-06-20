@@ -280,9 +280,11 @@ class RowCountDifference(DiscrepancyBase):
     row_difference: int
 
 
+@trimmable_fields(["index_value"])
 @location_fields(
     [
-        "row",
+        "index_column",
+        "index_value",
     ]
 )
 @dataclass(frozen=True)
@@ -293,7 +295,8 @@ class ColumnCountDifference(DiscrepancyBase):
     run2_columns: int
     columns_missing_in_run2: List[str]
     columns_extra_in_run2: List[str]
-    row: int
+    index_column: str
+    index_value: str
     column_difference: int
 
 

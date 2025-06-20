@@ -312,27 +312,6 @@ def compare_csv_contents(
                 ),
             )
 
-        # Check for column count differences in header
-        if len(headers1) != len(headers2):
-            missing_cols, extra_cols = analyze_column_differences(headers1, headers2)
-            report.add_discrepancy(
-                ColumnCountDifference(
-                    severity=Severity.CRITICAL,
-                    confidence=Confidence.HIGH,
-                    description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({len(missing_cols)} missing, {len(extra_cols)} extra in run2)",
-                    file=filename,
-                    version=version,
-                    run="both",
-                    run1_columns=len(headers1),
-                    run2_columns=len(headers2),
-                    columns_missing_in_run2=missing_cols,
-                    columns_extra_in_run2=extra_cols,
-                    row=1,  # Headers are always row 1
-                    column_difference=len(headers2)
-                    - len(headers1),  # Positive if run2 has more columns
-                ),
-            )
-
     # Use index-column-based comparison if available, otherwise report error
     if index_column_name is not None and not dup_check1 and not dup_check2:
         # Use index-column-based row comparison (skip header row since already compared)
@@ -576,7 +555,8 @@ def _compare_rows_by_index_column(
                             run2_columns=len(row2),
                             columns_missing_in_run2=missing_cols,
                             columns_extra_in_run2=extra_cols,
-                            row=pos1 + 1,  # 1-based row number
+                            index_column=index_column_name,
+                            index_value=index_value,
                             column_difference=abs(len(row1) - len(row2)),
                         )
                     )
