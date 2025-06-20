@@ -431,7 +431,7 @@ def _compare_rows_by_index_column(
     header_difference_reported: bool = False,  # Add the flag
 ) -> List[Discrepancy]:
     """
-    Compare CSV rows using index column matching instead of position-based comparison.
+    Compare CSV rows using index column matching.
 
     Args:
         content1: First CSV data
@@ -482,9 +482,17 @@ def _compare_rows_by_index_column(
 
             # Compare row content if rows differ
             if row1 != row2:
+                # Convert rows to dicts for analysis
+                row1_dict = dict(zip(headers1, row1))
+                row2_dict = dict(zip(headers2, row2))
                 # Analyze which specific columns differ
                 column_differences = analyze_row_differences(
-                    row1, row2, headers1, headers2, column_map1, column_map2
+                    row1_dict,
+                    row2_dict,
+                    headers1,
+                    None,
+                    column_map1,
+                    None,
                 )
 
                 # Create individual discrepancies for each field change
