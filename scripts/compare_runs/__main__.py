@@ -36,11 +36,10 @@ from .discrepancy import (
     MissingRow,
     ExtraRow,
     MissingFile,
+    MissingHeader,
     MissingDirectory,
     # New flat discrepancy types
     FieldChange,
-    HeaderFieldChange,
-    HeaderDifference,
     ColumnReorder,
     RowReorder,
 )
@@ -56,7 +55,6 @@ from .csv_utils import (
 #     discover_index_column,  # Replaced with regex-based approach
 # )
 from .row_comparison import (
-    analyze_header_differences,
     analyze_row_differences,
 )
 from .file_operations import (
@@ -180,7 +178,7 @@ def compare_csv_contents(
         for reordered_col in order_diff["reordered_columns"]:
             report.add_discrepancy(
                 ColumnReorder(
-                    severity=Severity.MEDIUM,
+                    severity=Severity.LOW,
                     confidence=Confidence.HIGH,
                     description=f"Column '{reordered_col['column']}' moved from position {reordered_col['position_run1']} to {reordered_col['position_run2']}",
                     file=filename,
@@ -262,102 +260,39 @@ def compare_csv_contents(
     # Always check headers first, regardless of comparison method
     if headers1 != headers2:
         # Identify specific header differences
-        changed_headers = analyze_header_differences(headers1, headers2)
+        removed = list({key: None for key in headers1 if key not in headers2}.keys())
+        added = list({key: None for key in headers2 if key not in headers1}.keys())
 
         # Create individual discrepancies for each header field change
-        for removed_header in changed_headers["removed"]:
+        for removed_header in removed:
             report.add_discrepancy(
-                HeaderFieldChange(
+                MissingHeader(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
-                    description=f"Header '{removed_header['value']}' removed at position {removed_header['index']}",
+                    description=f"Header '{removed_header}' removed at position {headers1.index(removed_header)}",
                     file=filename,
                     version=version,
                     run="run1",  # Present in run1, missing in run2
-                    column_index=removed_header["index"],
-                    value1=removed_header["value"],
-                    value2=None,
-                    row=1,  # Headers are always row 1
+                    name=removed_header,
+                    present_in="run1",
+                    missing_from="run2",
                 ),
             )
 
-        for added_header in changed_headers["added"]:
+        for added_header in added:
             report.add_discrepancy(
-                HeaderFieldChange(
+                MissingHeader(
                     severity=Severity.CRITICAL,
                     confidence=Confidence.HIGH,
-                    description=f"Header '{added_header['value']}' added at position {added_header['index']}",
+                    description=f"Header '{added_header}' added at position {headers2.index(added_header)}",
                     file=filename,
                     version=version,
                     run="run2",  # Missing in run1, present in run2
-                    column_index=added_header["index"],
-                    value1=None,
-                    value2=added_header["value"],
-                    row=1,  # Headers are always row 1
+                    name=added_header,
+                    present_in="run2",
+                    missing_from="run1",
                 ),
             )
-
-        for modified_header in changed_headers["modified"]:
-            report.add_discrepancy(
-                HeaderFieldChange(
-                    severity=Severity.CRITICAL,
-                    confidence=Confidence.HIGH,
-                    description=f"Header changed at position {modified_header['index']}: '{modified_header['old_header']}' → '{modified_header['new_header']}'",
-                    file=filename,
-                    version=version,
-                    run="both",
-                    value1=modified_header["old_header"],
-                    value2=modified_header["new_header"],
-                    column_index=modified_header["index"],
-                    row=1,  # Headers are always row 1
-                ),
-            )
-
-        # Check for column count differences in header
-        header_difference_reported = False
-        if len(headers1) != len(headers2):
-            missing_cols, extra_cols = analyze_column_differences(headers1, headers2)
-            report.add_discrepancy(
-                HeaderDifference(
-                    severity=Severity.CRITICAL,
-                    confidence=Confidence.HIGH,
-                    description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({len(missing_cols)} missing, {len(extra_cols)} extra in run2)",
-                    file=filename,
-                    version=version,
-                    run="both",
-                    columns_missing_in_run2=missing_cols,
-                    columns_extra_in_run2=extra_cols,
-                    run1_header_count=len(headers1),
-                    run2_header_count=len(headers2),
-                ),
-            )
-            header_difference_reported = True
-
-        # Only report ColumnCountDifference if no HeaderDifference was reported
-        if not header_difference_reported:
-            if len(headers1) != len(headers2):
-                missing_cols, extra_cols = analyze_column_differences(
-                    headers1, headers2
-                )
-                report.add_discrepancy(
-                    ColumnCountDifference(
-                        severity=Severity.CRITICAL,
-                        confidence=Confidence.HIGH,
-                        description=f"Header column count differs: {len(headers1)} vs {len(headers2)} ({len(missing_cols)} missing, {len(extra_cols)} extra in run2)",
-                        file=filename,
-                        version=version,
-                        run="both",
-                        run1_columns=len(headers1),
-                        run2_columns=len(headers2),
-                        columns_missing_in_run2=missing_cols,
-                        columns_extra_in_run2=extra_cols,
-                        index_column=index_column_name
-                        if index_column_name
-                        else "HEADER",
-                        index_value="HEADER",
-                        column_difference=len(headers2) - len(headers1),
-                    ),
-                )
 
     # Use index-column-based comparison if available, otherwise report error
     if index_column_name is not None and not dup_check1 and not dup_check2:
@@ -366,6 +301,7 @@ def compare_csv_contents(
             f"Using index-column-based comparison with column: {index_column_name}"
         )
 
+        header_difference_reported = headers1 != headers2
         index_based_discrepancies = _compare_rows_by_index_column(
             content1,
             content2,
@@ -376,6 +312,7 @@ def compare_csv_contents(
             column_map2,
             version,
             filename,
+            header_difference_reported,
         )
         for discrepancy in index_based_discrepancies:
             report.add_discrepancy(discrepancy)
@@ -491,6 +428,7 @@ def _compare_rows_by_index_column(
     column_map2: Dict[str, int],
     version: str,
     filename: str,
+    header_difference_reported: bool = False,  # Add the flag
 ) -> List[Discrepancy]:
     """
     Compare CSV rows using index column matching instead of position-based comparison.
@@ -587,7 +525,7 @@ def _compare_rows_by_index_column(
                     )
 
                 # Check for column count differences in data rows
-                if len(row1) != len(row2):
+                if not header_difference_reported and len(row1) != len(row2):
                     # For data rows, missing_cols and extra_cols will be []
                     missing_cols, extra_cols = analyze_column_differences(row1, row2)
                     discrepancies.append(

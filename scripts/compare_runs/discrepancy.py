@@ -230,16 +230,6 @@ class MissingDirectory(DiscrepancyBase):
     present_in: str
 
 
-@dataclass(frozen=True)
-class HeaderDifference(DiscrepancyBase):
-    """Represents a header difference discrepancy."""
-
-    columns_missing_in_run2: List[str]
-    columns_extra_in_run2: List[str]
-    run1_header_count: int
-    run2_header_count: int
-
-
 @trimmable_fields(["index_value"])
 @location_fields(
     [
@@ -308,27 +298,6 @@ class DuplicateColumnNames(DiscrepancyBase):
     positions: List[int]
 
 
-@location_fields(["reordered_columns"])
-@dataclass(frozen=True)
-class ColumnOrderDifference(DiscrepancyBase):
-    """Represents a column order difference discrepancy."""
-
-    order_differences: Dict[str, Any]
-    reordered_count: int
-    reordered_columns: List[str]
-
-
-@location_fields(["index_column", "reordered_rows"])
-@dataclass(frozen=True)
-class RowOrderDifference(DiscrepancyBase):
-    """Represents a row order difference discrepancy."""
-
-    position_differences: List[Dict[str, Any]]
-    reordered_count: int
-    index_column: str
-    reordered_rows: List[str]
-
-
 @trimmable_fields(["index_value"])
 @location_fields(
     ["index_column", "index_value", "position_run1", "missing_from", "present_in"]
@@ -393,15 +362,14 @@ class FieldChange(DiscrepancyBase):
     column_name: Optional[str]
 
 
-@location_fields(["row", "column_index"])
+@location_fields(["column_index"])
 @dataclass(frozen=True)
-class HeaderFieldChange(DiscrepancyBase):
+class MissingHeader(DiscrepancyBase):
     """Represents a single header field change."""
 
-    value1: Optional[str]
-    value2: Optional[str]
-    column_index: int
-    row: int  # Headers are always row 1
+    name: str
+    present_in: str
+    missing_from: str
 
 
 @location_fields(["column_name", "position_run1", "position_run2"])
@@ -429,17 +397,14 @@ class RowReorder(DiscrepancyBase):
 Discrepancy = Union[
     MissingFile,
     MissingDirectory,
-    HeaderDifference,
     RowDifference,
     RowCountDifference,
     ColumnCountDifference,
     DuplicateColumnNames,
-    ColumnOrderDifference,
-    RowOrderDifference,
     MissingRow,
     ExtraRow,
     FieldChange,
-    HeaderFieldChange,
+    MissingHeader,
     ColumnReorder,
     RowReorder,
 ]

@@ -10,38 +10,6 @@ from .discrepancy import _trim_value_for_display
 from .csv_utils import classify_value_change, get_value_type
 
 
-def analyze_header_differences(
-    header1: List[str], header2: List[str]
-) -> Dict[str, Any]:
-    """Analyze differences between two header rows."""
-    changes: Dict[str, Any] = {
-        "indices": [],
-        "added": [],
-        "removed": [],
-        "modified": [],
-    }
-
-    max_len = max(len(header1), len(header2))
-
-    for i in range(max_len):
-        val1 = header1[i] if i < len(header1) else None
-        val2 = header2[i] if i < len(header2) else None
-
-        if val1 != val2:
-            changes["indices"].append(i)
-
-            if val1 is None:
-                changes["added"].append({"index": i, "value": val2})
-            elif val2 is None:
-                changes["removed"].append({"index": i, "value": val1})
-            else:
-                changes["modified"].append(
-                    {"index": i, "old_header": val1, "new_header": val2}
-                )
-
-    return changes
-
-
 def get_header_change_summary(changes: Dict[str, Any]) -> str:
     """Generate a human-readable summary of header changes."""
     parts = []
