@@ -144,15 +144,25 @@ def classify_value_change(val1: str, val2: str) -> str:
         return "text"
 
 
-def analyze_column_differences(row1: List[str], row2: List[str]) -> tuple[int, int]:
-    """Analyze column count differences between two rows."""
+def analyze_column_differences(row1: List[str], row2: List[str]) -> tuple[list[str], int]:
+    """Analyze column differences between two rows or headers.
+    Returns a tuple of (missing_in_run2, extra_in_run2_count).
+    missing_in_run2 is a list of column names in row1 not in row2 (if headers),
+    or empty list if not headers.
+    """
+    # If both are header rows (list of str), return missing column names
+    if all(isinstance(x, str) for x in row1) and all(isinstance(x, str) for x in row2):
+        missing_in_run2 = [col for col in row1 if col not in row2]
+        extra_in_run2_count = len([col for col in row2 if col not in row1])
+        return missing_in_run2, extra_in_run2_count
+    # Otherwise, treat as data rows (list of str), just compare lengths
     len1, len2 = len(row1), len(row2)
     if len1 > len2:
-        return len1 - len2, 0  # missing in run2, extra in run1
+        return [], 0  # No column names for data rows
     elif len2 > len1:
-        return 0, len2 - len1  # missing in run1, extra in run2
+        return [], len2 - len1
     else:
-        return 0, 0
+        return [], 0
 
 
 def compare_column_orders(
