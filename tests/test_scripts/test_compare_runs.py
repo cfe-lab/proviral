@@ -445,7 +445,7 @@ class TestCSVComparison:
         result_dict = field_discrepancy
         assert result_dict["location"]["file"] == "test.csv"
         assert result_dict["location"]["row"] == 2
-        assert result_dict["location"]["column_index"] == 1  # Second column
+        assert result_dict["location"]["column_name"] == "header2"
         assert result_dict["value1"] == "value2"
         assert result_dict["value2"] == "different"
 

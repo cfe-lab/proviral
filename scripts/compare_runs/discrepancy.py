@@ -338,7 +338,6 @@ class ExtraRow(DiscrepancyBase):
         "index_value",
         "position_run1",
         "position_run2",
-        "column_index",
         "column_name",
     ],
 )
@@ -358,8 +357,7 @@ class FieldChange(DiscrepancyBase):
     index_value: str
     position_run1: int
     position_run2: int
-    column_index: int
-    column_name: Optional[str]
+    column_name: str
 
 
 @location_fields(["column_index"])

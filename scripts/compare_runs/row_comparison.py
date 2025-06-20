@@ -30,25 +30,10 @@ def get_header_change_summary(changes: Dict[str, Any]) -> str:
 def analyze_row_differences(
     row1: Dict[str, str],
     row2: Dict[str, str],
-    headers1: Optional[List[str]] = None,
-    _headers2: Optional[List[str]] = None,
-    column_map1: Optional[Dict[str, int]] = None,
-    _column_map2: Optional[Dict[str, int]] = None,
+    headers: List[str],
 ) -> Dict[str, Any]:
     """
     Analyze differences between two data rows using column names.
-
-    Args:
-        row1: First row data as dictionary (column_name -> value)
-        row2: Second row data as dictionary (column_name -> value)
-        headers1: Headers from first file (optional, for backwards
-            compatibility)
-        headers2: Headers from second file (optional, for backwards
-            compatibility, currently unused)
-        column_map1: Column name to index mapping for first file (optional,
-            for backwards compatibility)
-        column_map2: Column name to index mapping for second file (optional,
-            for backwards compatibility, currently unused)
 
     Returns:
         Dictionary with change information including column names
@@ -61,25 +46,13 @@ def analyze_row_differences(
     }
 
     # Get all column names from both rows
-    all_columns = set(row1.keys()) | set(row2.keys())
+    all_columns = sorted(set(headers))
     
     for col_name in all_columns:
         val1 = row1.get(col_name, "")
         val2 = row2.get(col_name, "")
 
         if val1 != val2:
-            # For backwards compatibility with indices, use column_map1 if
-            # available
-            column_index = None
-            if column_map1 and col_name in column_map1:
-                column_index = column_map1[col_name]
-            elif headers1 and col_name in headers1:
-                column_index = headers1.index(col_name)
-            else:
-                # Use a placeholder index if not found
-                column_index = -1
-                
-            changes["indices"].append(column_index)
             changes["column_names"].append(col_name)
 
             # Determine change type
@@ -87,7 +60,6 @@ def analyze_row_differences(
             changes["change_types"].append(change_type)
 
             change_info = {
-                "column_index": column_index,
                 "column_name": col_name,
                 "change_type": change_type,
                 "value1": _trim_value_for_display(val1),

@@ -489,10 +489,7 @@ def _compare_rows_by_index_column(
                 column_differences = analyze_row_differences(
                     row1_dict,
                     row2_dict,
-                    headers1,
-                    None,
-                    column_map1,
-                    None,
+                    list(sorted(set(headers1) & set(headers2))),
                 )
 
                 # Create individual discrepancies for each field change
@@ -520,7 +517,6 @@ def _compare_rows_by_index_column(
                             index_value=str(index_value),
                             position_run1=pos1,
                             position_run2=pos2,
-                            column_index=field_change["column_index"],
                             column_name=field_change["column_name"],
                             change_type=field_change["change_type"],
                             value1=field_change["value1"],
