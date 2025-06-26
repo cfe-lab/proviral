@@ -6,6 +6,7 @@ from typing import Sequence
 import runpy
 import sys
 from pathlib import Path
+from importlib.metadata import version
 
 
 PROGRAMS = ['sample', 'pipeline', 'study_summary', 'landscapes']
