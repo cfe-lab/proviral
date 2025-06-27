@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cfeproviral',
-    version='v2.4.4',
+    version='v2.4.5',
     classifiers=[
         'License :: OSI Approved :: MIT License',
     ],
