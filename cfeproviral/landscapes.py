@@ -8,6 +8,7 @@ import argparse
 import sys
 
 import json
+from cfeproviral.version import get_version
 import shutil
 import subprocess as sp
 import glob
@@ -69,6 +70,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                            'is_inverted': is_inverted,
                            'is_defective': is_defective,
                            'defect': verdict,
+                           'cfeproviral-version': get_version(),
                            }
 
         landscape_writer.writerow(landscape_entry)
@@ -144,7 +146,7 @@ def generate_proviral_landscape_csv(outpath: Path, backend: Backend):
         _: None = subpath
         subpath = "/dev/null"
 
-    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective']
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective', 'cfeproviral-version']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
         landscape_writer.writeheader()

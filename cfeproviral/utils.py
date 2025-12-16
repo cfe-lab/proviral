@@ -8,6 +8,7 @@ from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple, Optional, 
 import yaml
 import json
 import shutil
+from cfeproviral.version import get_version
 import subprocess as sp
 import pandas as pd
 import glob
@@ -547,11 +548,12 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
+    merged['cfeproviral-version'] = get_version()
     if not results.empty:
-        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral-version']].to_csv(
             precursor_path, index=False)
     else:
-        merged[['sample', 'sequence'] + genes_of_interest].to_csv(precursor_path,
+        merged[['sample', 'sequence'] + genes_of_interest + ['cfeproviral-version']].to_csv(precursor_path,
                                                                   index=False)
     return precursor_path
 
@@ -591,7 +593,8 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
         merged[gene] = seq
 
     # Output csv
-    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+    merged['cfeproviral-version'] = get_version()
+    merged[['sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral-version']].to_csv(
         table_precursorfile, index=False)
     return table_precursorfile
 

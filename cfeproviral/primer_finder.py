@@ -7,6 +7,7 @@ from operator import itemgetter
 import os
 from tarfile import TarFile
 import cfeintact
+from cfeproviral.version import get_version
 
 import pandas as pd
 from pathlib import Path
@@ -491,6 +492,7 @@ def run(contigs_csv,
                                         on='sample',
                                         suffixes=('_contig', '_conseq'),
                                         how='outer')
+        joined['cfeproviral-version'] = get_version()
         joined.to_csv(outpath / 'joined.csv', index=False)
         joined['sequence'] = joined['sequence_conseq'].fillna(
             joined['sequence_contig'])
@@ -504,7 +506,7 @@ def run(contigs_csv,
         joined['reference'] = joined['reference_conseq'].fillna(
             joined['reference_contig'])
         joined = joined[[
-            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen'
+            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen', 'cfeproviral-version'
         ]].sort_values(by='sample')
         joined.to_csv(outpath / f'{name}_filtered.csv', index=False)
         nrows = len(joined)
