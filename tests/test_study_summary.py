@@ -246,7 +246,7 @@ P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
 type,name,samples,passed,errors,no_sequence,non_hiv,\
-no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral-version
+no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral_version
 run,200101_M11111,3,1,2,0,0,1,0,1,0,unknown
 participant,P1,1,1,0,0,0,0,0,0,0,unknown
 participant,P2,1,0,1,0,0,1,0,0,0,unknown

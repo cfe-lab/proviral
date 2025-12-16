@@ -148,7 +148,7 @@ class StudySummary:
                          'hiv_but_failed']
         writer = DictWriter(study_summary_csv,
                             ['type',  # run, participant, or total
-                             'name'] + count_columns + ['cfeproviral-version'],
+                             'name'] + count_columns + ['cfeproviral_version'],
                             lineterminator=os.linesep)
         writer.writeheader()
         total_counts = Counter()
@@ -157,7 +157,7 @@ class StudySummary:
             for column_name in count_columns:
                 run_counts[column_name] += 0  # Force zeroes in CSV.
             row = dict(type='run', name=run_name, **run_counts)
-            row['cfeproviral-version'] = get_version()
+            row['cfeproviral_version'] = get_version()
             writer.writerow(row)
 
         for participant_id, participant_counts in sorted(
@@ -167,13 +167,13 @@ class StudySummary:
             row = dict(type='participant',
                        name=participant_id,
                        **participant_counts)
-            row['cfeproviral-version'] = get_version()
+            row['cfeproviral_version'] = get_version()
             writer.writerow(row)
 
         for column_name in count_columns:
             total_counts[column_name] += 0  # Force zeroes in CSV.
         total_row = dict(type='total', name='total', **total_counts)
-        total_row['cfeproviral-version'] = get_version()
+        total_row['cfeproviral_version'] = get_version()
         writer.writerow(total_row)
 
     def write_warnings(self, report_file: typing.TextIO, limit: int = None):

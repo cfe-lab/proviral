@@ -173,7 +173,7 @@ class OutcomeSummary:
             "sequence",
             "fwd_err",
             "rev_err",
-            "cfeproviral-version",
+            "cfeproviral_version",
         ]
 
         # Write the rows
@@ -186,7 +186,7 @@ class OutcomeSummary:
                 row_data = {
                     k: v for k, v in self.data[sample].items() if k in fieldnames
                 }
-                row_data["cfeproviral-version"] = get_version()
+                row_data["cfeproviral_version"] = get_version()
                 # Convert seqlen from float to int if it's a valid number
                 if "seqlen" in row_data and row_data["seqlen"] != "":
                     try:
