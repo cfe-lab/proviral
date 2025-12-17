@@ -25,11 +25,11 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt install -qq mafft ncbi-blast+
-        python -m pip install --upgrade pip pipenv
-        pipenv install --dev
+        pip install uv
+        uv sync --all-extras
     - name: Test with pytest
       run: |
-        pipenv run python -m pytest
+        uv run pytest
 
   docker-build:
 
