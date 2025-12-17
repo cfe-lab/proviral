@@ -8,7 +8,7 @@ import argparse
 import sys
 
 import json
-from cfeproviral.version import get_version
+from cfeproviral.version import get_version, get_cfeintact_version
 import shutil
 import subprocess as sp
 import glob
@@ -71,6 +71,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                            'is_defective': is_defective,
                            'defect': verdict,
                            'cfeproviral_version': get_version(),
+                           'cfeintact_version': get_cfeintact_version(),
                            }
 
         landscape_writer.writerow(landscape_entry)
@@ -146,7 +147,7 @@ def generate_proviral_landscape_csv(outpath: Path, backend: Backend):
         _: None = subpath
         subpath = "/dev/null"
 
-    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective', 'cfeproviral_version']
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective', 'cfeproviral_version', 'cfeintact_version']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
         landscape_writer.writeheader()
@@ -205,7 +206,7 @@ def main(argv: list) -> int:
 
     logger.debug("Start.")
 
-    fieldnames = ['ref_start', 'ref_end', 'samp_name', 'run_name', 'is_inverted', 'is_defective', 'defect']
+    fieldnames = ['ref_start', 'ref_end', 'samp_name', 'run_name', 'is_inverted', 'is_defective', 'defect', 'cfeproviral_version', 'cfeintact_version']
 
     landscape_writer = csv.DictWriter(args.output, fieldnames=fieldnames)
     landscape_writer.writeheader()

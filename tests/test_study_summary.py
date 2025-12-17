@@ -247,17 +247,18 @@ P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
 type,name,samples,passed,errors,no_sequence,non_hiv,\
-no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral_version
-run,200101_M11111,3,1,2,0,0,1,0,1,0,vmocked
-participant,P1,1,1,0,0,0,0,0,0,0,vmocked
-participant,P2,1,0,1,0,0,1,0,0,0,vmocked
-participant,P3,1,0,1,0,0,0,0,1,0,vmocked
-total,total,3,1,2,0,0,1,0,1,0,vmocked
+no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral_version,cfeintact_version
+run,200101_M11111,3,1,2,0,0,1,0,1,0,vmocked,vmocked
+participant,P1,1,1,0,0,0,0,0,0,0,vmocked,vmocked
+participant,P2,1,0,1,0,0,1,0,0,0,vmocked,vmocked
+participant,P3,1,0,1,0,0,0,0,1,0,vmocked,vmocked
+total,total,3,1,2,0,0,1,0,1,0,vmocked,vmocked
 """
     study_summary_csv = StringIO()
 
     summary.load_outcome(outcome_summary_csv)
-    with patch('cfeproviral.study_summary.get_version', return_value='vmocked'):
+    with patch('cfeproviral.study_summary.get_version', return_value='vmocked'), \
+            patch('cfeproviral.study_summary.get_cfeintact_version', return_value='vmocked'):
         summary.write(study_summary_csv)
 
     assert study_summary_csv.getvalue() == expected_study_summary_csv

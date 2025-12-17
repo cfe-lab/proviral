@@ -5,3 +5,10 @@ def get_version():
         return version('cfeproviral')
     except PackageNotFoundError:
         return 'unknown'
+
+
+def get_cfeintact_version():
+    try:
+        return version('cfeintact')
+    except PackageNotFoundError:
+        return 'unknown'

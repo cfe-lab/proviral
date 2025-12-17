@@ -2,7 +2,7 @@ import csv
 import logging
 
 import pandas as pd
-from cfeproviral.version import get_version
+from cfeproviral.version import get_version, get_cfeintact_version
 from cfeproviral.primer_finder_errors import PrimerFinderErrors
 from cfeproviral.helpers.proviral_helper import ProviralHelper
 
@@ -174,6 +174,7 @@ class OutcomeSummary:
             "fwd_err",
             "rev_err",
             "cfeproviral_version",
+            "cfeintact_version",
         ]
 
         # Write the rows
@@ -187,6 +188,7 @@ class OutcomeSummary:
                     k: v for k, v in self.data[sample].items() if k in fieldnames
                 }
                 row_data["cfeproviral_version"] = get_version()
+                row_data["cfeintact_version"] = get_cfeintact_version()
                 # Convert seqlen from float to int if it's a valid number
                 if "seqlen" in row_data and row_data["seqlen"] != "":
                     try:
