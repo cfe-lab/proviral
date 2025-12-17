@@ -549,6 +549,9 @@ def run(contigs_csv,
                                         suffixes=('_contig', '_conseq'),
                                         how='outer')
         joined['cfeproviral_version'] = get_version()
+        joined['cfeintact_version'] = get_cfeintact_version()
+        # Add micall_version for each sample
+        joined['micall_version'] = joined['sample'].map(lambda s: all_samples.get(s, {}).get('micall_version'))
         joined.to_csv(outpath / 'joined.csv', index=False)
         joined['sequence'] = joined['sequence_conseq'].fillna(
             joined['sequence_contig'])
@@ -562,7 +565,7 @@ def run(contigs_csv,
         joined['reference'] = joined['reference_conseq'].fillna(
             joined['reference_contig'])
         joined = joined[[
-            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen', 'cfeproviral_version'
+            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen', 'cfeproviral_version', 'cfeintact_version', 'micall_version'
         ]].sort_values(by='sample')
         joined.to_csv(outpath / f'{name}_filtered.csv', index=False)
         nrows = len(joined)

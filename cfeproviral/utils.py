@@ -8,7 +8,7 @@ from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple, Optional, 
 import yaml
 import json
 import shutil
-from cfeproviral.version import get_version
+from cfeproviral.version import get_version, get_cfeintact_version
 import subprocess as sp
 import pandas as pd
 import glob
@@ -548,12 +548,20 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
-    merged['cfeproviral_version'] = get_version()
+    # Version columns should come from the filtered dataframe
+    # If they're not there (shouldn't happen with updated code), add them
+    if 'cfeproviral_version' not in merged.columns:
+        merged['cfeproviral_version'] = get_version()
+    if 'cfeintact_version' not in merged.columns:
+        merged['cfeintact_version'] = get_cfeintact_version()
+    if 'micall_version' not in merged.columns:
+        merged['micall_version'] = None
+    
     if not results.empty:
-        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version']].to_csv(
+        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(
             precursor_path, index=False)
     else:
-        merged[['sample', 'sequence'] + genes_of_interest + ['cfeproviral_version']].to_csv(precursor_path,
+        merged[['sample', 'sequence'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(precursor_path,
                                                                   index=False)
     return precursor_path
 
@@ -594,7 +602,12 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
 
     # Output csv
     merged['cfeproviral_version'] = get_version()
-    merged[['sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version']].to_csv(
+    merged['cfeintact_version'] = get_cfeintact_version()
+    # micall_version should come from filtered dataframe
+    # If not present, set to None
+    if 'micall_version' not in merged.columns:
+        merged['micall_version'] = None
+    merged[['sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(
         table_precursorfile, index=False)
     return table_precursorfile
 
