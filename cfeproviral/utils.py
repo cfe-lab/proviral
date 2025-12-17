@@ -706,14 +706,18 @@ def get_samples_from_cascade(cascade_csv: typing.IO,
                              default_sample_name: Optional[str] = None):
     all_samples = {}
     reader = DictReader(cascade_csv)
-    if 'sample' in reader.fieldnames:
+    if reader.fieldnames and 'sample' in reader.fieldnames:
         for row in reader:
-            all_samples[row['sample']] = int(row['remap'])
+            all_samples[row['sample']] = {
+                'remap': int(row['remap']),
+                'micall_version': row.get('micall_version')
+            }
         return all_samples
     rows = list(reader)
     assert len(rows) == 1, len(rows)
     remap_count = int(rows[0]['remap'])
-    return {default_sample_name: remap_count}
+    micall_version = rows[0].get('micall_version')
+    return {default_sample_name: {'remap': remap_count, 'micall_version': micall_version}}
 
 
 ## Define some variables

@@ -148,7 +148,7 @@ def find_primers(
     # column (constructed from cascade.csv file)
     for sample in all_samples:
         # If no reads remapped, contig/conseq does not exist, write it as an error
-        if all_samples[sample] == 0:
+        if all_samples[sample]['remap'] == 0:
             # Do not analyze non-proviral samples
             if not proviral_helper.is_proviral(sample):
                 logger.debug('Skipping sample "%s" because it is non-proviral' %
@@ -483,7 +483,7 @@ def run(contigs_csv,
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral)
+        OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral, sample_info=all_samples)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(sample_size, contigs_df, nodups)

@@ -59,10 +59,12 @@ class StudySummary:
         # {run_path: {col_name: count}}
         self.run_counts: typing.Dict[str, typing.Dict[str, int]] = \
             defaultdict(Counter)
+        self.run_versions: typing.Dict[str, typing.Set[str]] = defaultdict(set)
 
         # {participant_id: {col_name: count}}
         self.participant_counts: typing.Dict[str, typing.Dict[str, int]] = \
             defaultdict(Counter)
+        self.participant_versions: typing.Dict[str, typing.Set[str]] = defaultdict(set)
 
         # {(run_name, sample): participant_id}
         self.participant_ids: typing.Dict[typing.Tuple[str, str], str] = {}
@@ -123,6 +125,11 @@ class StudySummary:
                 pass
             participant_counts = self.participant_counts[participant_key]
 
+            micall_version = row.get('micall_version')
+            if micall_version:
+                self.run_versions[run_name].add(micall_version)
+                self.participant_versions[participant_key].add(micall_version)
+
             for counts in (run_counts, participant_counts):
                 counts['samples'] += 1
                 passed_field = row['passed']
@@ -148,17 +155,21 @@ class StudySummary:
                          'hiv_but_failed']
         writer = DictWriter(study_summary_csv,
                             ['type',  # run, participant, or total
-                             'name'] + count_columns + ['cfeproviral_version', 'cfeintact_version'],
+                             'name'] + count_columns + ['cfeproviral_version', 'cfeintact_version', 'micall_version'],
                             lineterminator=os.linesep)
         writer.writeheader()
         total_counts = Counter()
+        total_versions = set()
         for run_name, run_counts in sorted(self.run_counts.items()):
             total_counts += run_counts
+            versions = self.run_versions[run_name]
+            total_versions.update(versions)
             for column_name in count_columns:
                 run_counts[column_name] += 0  # Force zeroes in CSV.
             row = dict(type='run', name=run_name, **run_counts)
             row['cfeproviral_version'] = get_version()
             row['cfeintact_version'] = get_cfeintact_version()
+            row['micall_version'] = ';'.join(sorted(versions))
             writer.writerow(row)
 
         for participant_id, participant_counts in sorted(
@@ -170,6 +181,7 @@ class StudySummary:
                        **participant_counts)
             row['cfeproviral_version'] = get_version()
             row['cfeintact_version'] = get_cfeintact_version()
+            row['micall_version'] = ';'.join(sorted(self.participant_versions[participant_id]))
             writer.writerow(row)
 
         for column_name in count_columns:
@@ -177,6 +189,7 @@ class StudySummary:
         total_row = dict(type='total', name='total', **total_counts)
         total_row['cfeproviral_version'] = get_version()
         total_row['cfeintact_version'] = get_cfeintact_version()
+        total_row['micall_version'] = ';'.join(sorted(total_versions))
         writer.writerow(total_row)
 
     def write_warnings(self, report_file: typing.TextIO, limit: int = None):

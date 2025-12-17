@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                                            landscape_writer: csv.DictWriter,
                                            verdicts: Mapping[str, str],
+                                           micall_versions: Mapping[str, str] = None,
                                            ) -> None:
 
     for row in blastn_reader:
@@ -72,6 +73,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                            'defect': verdict,
                            'cfeproviral_version': get_version(),
                            'cfeintact_version': get_cfeintact_version(),
+                           'micall_version': micall_versions.get(sample_name) if micall_versions else None,
                            }
 
         landscape_writer.writerow(landscape_entry)
@@ -95,6 +97,20 @@ def get_hivseqinr_verdicts_1_map(details_dir: Path) -> Mapping[str, str]:
     return ret
 
 
+def get_micall_versions(details_dir: Path) -> Mapping[str, str]:
+    outcome_summary_path = details_dir / "outcome_summary.csv"
+    if not outcome_summary_path.exists():
+        return {}
+
+    versions = {}
+    with open(outcome_summary_path) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if 'micall_version' in row and row['micall_version']:
+                versions[row['sample']] = row['micall_version']
+    return versions
+
+
 def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
                                       details_dir: Path,
                                       ) -> None:
@@ -105,6 +121,8 @@ def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
     else:
         verdicts = get_hivseqinr_verdicts_1_map(details_dir)
         blastn_path = details_dir / "Results_Intermediate" / "Output_Blastn_HXB2MEGA28_tabdelim.txt"
+
+    micall_versions = get_micall_versions(details_dir)
 
     with blastn_path.open() as blastn_file:
         if is_cfeintact:
@@ -133,6 +151,7 @@ def generate_proviral_landscape_csv_1(landscape_writer: csv.DictWriter,
             blastn_reader,
             landscape_writer,
             verdicts,
+            micall_versions,
         )
 
 
@@ -147,7 +166,7 @@ def generate_proviral_landscape_csv(outpath: Path, backend: Backend):
         _: None = subpath
         subpath = "/dev/null"
 
-    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective', 'cfeproviral_version', 'cfeintact_version']
+    landscape_columns = ['samp_name', 'run_name', 'ref_start', 'ref_end', 'defect', 'is_inverted', 'is_defective', 'cfeproviral_version', 'cfeintact_version', 'micall_version']
     with open(proviral_landscape_csv, 'w') as landscape_file:
         landscape_writer = csv.DictWriter(landscape_file, fieldnames=landscape_columns)
         landscape_writer.writeheader()
@@ -206,7 +225,7 @@ def main(argv: list) -> int:
 
     logger.debug("Start.")
 
-    fieldnames = ['ref_start', 'ref_end', 'samp_name', 'run_name', 'is_inverted', 'is_defective', 'defect', 'cfeproviral_version', 'cfeintact_version']
+    fieldnames = ['ref_start', 'ref_end', 'samp_name', 'run_name', 'is_inverted', 'is_defective', 'defect', 'cfeproviral_version', 'cfeintact_version', 'micall_version']
 
     landscape_writer = csv.DictWriter(args.output, fieldnames=fieldnames)
     landscape_writer.writeheader()
