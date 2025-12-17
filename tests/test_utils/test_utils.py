@@ -111,4 +111,4 @@ def test_getSamplesFromCascade():
     samples = utils.get_samples_from_cascade(cascade)
     assert len(samples) == 10
     for i in range(10):
-        assert samples[str(i)] == i
+        assert samples[str(i)]['remap'] == i
