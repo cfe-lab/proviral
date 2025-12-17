@@ -9,6 +9,7 @@ import Levenshtein
 from gotoh import align_it
 
 import cfeproviral.utils as utils
+from cfeproviral.version import get_version, get_cfeintact_version
 mixture_dict = utils.mixture_dict
 reverse_and_complement = utils.reverse_and_complement
 
@@ -46,6 +47,7 @@ def find_probes(contigs_csv, probes_csv):
                 'dist', 'end_dist', 'score', 'is_reversed', 'seq'
         ]:
             columns.append(target_name + '_' + column_type)
+    columns.extend(['cfeproviral_version', 'cfeintact_version', 'micall_version'])
     writer = DictWriter(probes_csv, columns)
     writer.writeheader()
     # projects = ProjectConfig.loadDefault()
@@ -112,6 +114,12 @@ def find_probes(contigs_csv, probes_csv):
                 new_row[prefix +
                         'is_reversed'] = ('Y' if finder.is_reversed else 'N')
                 new_row[prefix + 'seq'] = finder.contig_match
+
+            # Add version columns
+            new_row['cfeproviral_version'] = get_version()
+            new_row['cfeintact_version'] = get_cfeintact_version()
+            new_row['micall_version'] = ''  # Not available in standalone mode
+
             writer.writerow(new_row)
 
 

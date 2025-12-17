@@ -111,6 +111,14 @@ def make_path(path):
         os.makedirs(path)
 
 
+def add_version_columns_to_row(row, sample_name, all_samples):
+    """Add version columns to a row dictionary."""
+    row['cfeproviral_version'] = get_version()
+    row['cfeintact_version'] = get_cfeintact_version()
+    row['micall_version'] = all_samples.get(sample_name, {}).get('micall_version')
+    return row
+
+
 def find_primers(
         csv_filepath,
         outpath,
@@ -137,6 +145,9 @@ def find_primers(
                 'hxb2_sample_primer_end'
         ]:
             columns.append(direction + '_' + column_type)
+    # Add version columns
+    columns.extend(['cfeproviral_version', 'cfeintact_version', 'micall_version'])
+
     non_tcga = re.compile(r'[^TCGA-]+')
     outfilepath = os.path.join(outpath, f'{run_name}_primer_analysis.csv')
     outfile = open(outfilepath, 'w')
@@ -157,6 +168,7 @@ def find_primers(
             new_row = dict(run_name=run_name,
                            sample=sample,
                            error=errors.no_sequence)
+            add_version_columns_to_row(new_row, sample, all_samples)
             writer.writerow(new_row)
 
     if 'sample' in reader.fieldnames:
@@ -186,6 +198,7 @@ def find_primers(
                            reference=contig_name,
                            is_rev_comp='N')
             new_row['sample'] = sample_name
+            add_version_columns_to_row(new_row, sample_name, all_samples)
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
@@ -278,6 +291,7 @@ def find_primers(
                 new_row = dict(run_name=run_name,
                                sample=sample_name,
                                error=errors.no_sequence)
+                add_version_columns_to_row(new_row, sample_name, all_samples)
                 writer.writerow(new_row)
 
     outfile.close()

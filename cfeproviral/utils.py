@@ -699,10 +699,12 @@ def genFailureSummary(contigs_df, conseqs_df, outpath):
     filtered_contigs = filter_valid(contigs_df)
     filtered_conseqs = filter_valid(conseqs_df)
     contigs_simple = filtered_contigs[[
-        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error',
+        'cfeproviral_version', 'cfeintact_version', 'micall_version'
     ]]
     conseqs_simple = filtered_conseqs[[
-        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error',
+        'cfeproviral_version', 'cfeintact_version', 'micall_version'
     ]]
     concat = pd.concat([contigs_simple, conseqs_simple])
     outfile = outpath / 'failure_summary.csv'
