@@ -1,5 +1,6 @@
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from cfeproviral.study_summary import StudySummary
 
@@ -256,7 +257,8 @@ total,total,3,1,2,0,0,1,0,1,0,unknown
     study_summary_csv = StringIO()
 
     summary.load_outcome(outcome_summary_csv)
-    summary.write(study_summary_csv)
+    with patch('cfeproviral.study_summary.get_version', return_value='unknown'):
+        summary.write(study_summary_csv)
 
     assert study_summary_csv.getvalue() == expected_study_summary_csv
 
