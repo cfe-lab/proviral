@@ -2,6 +2,7 @@ import csv
 import logging
 
 import pandas as pd
+from cfeproviral.version import get_version, get_cfeintact_version
 from cfeproviral.primer_finder_errors import PrimerFinderErrors
 from cfeproviral.helpers.proviral_helper import ProviralHelper
 
@@ -9,18 +10,21 @@ logger = logging.getLogger(__name__)
 
 
 class OutcomeSummary:
-    def __init__(self, conseqs_df, contigs_df, outpath, force_all_proviral=False):
+    def __init__(self, conseqs_df, contigs_df, outpath, force_all_proviral=False, sample_info=None):
         self.proviral_helper = ProviralHelper(force_all_proviral)
         self.errors = PrimerFinderErrors()
         self.data = {}
         self.path = outpath / "outcome_summary.csv"
+        self.sample_info = sample_info or {}
         # To know how many columns to produce
         self.max_failed = 0
         self.create(conseqs_df, contigs_df)
 
     def add_sample(self, row):
-        self.data[row["sample"]] = {
-            "sample": row["sample"],
+        sample_name = row["sample"]
+        micall_version = self.sample_info.get(sample_name, {}).get('micall_version')
+        self.data[sample_name] = {
+            "sample": sample_name,
             # Since I add suffix "_conseq", remove it
             "run": row["run_name"].rsplit("_", 1)[0],
             "conseq_passed": False,
@@ -31,6 +35,7 @@ class OutcomeSummary:
             "sequence": "",
             "failed": [],
             "error": "",
+            "micall_version": micall_version,
         }
 
     def set_passed(self, row):
@@ -172,6 +177,9 @@ class OutcomeSummary:
             "sequence",
             "fwd_err",
             "rev_err",
+            "cfeproviral_version",
+            "cfeintact_version",
+            "micall_version",
         ]
 
         # Write the rows
@@ -184,6 +192,8 @@ class OutcomeSummary:
                 row_data = {
                     k: v for k, v in self.data[sample].items() if k in fieldnames
                 }
+                row_data["cfeproviral_version"] = get_version()
+                row_data["cfeintact_version"] = get_cfeintact_version()
                 # Convert seqlen from float to int if it's a valid number
                 if "seqlen" in row_data and row_data["seqlen"] != "":
                     try:

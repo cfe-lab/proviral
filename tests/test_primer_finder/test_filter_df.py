@@ -40,7 +40,7 @@ def test_filter_df():
     contigs_csv_path = inputs / 'contigs.csv'
     conseqs_csv_path = inputs / 'conseqs.csv'
     outpath = outputs
-    all_samples = {'my_sample': 0}
+    all_samples = {'my_sample': {'remap': 0, 'micall_version': '1.0.0'}}
     run_name = 'my_run'
     contigs_out = primer_finder.find_primers(open(contigs_csv_path),
                                              outpath,

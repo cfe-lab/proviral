@@ -224,7 +224,7 @@ def setup_trim_case(tmp_path, fwd_frag, rev_frag, payload,
         csv_filepath=contigs_csv.open("r"),
         outpath=outdir,
         run_name="run1",
-        all_samples={sample_name: 1},
+        all_samples={sample_name: {'remap': 1, 'micall_version': '1.0.0'}},
         seqtype="contigs",
         sample_size=len(full_seq),
         force_all_proviral=True

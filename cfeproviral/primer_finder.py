@@ -7,6 +7,7 @@ from operator import itemgetter
 import os
 from tarfile import TarFile
 import cfeintact
+from cfeproviral.version import get_version, get_cfeintact_version
 
 import pandas as pd
 from pathlib import Path
@@ -110,6 +111,14 @@ def make_path(path):
         os.makedirs(path)
 
 
+def add_version_columns_to_row(row, sample_name, all_samples):
+    """Add version columns to a row dictionary."""
+    row['cfeproviral_version'] = get_version()
+    row['cfeintact_version'] = get_cfeintact_version()
+    row['micall_version'] = all_samples.get(sample_name, {}).get('micall_version')
+    return row
+
+
 def find_primers(
         csv_filepath,
         outpath,
@@ -136,6 +145,9 @@ def find_primers(
                 'hxb2_sample_primer_end'
         ]:
             columns.append(direction + '_' + column_type)
+    # Add version columns
+    columns.extend(['cfeproviral_version', 'cfeintact_version', 'micall_version'])
+
     non_tcga = re.compile(r'[^TCGA-]+')
     outfilepath = os.path.join(outpath, f'{run_name}_primer_analysis.csv')
     outfile = open(outfilepath, 'w')
@@ -147,7 +159,7 @@ def find_primers(
     # column (constructed from cascade.csv file)
     for sample in all_samples:
         # If no reads remapped, contig/conseq does not exist, write it as an error
-        if all_samples[sample] == 0:
+        if all_samples[sample]['remap'] == 0:
             # Do not analyze non-proviral samples
             if not proviral_helper.is_proviral(sample):
                 logger.debug('Skipping sample "%s" because it is non-proviral' %
@@ -156,6 +168,7 @@ def find_primers(
             new_row = dict(run_name=run_name,
                            sample=sample,
                            error=errors.no_sequence)
+            add_version_columns_to_row(new_row, sample, all_samples)
             writer.writerow(new_row)
 
     if 'sample' in reader.fieldnames:
@@ -185,6 +198,7 @@ def find_primers(
                            reference=contig_name,
                            is_rev_comp='N')
             new_row['sample'] = sample_name
+            add_version_columns_to_row(new_row, sample_name, all_samples)
 
             contig_seq: str = row.get('contig') or row['sequence']
             contig_seq = contig_seq.upper()
@@ -277,6 +291,7 @@ def find_primers(
                 new_row = dict(run_name=run_name,
                                sample=sample_name,
                                error=errors.no_sequence)
+                add_version_columns_to_row(new_row, sample_name, all_samples)
                 writer.writerow(new_row)
 
     outfile.close()
@@ -437,6 +452,62 @@ def archive_hivseqinr_results(working_path: Path,
             archive.add(result_path, result_path.name)
 
 
+def add_versions_to_cfeintact_outputs(working_path: Path, all_samples: dict):
+    cfeproviral_ver = get_version()
+    cfeintact_ver = get_cfeintact_version()
+
+    for csv_file in working_path.glob('*.csv'):
+        # Read the CSV
+        rows = []
+        fieldnames: list[str] = []
+        with open(csv_file, 'r') as f:
+            reader = DictReader(f)
+            fieldnames = list(reader.fieldnames or [])
+            if not fieldnames:
+                continue
+            rows = list(reader)
+
+        # Determine if we can add versions
+        # We need a column that contains the sample ID or the full qseqid
+        # Based on utils.py, 'qseqid' seems to be the standard column name in CFEIntact outputs
+
+        id_col = 'qseqid'
+
+        # Add new columns to fieldnames
+        new_columns = ['cfeproviral_version', 'cfeintact_version', 'micall_version']
+        for col in new_columns:
+            if col not in fieldnames:
+                fieldnames.append(col)
+
+        # Update rows
+        for row in rows:
+            row['cfeproviral_version'] = cfeproviral_ver
+            row['cfeintact_version'] = cfeintact_ver
+
+            if id_col in row:
+                qseqid = row[id_col]
+                # Parse qseqid to get sample name
+                # Format: name::sample::reference::seqtype
+                try:
+                    parts = qseqid.split('::')
+                    if len(parts) >= 2:
+                        sample_name = parts[1]
+                        micall_ver = all_samples.get(sample_name, {}).get('micall_version')
+                        row['micall_version'] = micall_ver
+                    else:
+                        row['micall_version'] = None
+                except Exception:
+                    row['micall_version'] = None
+            else:
+                row['micall_version'] = None
+
+        # Write back
+        with open(csv_file, 'w', newline='') as f:
+            writer = DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+
+
 def archive_cfeintact_results(working_path: Path,
                               cfeintact_results_tar: Path):
     with cfeintact_results_tar.open("wb") as writer:
@@ -482,7 +553,7 @@ def run(contigs_csv,
         contigs_df = dfs[name]['contigs']
         conseqs_df = dfs[name]['conseqs']
         # Generate outcome summary
-        OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral)
+        OutcomeSummary(conseqs_df, contigs_df, outpath, force_all_proviral, sample_info=all_samples)
         # Generate the failure summary
         # utils.genFailureSummary(contigs_df, conseqs_df, outpath)
         filtered_contigs = filter_df(sample_size, contigs_df, nodups)
@@ -491,6 +562,10 @@ def run(contigs_csv,
                                         on='sample',
                                         suffixes=('_contig', '_conseq'),
                                         how='outer')
+        joined['cfeproviral_version'] = get_version()
+        joined['cfeintact_version'] = get_cfeintact_version()
+        # Add micall_version for each sample
+        joined['micall_version'] = joined['sample'].map(lambda s: all_samples.get(s, {}).get('micall_version'))
         joined.to_csv(outpath / 'joined.csv', index=False)
         joined['sequence'] = joined['sequence_conseq'].fillna(
             joined['sequence_contig'])
@@ -504,7 +579,7 @@ def run(contigs_csv,
         joined['reference'] = joined['reference_conseq'].fillna(
             joined['reference_contig'])
         joined = joined[[
-            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen'
+            'name', 'sample', 'reference', 'seqtype', 'sequence', 'seqlen', 'cfeproviral_version', 'cfeintact_version', 'micall_version'
         ]].sort_values(by='sample')
         joined.to_csv(outpath / f'{name}_filtered.csv', index=False)
         nrows = len(joined)
@@ -569,6 +644,8 @@ def run(contigs_csv,
                     check_distance=False,
                     output_csv=True,
                 )
+
+                add_versions_to_cfeintact_outputs(working_path, all_samples)
 
                 if cfeintact_results_tar is not None:
                     archive_cfeintact_results(working_path,

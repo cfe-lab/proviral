@@ -1,5 +1,6 @@
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from cfeproviral.study_summary import StudySummary
 
@@ -246,17 +247,19 @@ P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs
 """)
     expected_study_summary_csv = """\
 type,name,samples,passed,errors,no_sequence,non_hiv,\
-no_primer,low_cov,multiple_contigs,hiv_but_failed
-run,200101_M11111,3,1,2,0,0,1,0,1,0
-participant,P1,1,1,0,0,0,0,0,0,0
-participant,P2,1,0,1,0,0,1,0,0,0
-participant,P3,1,0,1,0,0,0,0,1,0
-total,total,3,1,2,0,0,1,0,1,0
+no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral_version,cfeintact_version,micall_version
+run,200101_M11111,3,1,2,0,0,1,0,1,0,vmocked,vmocked,
+participant,P1,1,1,0,0,0,0,0,0,0,vmocked,vmocked,
+participant,P2,1,0,1,0,0,1,0,0,0,vmocked,vmocked,
+participant,P3,1,0,1,0,0,0,0,1,0,vmocked,vmocked,
+total,total,3,1,2,0,0,1,0,1,0,vmocked,vmocked,
 """
     study_summary_csv = StringIO()
 
     summary.load_outcome(outcome_summary_csv)
-    summary.write(study_summary_csv)
+    with patch('cfeproviral.study_summary.get_version', return_value='vmocked'), \
+            patch('cfeproviral.study_summary.get_cfeintact_version', return_value='vmocked'):
+        summary.write(study_summary_csv)
 
     assert study_summary_csv.getvalue() == expected_study_summary_csv
 
@@ -309,3 +312,30 @@ run1:
     summary.write_warnings(report, limit=12)
 
     assert report.getvalue() == expected_warnings
+
+
+def test_write_with_micall_version():
+    summary = StudySummary()
+    outcome_summary_csv = StringIO("""\
+sample,run,passed,error,micall_version
+P1-NFLHIVDNA_S1,200101_M11111,True,,v1.0.0
+P2-NFLHIVDNA_S2,200101_M11111,False,primer error,v1.0.2
+P3-NFLHIVDNA_S3,200101_M11111,False,multiple contigs,3.0.0
+""")
+    expected_study_summary_csv = """\
+type,name,samples,passed,errors,no_sequence,non_hiv,\
+no_primer,low_cov,multiple_contigs,hiv_but_failed,cfeproviral_version,cfeintact_version,micall_version
+run,200101_M11111,3,1,2,0,0,1,0,1,0,vmocked,vmocked,3.0.0;v1.0.0;v1.0.2
+participant,P1,1,1,0,0,0,0,0,0,0,vmocked,vmocked,v1.0.0
+participant,P2,1,0,1,0,0,1,0,0,0,vmocked,vmocked,v1.0.2
+participant,P3,1,0,1,0,0,0,0,1,0,vmocked,vmocked,3.0.0
+total,total,3,1,2,0,0,1,0,1,0,vmocked,vmocked,3.0.0;v1.0.0;v1.0.2
+"""
+    study_summary_csv = StringIO()
+
+    summary.load_outcome(outcome_summary_csv)
+    with patch('cfeproviral.study_summary.get_version', return_value='vmocked'), \
+            patch('cfeproviral.study_summary.get_cfeintact_version', return_value='vmocked'):
+        summary.write(study_summary_csv)
+
+    assert study_summary_csv.getvalue() == expected_study_summary_csv

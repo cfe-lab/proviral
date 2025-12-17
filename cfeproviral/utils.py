@@ -8,6 +8,7 @@ from typing import TextIO, Mapping, Dict, Set, List, Iterable, Tuple, Optional, 
 import yaml
 import json
 import shutil
+from cfeproviral.version import get_version, get_cfeintact_version
 import subprocess as sp
 import pandas as pd
 import glob
@@ -547,11 +548,20 @@ def generate_table_precursor(name, outpath, add_columns=None):
     if add_columns:
         for key, val in add_columns.items():
             merged[key] = val
+    # Version columns should come from the filtered dataframe
+    # If they're not there (shouldn't happen with updated code), add them
+    if 'cfeproviral_version' not in merged.columns:
+        merged['cfeproviral_version'] = get_version()
+    if 'cfeintact_version' not in merged.columns:
+        merged['cfeintact_version'] = get_cfeintact_version()
+    if 'micall_version' not in merged.columns:
+        merged['micall_version'] = None
+    
     if not results.empty:
-        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+        merged[['sample', 'sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(
             precursor_path, index=False)
     else:
-        merged[['sample', 'sequence'] + genes_of_interest].to_csv(precursor_path,
+        merged[['sample', 'sequence'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(precursor_path,
                                                                   index=False)
     return precursor_path
 
@@ -591,7 +601,13 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
         merged[gene] = seq
 
     # Output csv
-    merged[['sequence', 'MyVerdict'] + genes_of_interest].to_csv(
+    merged['cfeproviral_version'] = get_version()
+    merged['cfeintact_version'] = get_cfeintact_version()
+    # micall_version should come from filtered dataframe
+    # If not present, set to None
+    if 'micall_version' not in merged.columns:
+        merged['micall_version'] = None
+    merged[['sequence', 'MyVerdict'] + genes_of_interest + ['cfeproviral_version', 'cfeintact_version', 'micall_version']].to_csv(
         table_precursorfile, index=False)
     return table_precursorfile
 
@@ -683,10 +699,12 @@ def genFailureSummary(contigs_df, conseqs_df, outpath):
     filtered_contigs = filter_valid(contigs_df)
     filtered_conseqs = filter_valid(conseqs_df)
     contigs_simple = filtered_contigs[[
-        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error',
+        'cfeproviral_version', 'cfeintact_version', 'micall_version'
     ]]
     conseqs_simple = filtered_conseqs[[
-        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error'
+        'sample', 'run_name', 'reference', 'error', 'fwd_error', 'rev_error',
+        'cfeproviral_version', 'cfeintact_version', 'micall_version'
     ]]
     concat = pd.concat([contigs_simple, conseqs_simple])
     outfile = outpath / 'failure_summary.csv'
@@ -703,14 +721,18 @@ def get_samples_from_cascade(cascade_csv: typing.IO,
                              default_sample_name: Optional[str] = None):
     all_samples = {}
     reader = DictReader(cascade_csv)
-    if 'sample' in reader.fieldnames:
+    if reader.fieldnames and 'sample' in reader.fieldnames:
         for row in reader:
-            all_samples[row['sample']] = int(row['remap'])
+            all_samples[row['sample']] = {
+                'remap': int(row['remap']),
+                'micall_version': row.get('micall_version')
+            }
         return all_samples
     rows = list(reader)
     assert len(rows) == 1, len(rows)
     remap_count = int(rows[0]['remap'])
-    return {default_sample_name: remap_count}
+    micall_version = rows[0].get('micall_version')
+    return {default_sample_name: {'remap': remap_count, 'micall_version': micall_version}}
 
 
 ## Define some variables
