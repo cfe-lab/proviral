@@ -98,14 +98,33 @@ def main(argv: Sequence[str]) -> int:
     outpath = args.outcome_summary_csv.parent / 'scratch'
     outpath = outpath.resolve()
     outpath.mkdir(exist_ok=True, parents=True)
-    with args.sample_info_csv as reader:
-        info_reader = DictReader(reader)
-        for row in info_reader:
-            sample_info: dict = row
-            break
+
+    # Read sample_info to get run_name, sample, and build the mapping
+    info_reader = DictReader(args.sample_info_csv)
+    rows = list(info_reader)
+
+    if rows:
+        first_row = rows[0]
+        run_name = first_row.get('run_name', 'kive_run')
+        default_sample_name = first_row.get('sample')  # None if no 'sample' column
+
+        # Build sample_info_map
+        if info_reader.fieldnames and 'sample' in info_reader.fieldnames:
+            # Multi-sample format: each row maps to a specific sample
+            sample_info_map = {row['sample']: row for row in rows}
+            if not default_sample_name:
+                default_sample_name = rows[0]['sample']  # Use first sample as default
         else:
-            sample_info = {'run_name': 'test_run', 'sample': 'Sample_S1'}
-    run_name = sample_info.get('run_name', 'kive_run')
+            # No 'sample' column: this is run-level metadata that applies to all samples
+            # Leave sample_info_map empty - we'll pass run_level_info separately
+            sample_info_map = {}
+            if not default_sample_name:
+                default_sample_name = 'Sample_S1'  # Fallback default
+    else:
+        run_name = 'kive_run'
+        default_sample_name = 'Sample_S1'
+        sample_info_map = {}
+        first_row = {}
 
     hivseqinr_results_tar = None
     cfeintact_results_tar = None
@@ -128,9 +147,11 @@ def main(argv: Sequence[str]) -> int:
                                     split=args.split,
                                     sample_size=args.sample_size,
                                     force_all_proviral=True,
-                                    default_sample_name=sample_info['sample'],
+                                    default_sample_name=default_sample_name,
                                     backend=backend,
-                                    cfeintact_results_tar=cfeintact_results_tar)
+                                    cfeintact_results_tar=cfeintact_results_tar,
+                                    sample_info_map=sample_info_map,
+                                    run_level_info=first_row if not sample_info_map else None)
     for file in fasta_files:
         gene_splicer.run(file, outdir=outpath)
     utils.generate_table_precursor(name=run_name, outpath=outpath)

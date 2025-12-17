@@ -528,9 +528,25 @@ def run(contigs_csv,
         default_sample_name: Optional[str] = None,
         hivseqinr_results_tar: Optional[Path] = None,
         backend: utils.Backend = None,
-        cfeintact_results_tar: Optional[Path] = None):
+        cfeintact_results_tar: Optional[Path] = None,
+        sample_info_map: Optional[dict] = None,
+        run_level_info: Optional[dict] = None):
     all_samples = utils.get_samples_from_cascade(cascade_csv,
                                                  default_sample_name)
+
+    # Apply sample-specific info from sample_info_map
+    if sample_info_map:
+        for sample_name, sample_info in sample_info_map.items():
+            if sample_name not in all_samples:
+                raise ValueError(f"Sample '{sample_name}' in sample_info does not exist in cascade data. "
+                               f"Available samples: {list(all_samples.keys())}")
+            if 'micall_version' in sample_info:
+                all_samples[sample_name]['micall_version'] = sample_info['micall_version']
+
+    # Apply run-level info to ALL samples (e.g., when sample_info has no 'sample' column)
+    if run_level_info and 'micall_version' in run_level_info:
+        for sample_name in all_samples:
+            all_samples[sample_name]['micall_version'] = run_level_info['micall_version']
 
     contigs_out = find_primers(contigs_csv,
                                outpath,
