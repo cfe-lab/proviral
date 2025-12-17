@@ -68,7 +68,7 @@ The repository is organized as follows:
   - `gene_splicer.py`: Gene splicing and alignment with external tools.
   - `main.py`: Entry point (cfeproviral) and command-line interface orchestration.
   - Additional modules, helpers, and utilities to support functions such as statistics, failure summary, and landscape generation.
-- `setup.py` – Package installation script with dependency management and console-script entry point.
+- `pyproject.toml` – Package configuration and dependency management.
 
 ---
 
