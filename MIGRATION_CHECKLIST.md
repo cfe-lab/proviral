@@ -62,7 +62,7 @@
       "mappy>=2.24",
   ]
   ```
-- [ ] Test installation: `pip install mappy`
+- [ ] Test installation: `uv sync`
 - [ ] Verify mappy version and compatibility
 
 ### 3.2 Implement Helper Functions
