@@ -19,7 +19,7 @@ dependencies = [
     "python-levenshtein==0.26.1",
     "pandas==2.2.3",
     "requests==2.32.4",
-    "pyyaml==6.0.2",
+    "pyyaml==6.0.3",
     "gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment",
     "cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.23.2",
 ]
