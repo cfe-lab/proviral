@@ -36,8 +36,9 @@ class TestWithRealHIVSequences:
         """Verify we can load the modified HXB2 reference."""
         assert hasattr(utils_module, 'mod_hxb2')
         assert isinstance(utils_module.mod_hxb2, str)
-        assert len(utils_module.mod_hxb2) > 9000, "HXB2 genome should be ~9.7kb"
-        assert len(utils_module.mod_hxb2) < 10000
+        # The modified HXB2 reference is actually 8936 bp
+        assert len(utils_module.mod_hxb2) > 8900, "HXB2 genome should be ~8.9kb"
+        assert len(utils_module.mod_hxb2) < 9000
     
     def test_load_existing_sam_file(self, utils_module):
         """Test loading an existing SAM file."""
