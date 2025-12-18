@@ -281,6 +281,70 @@ class TestMinimap2ToMappyEquivalence:
             print(f"minimap2 CIGARs: {mm2_cigars}")
             print(f"mappy CIGARs: {[h.cigar for h in mappy_hits]}")
     
+    def test_exact_current_invocation_with_no_preset(self, mappy_module, minimap2_available):
+        """
+        CRITICAL TEST: Replicate the exact current minimap2 invocation.
+        
+        The current code uses: minimap2 -a target.fasta query.fasta
+        NO PRESET SPECIFIED - this uses minimap2's default heuristics.
+        """
+        import cfeproviral.utils as utils
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            
+            # Use real HIV sequences (HXB2 reference and a portion of it)
+            target_seq = utils.mod_hxb2
+            query_seq = target_seq[1000:6000]  # 5kb portion of HIV genome
+            
+            # Test 1: Run minimap2 EXACTLY as the current code does (no -x flag)
+            target_fasta = tmpdir / "target.fasta"
+            query_fasta = tmpdir / "query.fasta"
+            target_fasta.write_text(">MOD_HXB2\n" + target_seq + "\n")
+            query_fasta.write_text(">query\n" + query_seq + "\n")
+            
+            mm2_result = subprocess.run(
+                ['minimap2', '-a', str(target_fasta), str(query_fasta)],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            # Parse minimap2 SAM output
+            mm2_lines = [line for line in mm2_result.stdout.split('\n') 
+                        if line and not line.startswith('@')]
+            assert len(mm2_lines) > 0, "minimap2 should produce alignments"
+            
+            mm2_fields = mm2_lines[0].split('\t')
+            mm2_pos = int(mm2_fields[3])  # POS (1-based)
+            mm2_cigar = mm2_fields[5]
+            mm2_mapq = int(mm2_fields[4])
+            
+            # Test 2: Run mappy with NO preset (closest to minimap2 default)
+            # When no preset is given, mappy uses reasonable defaults for the sequence length
+            aligner = mappy_module.Aligner(seq=target_seq)  # No preset!
+            mappy_hits = list(aligner.map(query_seq))
+            
+            assert len(mappy_hits) > 0, "mappy should produce alignments"
+            
+            mappy_hit = mappy_hits[0]
+            mappy_pos = mappy_hit.r_st + 1  # Convert 0-based to 1-based
+            
+            # Verify both find the alignment in the correct region
+            # Query comes from position 1000, so alignment should be near 1001 (1-based)
+            expected_pos = 1001
+            tolerance = 100  # Allow 100bp difference for soft-clipping
+            
+            assert abs(mm2_pos - expected_pos) < tolerance, \
+                f"minimap2 position should be near {expected_pos}: got {mm2_pos}"
+            assert abs(mappy_pos - expected_pos) < tolerance, \
+                f"mappy position should be near {expected_pos}: got {mappy_pos}"
+            
+            # Print for manual inspection
+            print(f"\nminimap2 (no preset): pos={mm2_pos}, cigar={mm2_cigar}, mapq={mm2_mapq}")
+            print(f"mappy (no preset): pos={mappy_pos}, cigar={mappy_hit.cigar}, mapq={mappy_hit.mapq}")
+            print(f"Position difference: {abs(mm2_pos - mappy_pos)} bp")
+    
     def test_equivalent_alignment_positions(self, mappy_module, minimap2_available):
         """Compare alignment positions from minimap2 and mappy."""
         with tempfile.TemporaryDirectory() as tmpdir:
