@@ -66,6 +66,7 @@ dependencies = [
 name = "cfeproviral"
 source = { editable = "." }
 dependencies = [
+    { name = "aligntools" },
     { name = "cfeintact" },
     { name = "gotoh" },
     { name = "mappy" },
@@ -84,6 +85,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aligntools", specifier = "==1.2.1" },
     { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.23.2" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "gotoh", git = "https://github.com/cfe-lab/MiCall.git?subdirectory=micall%2Falignment&rev=v7.7.0" },
