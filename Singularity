@@ -18,9 +18,7 @@ From: ubuntu:22.04
     KIVE_MEMORY 6000
 
 %files
-    pyproject.toml /opt/cfeproviral/
-    cfeproviral /opt/cfeproviral/
-    scripts /opt/cfeproviral/
+    . /opt/cfeproviral
 
 %post
     sh -- /opt/cfeproviral/scripts/install.sh
