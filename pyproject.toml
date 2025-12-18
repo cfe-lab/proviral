@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
     "numpy==2.2.6",
     "python-levenshtein==0.26.1",
-    "pandas==2.2.3",
+    "pandas==2.3.3",
     "requests==2.32.4",
     "pyyaml==6.0.3",
     "gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment",
