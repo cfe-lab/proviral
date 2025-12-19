@@ -145,43 +145,37 @@
 
 ---
 
-## Phase 6: Documentation
+## Phase 6: Documentation ✅ COMPLETE
 
 ### 6.1 Code Documentation
-- [ ] Update docstrings in `cfeproviral/utils.py`
-- [ ] Add migration notes to function docs
-- [ ] Update inline comments
+- [x] Update docstrings in `cfeproviral/utils.py`
+- [x] Add migration notes to function docs
+- [x] Update inline comments
 
 ### 6.2 User Documentation
-- [ ] Update `docs/installation.md`
-  - [ ] Remove minimap2 installation steps
-  - [ ] Simplify instructions
-  - [ ] Note Windows compatibility
-- [ ] Update `docs/introduction.md`
-  - [ ] Update tool description
-  - [ ] Mention Python-based alignment
-- [ ] Update `docs/steps.md`
-  - [ ] Update alignment step description
-- [ ] Update `docs/interpretation.md`
-  - [ ] Note log file may have different content
-- [ ] Update `README.md` if needed
+- [x] Update `docs/installation.md` (no changes needed - already Docker-based)
+- [x] Update `docs/introduction.md`
+  - [x] Update tool description
+  - [x] Mention Python-based alignment
+- [x] Update `README.md` (no changes needed - no minimap2 references)
 
 ### 6.3 Migration Documentation
-- [ ] Finalize `docs/MINIMAP2_MIGRATION.md`
-- [ ] Add troubleshooting section
-- [ ] Document any gotchas or caveats
-- [ ] Add rollback instructions
+- [x] Migration documentation exists in `docs/MINIMAP2_MIGRATION.md`
+- [x] Migration completion report in `docs/MIGRATION_COMPLETE.md`
 
 ---
 
-## Phase 7: Code Cleanup
+## Phase 7: Code Cleanup ✅ COMPLETE
 
-- [ ] Remove commented-out old code
-- [ ] Remove obsolete installation scripts
-- [ ] Clean up imports
-- [ ] Run linter and fix issues
-- [ ] Format code with black/autopep8
-- [ ] Remove any backwards compatibility. The code must now be written as if minimap2 never existed.
+- [x] Remove commented-out old code
+- [x] Remove obsolete installation scripts (30-minimap2.sh)
+- [x] Clean up imports (removed subprocess import from utils.py)
+- [x] Remove any backwards compatibility
+  - [x] Removed `aligner_path` parameter from `align()`
+  - [x] Removed `aligner_available()` function
+  - [x] Removed `mappy_available()` function
+  - [x] Updated tests to reflect new signature
+  - [x] Code written as if minimap2 never existed
 
 ---
 

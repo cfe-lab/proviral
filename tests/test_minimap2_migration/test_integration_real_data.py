@@ -325,9 +325,8 @@ class TestBackwardCompatibility:
         assert 'query_name' in params
         assert 'outdir' in params
         
-        # aligner_path can remain for backward compatibility
-        # but will be deprecated
-        assert 'aligner_path' in params
+        # aligner_path parameter removed after migration completed
+        # No backward compatibility needed - migration is complete
     
     def test_align_return_value(self):
         """Document that align() return value should remain the same."""

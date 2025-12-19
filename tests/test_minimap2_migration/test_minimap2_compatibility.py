@@ -408,12 +408,12 @@ class TestCurrentCodebaseCompatibility:
         sig = inspect.signature(utils.align)
         params = list(sig.parameters.keys())
         
-        # Current signature
+        # Current signature (after migration - aligner_path removed)
         assert 'target_seq' in params
         assert 'query_seq' in params
         assert 'query_name' in params
         assert 'outdir' in params
-        assert 'aligner_path' in params
+        # aligner_path parameter removed in migration to mappy
     
     def test_align_output_structure(self):
         """Test that align() returns expected output structure."""

@@ -513,20 +513,17 @@ def align_with_mappy(target_seq,
 def align(target_seq,
           query_seq,
           query_name,
-          outdir=Path(os.getcwd()).resolve(),
-          aligner_path='minimap2'):
+          outdir=Path(os.getcwd()).resolve()):
     """
     Align query sequence to target sequence using mappy.
     
-    Uses mappy (Python minimap2 binding) for alignment. The aligner_path
-    parameter is kept for backward compatibility but is no longer used.
+    Uses mappy (Python binding for minimap2) for sequence alignment.
     
     Args:
         target_seq: reference sequence to align to
         query_seq: query sequence to align
         query_name: name for the query sequence
         outdir: output directory for alignment files
-        aligner_path: deprecated, kept for backward compatibility
     
     Returns:
         Path to alignment.sam file, or False if alignment fails
