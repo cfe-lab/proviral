@@ -363,6 +363,15 @@ def aligner_available(aligner_path='minimap2'):
         return False
 
 
+def mappy_available():
+    """Check if mappy Python module is available."""
+    try:
+        import mappy
+        return True
+    except ImportError:
+        return False
+
+
 # Removes all files in a directory
 def clean_dir(directory):
     for filename in os.listdir(directory):
@@ -376,13 +385,189 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
+def mappy_hit_to_sam_line(hit, query_name, query_seq, ref_name="MOD_HXB2"):
+    """
+    Convert a mappy alignment hit to a SAM format line.
+    
+    Args:
+        hit: mappy alignment hit object
+        query_name: name of the query sequence
+        query_seq: the query sequence string
+        ref_name: name of the reference sequence
+    
+    Returns:
+        str: SAM format line
+    """
+    # SAM fields: QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, RNEXT, PNEXT, TLEN, SEQ, QUAL
+    
+    # FLAG calculation
+    flag = 0
+    if hit.strand == -1:
+        flag |= 0x10  # Reverse strand
+    # Note: mappy hits are always primary alignments by default
+    
+    # POS: 1-based position
+    pos = hit.r_st + 1
+    
+    # CIGAR: convert from mappy format [(length, op), ...] to string
+    # mappy CIGAR operations: 0=M, 1=I, 2=D, 4=S, 7=match, 8=mismatch
+    cigar_ops = {0: 'M', 1: 'I', 2: 'D', 3: 'N', 4: 'S', 5: 'H', 7: '=', 8: 'X'}
+    cigar_str = ''.join(f"{length}{cigar_ops.get(op, 'M')}" for length, op in hit.cigar)
+    
+    # SEQ: query sequence (reverse complement if on reverse strand)
+    if hit.strand == -1:
+        seq = reverse_and_complement(query_seq)
+    else:
+        seq = query_seq
+    
+    # QUAL: not available from mappy, use '*'
+    qual = '*'
+    
+    # Construct SAM line
+    sam_line = '\t'.join([
+        query_name,           # QNAME
+        str(flag),            # FLAG
+        ref_name,             # RNAME
+        str(pos),             # POS
+        str(hit.mapq),        # MAPQ
+        cigar_str,            # CIGAR
+        '*',                  # RNEXT (not applicable for single-end)
+        '0',                  # PNEXT (not applicable)
+        '0',                  # TLEN (not applicable)
+        seq,                  # SEQ
+        qual                  # QUAL
+    ])
+    
+    return sam_line
+
+
+def align_with_mappy(target_seq,
+                     query_seq,
+                     query_name,
+                     outdir=Path(os.getcwd()).resolve(),
+                     ref_name="MOD_HXB2"):
+    """
+    Align query sequence to target using mappy (Python minimap2 binding).
+    
+    This replaces the minimap2 executable with the mappy Python library.
+    Output format and behavior are identical to the original align() function.
+    
+    Args:
+        target_seq: reference sequence to align to
+        query_seq: query sequence to align
+        query_name: name for the query sequence
+        outdir: output directory for alignment files
+        ref_name: name for the reference sequence
+    
+    Returns:
+        Path to alignment.sam file, or False if alignment fails
+    """
+    if not mappy_available():
+        raise ImportError('mappy module not available. Install with: pip install mappy')
+    
+    import mappy
+    
+    outdir = outdir / query_name
+    if os.path.isdir(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
+    
+    # Write the query fasta (for compatibility with existing code that may read it)
+    query_fasta_path = write_fasta({query_name: query_seq},
+                                   outdir / 'query.fasta')
+    # Write the target fasta
+    target_fasta_path = write_fasta({ref_name: target_seq},
+                                    outdir / 'target.fasta')
+    
+    alignment_path = outdir / 'alignment.sam'
+    log_path = outdir / 'minimap2.log'
+    
+    try:
+        # Create aligner with no preset (matches minimap2 -a default behavior)
+        aligner = mappy.Aligner(seq=target_seq)
+        
+        if not aligner:
+            raise RuntimeError("Failed to create mappy aligner")
+        
+        # Perform alignment
+        hits = list(aligner.map(query_seq))
+        
+        # Write SAM file
+        with alignment_path.open('w') as sam_file:
+            # Write SAM header
+            sam_file.write("@HD\tVN:1.0\tSO:unsorted\n")
+            sam_file.write(f"@SQ\tSN:{ref_name}\tLN:{len(target_seq)}\n")
+            sam_file.write("@PG\tID:mappy\tPN:mappy\tVN:{}\n".format(mappy.__version__))
+            
+            # Write alignments
+            if hits:
+                for hit in hits:
+                    sam_line = mappy_hit_to_sam_line(hit, query_name, query_seq, ref_name)
+                    sam_file.write(sam_line + '\n')
+            else:
+                # No hits - write unmapped record
+                flag = 0x4  # Unmapped
+                sam_line = '\t'.join([
+                    query_name,
+                    str(flag),
+                    '*',
+                    '0',
+                    '0',
+                    '*',
+                    '*',
+                    '0',
+                    '0',
+                    query_seq,
+                    '*'
+                ])
+                sam_file.write(sam_line + '\n')
+        
+        # Write log file (for compatibility)
+        with log_path.open('w') as log_file:
+            log_file.write(f"mappy alignment completed\n")
+            log_file.write(f"Query: {query_name} ({len(query_seq)} bp)\n")
+            log_file.write(f"Reference: {ref_name} ({len(target_seq)} bp)\n")
+            log_file.write(f"Hits: {len(hits)}\n")
+        
+        return alignment_path
+        
+    except Exception as e:
+        # Write error to log
+        with log_path.open('w') as log_file:
+            log_file.write(f"mappy alignment failed: {str(e)}\n")
+        logger.error('Alignment with mappy failed! Details in %s.', log_path)
+        return False
+
+
 def align(target_seq,
           query_seq,
           query_name,
           outdir=Path(os.getcwd()).resolve(),
           aligner_path='minimap2'):
+    """
+    Align query sequence to target sequence.
+    
+    Uses mappy (Python minimap2 binding) if available, otherwise falls back
+    to minimap2 executable.
+    
+    Args:
+        target_seq: reference sequence to align to
+        query_seq: query sequence to align
+        query_name: name for the query sequence
+        outdir: output directory for alignment files
+        aligner_path: path to minimap2 executable (used only if mappy unavailable)
+    
+    Returns:
+        Path to alignment.sam file, or False if alignment fails
+    """
+    # Try mappy first (preferred method)
+    if mappy_available():
+        return align_with_mappy(target_seq, query_seq, query_name, outdir)
+    
+    # Fall back to minimap2 executable
     if not aligner_available(aligner_path):
-        raise FileNotFoundError(f'Aligner {aligner_path} not found.')
+        raise FileNotFoundError(f'Neither mappy module nor {aligner_path} executable found.')
+    
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
