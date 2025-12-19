@@ -41,22 +41,20 @@ class TestWithRealHIVSequences:
         assert len(utils_module.mod_hxb2) < 9000
     
     def test_load_existing_sam_file(self, utils_module):
-        """Test loading an existing SAM file."""
-        sam_file = TEST_GENE_SPLICER_DIR / 'large_deletion1.sam'
+        """Test that we can generate alignments (replacing SAM file loading)."""
+        # We no longer load SAM files - we generate alignments with mappy
+        target = utils_module.mod_hxb2
+        query = target[123:1626]  # GAG region
         
-        if not sam_file.exists():
-            pytest.skip(f"Test file not found: {sam_file}")
+        cigar_hits = utils_module.align(target, query, 'test_load', outdir=TEST_GENE_SPLICER_DIR)
         
-        # This function is used by the rest of the codebase
-        samfile = utils_module.load_samfile(sam_file)
+        assert isinstance(cigar_hits, list)
+        assert len(cigar_hits) > 0, "Should generate alignments"
         
-        assert isinstance(samfile, list)
-        assert len(samfile) > 0, "SAM file should have alignments"
-        
-        # Each alignment should be a list of fields
-        for alignment in samfile:
-            assert isinstance(alignment, list)
-            assert len(alignment) >= 11, "Each alignment should have at least 11 fields"
+        # Each alignment should be a CigarHit object
+        from aligntools import CigarHit
+        for hit in cigar_hits:
+            assert isinstance(hit, CigarHit)
     
     def test_existing_sam_structure(self, utils_module):
         """Verify structure of existing SAM files."""
@@ -132,18 +130,7 @@ class TestWithRealHIVSequences:
         assert hit.r_en > len(target) - 10, "Should extend near end"
     
     def test_compare_with_existing_sam_output(self, utils_module, mappy_module):
-        """Compare mappy output with existing minimap2 SAM output."""
-        sam_file = TEST_GENE_SPLICER_DIR / 'large_deletion1.sam'
-        
-        if not sam_file.exists():
-            pytest.skip(f"Test file not found: {sam_file}")
-        
-        # Load existing SAM
-        existing_alignments = utils_module.load_samfile(sam_file)
-        
-        if not existing_alignments:
-            pytest.skip("No alignments in existing SAM file")
-        
+        """Test that mappy produces consistent alignments."""
         # Get query sequence from test
         target = utils_module.mod_hxb2
         query = target[123:1626]  # GAG
@@ -154,25 +141,17 @@ class TestWithRealHIVSequences:
         
         assert len(hits) > 0, "Should produce alignments"
         
-        # Compare key metrics
-        existing_aln = existing_alignments[0]
+        # Check that alignment is reasonable
         mappy_hit = hits[0]
+        mappy_pos = mappy_hit.r_st
         
-        # Compare positions (allowing some tolerance)
-        existing_pos = int(existing_aln[3])  # POS field (1-based)
-        mappy_pos = mappy_hit.r_st + 1  # Convert to 1-based
-        
-        print(f"Existing SAM position: {existing_pos}")
         print(f"Mappy position: {mappy_pos}")
-        
-        # Positions should be similar
-        assert abs(existing_pos - mappy_pos) < 20, \
-            f"Position difference too large: {abs(existing_pos - mappy_pos)}"
-        
-        # Compare CIGAR (structure, not necessarily exact match)
-        existing_cigar = existing_aln[5]
-        print(f"Existing CIGAR: {existing_cigar}")
         print(f"Mappy CIGAR: {mappy_hit.cigar}")
+        
+        # Should align near the original position (within tolerance)
+        assert abs(mappy_pos - 123) < 20, \
+            f"Position difference too large: {abs(mappy_pos - 123)}"
+
 
 
 class TestAlignFunctionWithRealData:
@@ -184,73 +163,57 @@ class TestAlignFunctionWithRealData:
         return utils
     
     def test_current_align_function_signature(self, utils_module):
-        """Verify current align function works."""
+        """Verify current align function returns CigarHit list."""
         import tempfile
         from pathlib import Path
+        from aligntools import CigarHit
         
         target = utils_module.mod_hxb2
         query = target[123:1626]  # GAG
         
-        try:
-            # Test current implementation
-            with tempfile.TemporaryDirectory() as tmpdir:
-                result = utils_module.align(
-                    target_seq=target,
-                    query_seq=query,
-                    query_name="test_gag",
-                    outdir=Path(tmpdir)
-                )
-                
-                if result:
-                    assert result.exists(), "Alignment file should exist"
-                    assert result.name == "alignment.sam"
-                    
-                    # Verify expected directory structure
-                    assert (result.parent / "query.fasta").exists()
-                    assert (result.parent / "target.fasta").exists()
-                    assert (result.parent / "minimap2.log").exists()
-                    
-                    # Verify SAM content
-                    alignments = utils_module.load_samfile(result)
-                    assert len(alignments) > 0, "Should have alignments"
-                else:
-                    # If minimap2 not available, that's expected during migration
-                    pytest.skip("minimap2 executable not available")
-                    
-        except FileNotFoundError:
-            pytest.skip("minimap2 not available - expected during migration")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = utils_module.align(
+                target_seq=target,
+                query_seq=query,
+                query_name="test_gag",
+                outdir=Path(tmpdir)
+            )
+            
+            # align() now returns a list of CigarHit objects
+            assert isinstance(result, list), "Should return a list"
+            assert len(result) > 0, "Should have alignments"
+            assert isinstance(result[0], CigarHit), "Should be CigarHit objects"
+            
+            # Verify expected directory structure (for debugging/reference)
+            outdir = Path(tmpdir) / "test_gag"
+            assert (outdir / "query.fasta").exists()
+            assert (outdir / "target.fasta").exists()
+            assert (outdir / "minimap2.log").exists()
     
     def test_align_output_compatibility(self, utils_module):
-        """Test that align() output is compatible with load_samfile()."""
+        """Test that align() output works with splice_genes()."""
         import tempfile
         from pathlib import Path
+        from aligntools import CigarHit
         
         target = utils_module.mod_hxb2
         query = target[1000:2000]
         
-        try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                result = utils_module.align(
-                    target_seq=target,
-                    query_seq=query,
-                    query_name="test_region",
-                    outdir=Path(tmpdir)
-                )
-                
-                if result:
-                    # This is the critical compatibility check:
-                    # load_samfile() must work with align() output
-                    samfile = utils_module.load_samfile(result)
-                    
-                    assert isinstance(samfile, list)
-                    for alignment in samfile:
-                        assert isinstance(alignment, list)
-                        assert len(alignment) >= 11
-                else:
-                    pytest.skip("minimap2 not available")
-                    
-        except FileNotFoundError:
-            pytest.skip("minimap2 not available")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = utils_module.align(
+                target_seq=target,
+                query_seq=query,
+                query_name="test_region",
+                outdir=Path(tmpdir)
+            )
+            
+            # align() returns CigarHit list
+            assert isinstance(result, list)
+            assert all(isinstance(hit, CigarHit) for hit in result)
+            
+            # Test compatibility with splice_genes
+            coords = utils_module.splice_genes(query, target, result, utils_module.mod_annot)
+            assert isinstance(coords, dict)
 
 
 class TestGeneSplicerIntegration:
@@ -269,43 +232,35 @@ class TestGeneSplicerIntegration:
         target = utils_module.mod_hxb2
         query = target[123:1626]  # GAG
         
-        try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                # Step 1: Align (as done in gene_splicer.py)
-                alignment_path = utils_module.align(
-                    target,
-                    query,
-                    "test_gag",
-                    outdir=Path(tmpdir)
-                )
-                
-                if not alignment_path:
-                    pytest.skip("Alignment failed - minimap2 not available")
-                
-                # Step 2: Load SAM file (as done in gene_splicer.py)
-                samfile = utils_module.load_samfile(alignment_path)
-                
-                # Step 3: Splice genes (as done in gene_splicer.py)
-                coords = utils_module.splice_genes(
-                    query,
-                    target,
-                    samfile,
-                    utils_module.mod_annot
-                )
-                
-                # Should identify genes
-                assert isinstance(coords, dict)
-                # GAG should be in the results
-                assert 'gag' in coords or len(coords) > 0
-                
-                # Step 4: Convert coordinates to sequences
-                genes = utils_module.coords_to_genes(coords, query)
-                
-                assert isinstance(genes, dict)
-                print(f"Identified genes: {list(genes.keys())}")
-                
-        except FileNotFoundError:
-            pytest.skip("minimap2 not available")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Step 1: Align (returns CigarHit list)
+            cigar_hits = utils_module.align(
+                target,
+                query,
+                "test_gag",
+                outdir=Path(tmpdir)
+            )
+            
+            assert len(cigar_hits) > 0, "Should produce alignments"
+            
+            # Step 2: Splice genes (using CigarHit list)
+            coords = utils_module.splice_genes(
+                query,
+                target,
+                cigar_hits,
+                utils_module.mod_annot
+            )
+            
+            # Should identify genes
+            assert isinstance(coords, dict)
+            # GAG should be in the results
+            assert 'gag' in coords or len(coords) > 0
+            
+            # Step 3: Convert coordinates to sequences
+            genes = utils_module.coords_to_genes(coords, query)
+            
+            assert isinstance(genes, dict)
+            print(f"Identified genes: {list(genes.keys())}")
 
 
 class TestBackwardCompatibility:
