@@ -120,6 +120,7 @@
 
 ## Phase 5: Update Dependencies
 
+- [ ] Remove **all** references to minimap2, anywhere in codebase.
 - [ ] Do not assume minimap2 is installed anymore. Assume that mappy is installed and present, never check.
 
 ### 5.1 Installation Scripts
