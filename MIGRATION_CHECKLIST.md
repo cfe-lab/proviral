@@ -179,26 +179,9 @@
 
 ---
 
-## Phase 9: Validation
+## Phase 8: Review and finalization
 
-### 9.1 Functional Validation
-- [ ] Run complete pipeline on test dataset
-- [ ] Compare outputs with previous version
-- [ ] Verify gene identification is identical
-- [ ] Check primer finder results
-- [ ] Validate study summary outputs
-
-### 9.2 User Acceptance Testing
-- [ ] Have another developer test
-- [ ] Test on production-like data
-- [ ] Verify performance is acceptable
-- [ ] Check error handling
-
-### 9.3 Regression Testing
-- [ ] Compare all outputs with baseline
-- [ ] Document any intentional differences
-- [ ] Ensure no unexpected changes
-
+- [ ] Inspect `git diff origin/master -- cfeproviral`. Confirm if all changes are appropriate. The code should be clean and correct. There should be more deletions than additions.
 
 ---
 
