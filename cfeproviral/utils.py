@@ -241,12 +241,19 @@ def splice_genes(query, target, cigar_hits, annotation):
             clipped_start = max(gene_start, hit.r_st)
             clipped_end = min(gene_end, hit.r_ei)
             
-            # Map global reference coordinates to global query coordinates
-            # coordinate_mapping.ref_to_query works with global coordinates
-            query_start = mapping.ref_to_query.get(clipped_start)
-            query_end = mapping.ref_to_query.get(clipped_end)
+            # Map reference positions to query positions
+            # We must iterate through all reference positions because some may be
+            # deleted (not present in the alignment). We collect all mapped query
+            # positions and take the min/max to get the gene boundaries.
+            query_positions = []
+            for ref_pos in range(clipped_start, clipped_end + 1):
+                query_pos = mapping.ref_to_query.get(ref_pos)
+                if query_pos is not None:
+                    query_positions.append(query_pos)
             
-            if query_start is not None and query_end is not None:
+            if query_positions:
+                query_start = min(query_positions)
+                query_end = max(query_positions)
                 if gene not in results:
                     results[gene] = [query_start, query_end]
                 else:
