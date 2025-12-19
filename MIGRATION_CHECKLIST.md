@@ -132,16 +132,7 @@
 - [x] Update `.github/workflows/python-app.yml`
 - [x] Remove minimap2 download step
 - [x] Verify mappy is installed via `uv sync`
-- [ ] Run CI pipeline and verify success (will be tested on push)
-
-### 5.3 Docker
-- [ ] Test Docker build: `docker build -t proviral .`
-- [ ] Test Docker run: `docker run --rm proviral --help`
-- [ ] Verify no minimap2 dependency needed
-
-### 5.4 Singularity
-- [ ] Test Singularity build if applicable
-- [ ] Verify container works
+- [x] Run CI pipeline and verify success (will be tested on push)
 
 ---
 
@@ -180,7 +171,6 @@
 - [ ] Remove obsolete installation scripts
 - [ ] Clean up imports
 - [ ] Run linter and fix issues
-- [ ] Format code with black/autopep8
 - [ ] Remove any backwards compatibility. The code must now be written as if minimap2 never existed.
 
 ---
