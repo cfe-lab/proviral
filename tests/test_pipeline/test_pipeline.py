@@ -23,7 +23,7 @@ class Args:
 
 def test_intact():
     # For this test I will simply use the full HXB2 reference as my sequence, this should guarantee it's intact-ness
-    alignment = utils.load_samfile(inputs / 'alignment.sam')
+    alignment = utils.align(utils.mod_hxb2, utils.mod_hxb2, 'test_intact', outdir=inputs)
     coords = utils.splice_genes(utils.mod_hxb2, utils.mod_hxb2, alignment,
                                 utils.mod_annot)
     genes = utils.coords_to_genes(coords, utils.mod_hxb2)

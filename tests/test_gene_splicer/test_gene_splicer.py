@@ -18,17 +18,13 @@ def test_large_deletion1():
     gag = valid_genes['gag']
     # Just sanity check that my query sequence is GAG
     assert gag == query
-    # Align the query to the target
-    # I have to skip this section because minimap2 does not run on windows
-    # Otherwise I could call it as a subprocess
-    # For now I will manually align the query to the target
-    alignment = utils.load_samfile(cwd / f'{name}.sam')
+    
+    # Align the query to the target using mappy
+    alignment = utils.align(utils.mod_hxb2, query, name, outdir=cwd)
+    
     # Get the genes
-    # results = utils.splice_genes(query, utils.mod_hxb2, alignment,
-    #                              utils.mod_annot)
     results, sequences = utils.splice_aligned_genes(query, utils.mod_hxb2,
                                                     alignment, utils.mod_annot)
-    # import pdb; pdb.set_trace()
     genes = utils.coords_to_genes(results, query)
     for gene in valid_genes:
         try:

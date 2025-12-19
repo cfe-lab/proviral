@@ -27,7 +27,7 @@ In summary, this pipeline was created to help researchers --- especially those w
 The pipeline offers the following core features:
 
 - **Primer Analysis**: Checks for primer sequences used in polymerase chain reactions.
-- **Sequence Alignment and Filtering**: Uses tools like `minimap2` to align sequences and applies filters to ensure data quality.
+- **Sequence Alignment and Filtering**: Uses tools like `mappy` to align sequences and applies filters to ensure data quality.
 - **Error Detection**: Categorizes sequence errors, such as non-proviral sequences or low coverage.
 - **Result Summarization**: Generates comprehensive reports to aid in data interpretation and decision-making.
 
