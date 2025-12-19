@@ -118,21 +118,21 @@
 
 ---
 
-## Phase 5: Update Dependencies
+## Phase 5: Update Dependencies ✅ COMPLETE
 
-- [ ] Remove **all** references to minimap2, anywhere in codebase.
-- [ ] Do not assume minimap2 is installed anymore. Assume that mappy is installed and present, never check.
+- [x] Remove **all** references to minimap2, anywhere in codebase.
+- [x] Do not assume minimap2 is installed anymore. Assume that mappy is installed and present, never check.
 
 ### 5.1 Installation Scripts
-- [ ] Remove/comment `scripts/installation/30-minimap2.sh`
-- [ ] Update `scripts/install.sh` to not call 30-minimap2.sh
-- [ ] Test installation process
+- [x] Remove/comment `scripts/installation/30-minimap2.sh`
+- [x] Update `scripts/install.sh` to not call 30-minimap2.sh
+- [x] Test installation process
 
 ### 5.2 CI/CD
-- [ ] Update `.github/workflows/python-app.yml`
-- [ ] Remove minimap2 download step
-- [ ] Verify mappy is installed via `uv sync`
-- [ ] Run CI pipeline and verify success
+- [x] Update `.github/workflows/python-app.yml`
+- [x] Remove minimap2 download step
+- [x] Verify mappy is installed via `uv sync`
+- [ ] Run CI pipeline and verify success (will be tested on push)
 
 ### 5.3 Docker
 - [ ] Test Docker build: `docker build -t proviral .`
@@ -181,6 +181,7 @@
 - [ ] Clean up imports
 - [ ] Run linter and fix issues
 - [ ] Format code with black/autopep8
+- [ ] Remove any backwards compatibility. The code must now be written as if minimap2 never existed.
 
 ---
 

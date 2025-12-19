@@ -415,18 +415,6 @@ class TestCurrentCodebaseCompatibility:
         assert 'outdir' in params
         assert 'aligner_path' in params
     
-    def test_utils_aligner_available_function(self):
-        """Test the aligner_available function."""
-        import cfeproviral.utils as utils
-        
-        # Should not crash
-        result = utils.aligner_available('minimap2')
-        assert isinstance(result, bool)
-        
-        # Non-existent aligner should return False
-        result = utils.aligner_available('nonexistent_aligner_xyz123')
-        assert result is False
-    
     def test_align_output_structure(self):
         """Test that align() returns expected output structure."""
         import cfeproviral.utils as utils

@@ -9,10 +9,10 @@ import yaml
 import json
 import shutil
 from cfeproviral.version import get_version, get_cfeintact_version
-import subprocess as sp
 import pandas as pd
 import glob
 from pathlib import Path
+import mappy
 from csv import DictWriter, DictReader
 from itertools import groupby
 from operator import itemgetter
@@ -353,25 +353,6 @@ def load_samfile(samfile_path: Path) -> List[List[str]]:
     return result
 
 
-def aligner_available(aligner_path='minimap2'):
-    cmd = [aligner_path, '-h']
-    try:
-        process = sp.run(cmd, stderr=sp.PIPE, stdout=sp.PIPE)
-        if process.returncode == 0:
-            return True
-    except Exception:
-        return False
-
-
-def mappy_available():
-    """Check if mappy Python module is available."""
-    try:
-        import mappy
-        return True
-    except ImportError:
-        return False
-
-
 # Removes all files in a directory
 def clean_dir(directory):
     for filename in os.listdir(directory):
@@ -449,9 +430,6 @@ def align_with_mappy(target_seq,
     """
     Align query sequence to target using mappy (Python minimap2 binding).
     
-    This replaces the minimap2 executable with the mappy Python library.
-    Output format and behavior are identical to the original align() function.
-    
     Args:
         target_seq: reference sequence to align to
         query_seq: query sequence to align
@@ -462,22 +440,15 @@ def align_with_mappy(target_seq,
     Returns:
         Path to alignment.sam file, or False if alignment fails
     """
-    if not mappy_available():
-        raise ImportError('mappy module not available. Install with: pip install mappy')
-    
-    import mappy
-    
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
     
     # Write the query fasta (for compatibility with existing code that may read it)
-    query_fasta_path = write_fasta({query_name: query_seq},
-                                   outdir / 'query.fasta')
+    write_fasta({query_name: query_seq}, outdir / 'query.fasta')
     # Write the target fasta
-    target_fasta_path = write_fasta({ref_name: target_seq},
-                                    outdir / 'target.fasta')
+    write_fasta({ref_name: target_seq}, outdir / 'target.fasta')
     
     alignment_path = outdir / 'alignment.sam'
     log_path = outdir / 'minimap2.log'
@@ -524,7 +495,7 @@ def align_with_mappy(target_seq,
         
         # Write log file (for compatibility)
         with log_path.open('w') as log_file:
-            log_file.write(f"mappy alignment completed\n")
+            log_file.write("mappy alignment completed\n")
             log_file.write(f"Query: {query_name} ({len(query_seq)} bp)\n")
             log_file.write(f"Reference: {ref_name} ({len(target_seq)} bp)\n")
             log_file.write(f"Hits: {len(hits)}\n")
@@ -545,52 +516,22 @@ def align(target_seq,
           outdir=Path(os.getcwd()).resolve(),
           aligner_path='minimap2'):
     """
-    Align query sequence to target sequence.
+    Align query sequence to target sequence using mappy.
     
-    Uses mappy (Python minimap2 binding) if available, otherwise falls back
-    to minimap2 executable.
+    Uses mappy (Python minimap2 binding) for alignment. The aligner_path
+    parameter is kept for backward compatibility but is no longer used.
     
     Args:
         target_seq: reference sequence to align to
         query_seq: query sequence to align
         query_name: name for the query sequence
         outdir: output directory for alignment files
-        aligner_path: path to minimap2 executable (used only if mappy unavailable)
+        aligner_path: deprecated, kept for backward compatibility
     
     Returns:
         Path to alignment.sam file, or False if alignment fails
     """
-    # Try mappy first (preferred method)
-    if mappy_available():
-        return align_with_mappy(target_seq, query_seq, query_name, outdir)
-    
-    # Fall back to minimap2 executable
-    if not aligner_available(aligner_path):
-        raise FileNotFoundError(f'Neither mappy module nor {aligner_path} executable found.')
-    
-    outdir = outdir / query_name
-    if os.path.isdir(outdir):
-        shutil.rmtree(outdir)
-    os.makedirs(outdir)
-    # Write the query fasta
-    query_fasta_path = write_fasta({query_name: query_seq},
-                                   outdir / 'query.fasta')
-    # Write the target fasta
-    target_fasta_path = write_fasta({'MOD_HXB2': target_seq},
-                                    outdir / 'target.fasta')
-    cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
-    alignment_path = outdir / 'alignment.sam'
-    log_path = outdir / 'minimap2.log'
-    with alignment_path.open('w') as alignment, log_path.open('w') as log_file:
-        process = sp.run(cmd,
-                         stdout=alignment,
-                         stderr=log_file,
-                         check=True)
-    if process.returncode != 0:
-        logger.error('Alignment failed! Details in %s.', log_path)
-        return False
-    else:
-        return alignment_path
+    return align_with_mappy(target_seq, query_seq, query_name, outdir)
 
 CFEINTACT_ERRORS_TABLE = [
     'UnknownNucleotide',
