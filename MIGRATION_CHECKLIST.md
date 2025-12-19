@@ -116,15 +116,11 @@
 - [x] Compare outputs with minimap2 (exact match confirmed)
 - [x] Verify alignment positions and CIGAR strings
 
-### 4.4 Performance Testing
-- [ ] Benchmark alignment speed
-- [ ] Compare with previous performance
-- [ ] Ensure < 20% slowdown
-- [ ] Profile memory usage
-
 ---
 
 ## Phase 5: Update Dependencies
+
+- [ ] Do not assume minimap2 is installed anymore. Assume that mappy is installed and present, never check.
 
 ### 5.1 Installation Scripts
 - [ ] Remove/comment `scripts/installation/30-minimap2.sh`
