@@ -134,6 +134,15 @@
 - [x] Verify mappy is installed via `uv sync`
 - [x] Run CI pipeline and verify success (will be tested on push)
 
+### 5.3 Docker
+- [x] Test Docker build: `docker build -t proviral .`
+- [x] Test Docker run: `docker run --rm proviral --help`
+- [x] Verify no minimap2 dependency needed
+
+### 5.4 Singularity
+- [x] Test Singularity build if applicable
+- [x] Verify container works
+
 ---
 
 ## Phase 6: Documentation
@@ -171,6 +180,7 @@
 - [ ] Remove obsolete installation scripts
 - [ ] Clean up imports
 - [ ] Run linter and fix issues
+- [ ] Format code with black/autopep8
 - [ ] Remove any backwards compatibility. The code must now be written as if minimap2 never existed.
 
 ---
