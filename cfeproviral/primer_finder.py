@@ -253,7 +253,8 @@ def find_primers(
             for key in columns:
                 if key not in ('sample', 'contig', 'seqlen', 'error',
                                'sequence', 'run_name', 'reference',
-                               'is_rev_comp'):
+                               'is_rev_comp', 'cfeproviral_version',
+                               'cfeintact_version', 'micall_version'):
                     new_row[key] = None
             rev_row = dict(new_row)
             record_primers(contig_seq,
