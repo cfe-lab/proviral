@@ -64,6 +64,13 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
 
         verdict = verdicts[qseqid]
         is_defective = verdict != 'Intact'
+
+        # Try to get micall_version from the row itself (CFEIntact case)
+        # Otherwise try from micall_versions dict (HIVSeqinR case)
+        micall_version = row.get('micall_version')
+        if not micall_version and micall_versions is not None:
+            micall_version = micall_versions.get(sample_name)
+
         landscape_entry = {'ref_start': ref_start,
                            'ref_end': ref_end,
                            'samp_name': sample_name,
@@ -73,7 +80,7 @@ def generate_proviral_landscape_csv_1_cont(blastn_reader: csv.DictReader,
                            'defect': verdict,
                            'cfeproviral_version': get_version(),
                            'cfeintact_version': get_cfeintact_version(),
-                           'micall_version': micall_versions.get(sample_name) if micall_versions else None,
+                           'micall_version': micall_version,
                            }
 
         landscape_writer.writerow(landscape_entry)
