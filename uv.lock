@@ -66,8 +66,10 @@ dependencies = [
 name = "cfeproviral"
 source = { editable = "." }
 dependencies = [
+    { name = "aligntools" },
     { name = "cfeintact" },
     { name = "gotoh" },
+    { name = "mappy" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "python-levenshtein" },
@@ -83,9 +85,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aligntools", specifier = "==1.2.1" },
     { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.23.2" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "gotoh", git = "https://github.com/cfe-lab/MiCall.git?subdirectory=micall%2Falignment&rev=v7.7.0" },
+    { name = "mappy", specifier = "==2.30" },
     { name = "numpy", specifier = "==2.2.6" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "pytest", marker = "extra == 'dev'" },
@@ -263,6 +267,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/b0/0aafad0dab03a58fd507773d3ff94ec13efdd3772ba217f85366213ab7ae/levenshtein-0.27.3-pp311-pypy311_pp73-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:559d3588e6766134d95f84f830cf40166360e1769d253f5f83474bff10a24341", size = 150655, upload-time = "2025-11-01T12:14:28.034Z" },
     { url = "https://files.pythonhosted.org/packages/b7/77/42dbcbafe9e0b0eb14cb6b08378c8c3bdc563ee34ee58f62e708e7f8956e/levenshtein-0.27.3-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:82d40da143c1b9e27adcd34a33dfcc4a0761aa717c5f618b9c6f57dec5d7a958", size = 92370, upload-time = "2025-11-01T12:14:29.143Z" },
 ]
+
+[[package]]
+name = "mappy"
+version = "2.30"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/78/25/21f1816701c7366cc2d1318c37fe374edd242e966ec3ad152f1742cef7a2/mappy-2.30.tar.gz", hash = "sha256:a25448004558a28cb0d74fb1e55b6ffe9a78aa15dd6b2763630fbbabbaa97a27", size = 143810, upload-time = "2025-06-15T22:49:38.771Z" }
 
 [[package]]
 name = "numpy"
