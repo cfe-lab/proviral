@@ -16,12 +16,6 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    - name: Install minimap2
-      run: |
-        cd /opt
-        wget https://github.com/lh3/minimap2/releases/download/v2.17/minimap2-2.17_x64-linux.tar.bz2
-        tar -jxvf ./minimap2-2.17_x64-linux.tar.bz2
-        echo /opt/minimap2-2.17_x64-linux >> $GITHUB_PATH
     - name: Install dependencies
       run: |
         sudo apt install -qq mafft ncbi-blast+

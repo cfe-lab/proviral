@@ -26,24 +26,23 @@ def run(query_fasta, outdir):
     target = utils.mod_hxb2
     for query_name, query_seq in utils.read_fasta(query_fasta):
         # Splitting by '::' is quite specific, make sure primer_finder joins using this
-        alignment_path = utils.align(target,
-                                     query_seq,
-                                     query_name[1:].split('::')[1],
-                                     outdir=outdir)
-        if not alignment_path:
-            print(f'Could not align {query_name}, aligner not available')
+        cigar_hits = utils.align(target,
+                                 query_seq,
+                                 query_name[1:].split('::')[1],
+                                 outdir=outdir)
+        if not cigar_hits:
+            print(f'Could not align {query_name}, no alignment results')
             continue
-        samfile = utils.load_samfile(alignment_path)
-        coords = utils.splice_genes(query_seq, target, samfile,
+        coords = utils.splice_genes(query_seq, target, cigar_hits,
                                     utils.mod_annot)
         # Try to get softclipped region if there is one
         softclipped_coords = utils.sequence_to_coords(query_seq, target,
-                                                      alignment_path,
+                                                      cigar_hits,
                                                       utils.mod_annot)
         if softclipped_coords:
             coords = utils.merge_coords(softclipped_coords, coords)
         genes = utils.coords_to_genes(coords, query_seq)
-        genes_path = alignment_path.parent / 'genes.fasta'
+        genes_path = outdir / query_name[1:].split('::')[1] / 'genes.fasta'
         with open(genes_path, 'w') as o:
             for gene, seq in genes.items():
                 o.write(f'>{gene}\n{seq}\n')

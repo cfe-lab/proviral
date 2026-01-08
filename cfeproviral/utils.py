@@ -9,10 +9,11 @@ import yaml
 import json
 import shutil
 from cfeproviral.version import get_version, get_cfeintact_version
-import subprocess as sp
 import pandas as pd
 import glob
 from pathlib import Path
+import mappy
+from aligntools import Cigar, CigarHit
 from csv import DictWriter, DictReader
 from itertools import groupby
 from operator import itemgetter
@@ -102,12 +103,6 @@ def csv_to_bed(csvfile, target_name='HXB2', offset_start=0, offset_stop=0):
                     'thickStart': int(row['start']) + offset_start,
                     'thickEnd': int(row['stop']) + offset_stop
                 })
-
-
-def split_cigar(string):
-    pattern = re.compile(r'(\d+)([A-Z])')
-    cigar = re.findall(pattern, string)
-    return cigar
 
 
 class MyContextManager(object):
@@ -215,58 +210,56 @@ def modify_annot(annot):
     return newannot
 
 
-def splice_genes(query, target, samfile, annotation):
+def splice_genes(query, target, cigar_hits, annotation):
+    """
+    Extract gene coordinates from aligned sequences using CigarHit objects.
+    
+    Uses aligntools' coordinate mapping for direct global coordinate translation.
+    
+    Args:
+        query: query sequence string
+        target: reference sequence string
+        cigar_hits: List of CigarHit objects from alignment
+        annotation: annotation dictionary mapping positions to genes
+    
+    Returns:
+        dict: gene name -> [start_pos, end_pos] in query coordinates
+    """
     results = {}
-    for i, row in enumerate(samfile):
-        # Subtract 1 to convert target position to zero-base
-        target_pos = int(row[3]) - 1
-        query_pos = None
-        cigar = row[5]
-        for size, op in split_cigar(cigar):
-            size = int(size)
-            # logger.debug(f'size: {size}, op: {op}')
-            # logger.debug(f'target_pos: {target_pos}, query_pos: {query_pos}')
-            # If the first section is hard-clipped the query should start at
-            # the first non-hard-clipped-based. The target should also be offset
-            # by the size of the hard-clip
-            if op == 'H' and query_pos is None:
-                query_pos = size
-                # logger.debug('='*50)
+    
+    for hit in cigar_hits:
+        # CigarHit.coordinate_mapping works with GLOBAL coordinates
+        mapping = hit.coordinate_mapping
+        
+        # For each gene, map its reference coordinates to query coordinates
+        for gene, (gene_start, gene_end) in annotation.items():
+            # Check if gene overlaps with the aligned region
+            if gene_end < hit.r_st or gene_start > hit.r_ei:
                 continue
-            elif query_pos is None:
-                query_pos = 0
-            if op == 'S':
-                query_pos += size
-                # logger.debug('='*50)
-                continue
-            elif op in ('M', '=', 'X'):
-                for j in range(size):
-                    try:
-                        target_nuc = target[target_pos]
-                    except IndexError:
-                        logger.warning(f'{target_pos} not in range of target')
-                        break
-                    query_nuc = query[query_pos]
-                    match = (target_nuc == query_nuc)
-                    genes = get_genes(annotation, target_pos)
-                    # logger.debug(target_pos, query_pos, target_nuc, query_nuc, match, genes)
-                    for gene in genes:
-                        if gene not in results:
-                            results[gene] = [query_pos, query_pos]
-                        elif query_pos > results[gene][1]:
-                            results[gene][1] = query_pos
-                    query_pos += 1
-                    target_pos += 1
-            elif op == 'D':
-                target_pos += size
-                # logger.debug('='*50)
-                continue
-            elif op == 'I':
-                query_pos += size
-                # logger.debug('='*50)
-                continue
-            # logger.debug('='*50)
-        # logger.debug('new alignment row'.center(50, '~'))
+            
+            # Clip gene to aligned region
+            clipped_start = max(gene_start, hit.r_st)
+            clipped_end = min(gene_end, hit.r_ei)
+            
+            # Map reference positions to query positions
+            # We must iterate through all reference positions because some may be
+            # deleted (not present in the alignment). We collect all mapped query
+            # positions and take the min/max to get the gene boundaries.
+            query_positions = []
+            for ref_pos in range(clipped_start, clipped_end + 1):
+                query_pos = mapping.ref_to_query.get(ref_pos)
+                if query_pos is not None:
+                    query_positions.append(query_pos)
+            
+            if query_positions:
+                query_start = min(query_positions)
+                query_end = max(query_positions)
+                if gene not in results:
+                    results[gene] = [query_start, query_end]
+                else:
+                    results[gene][0] = min(results[gene][0], query_start)
+                    results[gene][1] = max(results[gene][1], query_end)
+                
     return results
 
 
@@ -278,89 +271,73 @@ def coords_to_genes(coords, query):
     return genes
 
 
-def splice_aligned_genes(query, target, samfile, annotation):
+def splice_aligned_genes(query, target, cigar_hits, annotation):
+    """
+    Extract gene coordinates and aligned sequences using CigarHit objects.
+    
+    Args:
+        query: query sequence string
+        target: reference sequence string
+        cigar_hits: List of CigarHit objects from alignment
+        annotation: annotation dictionary mapping positions to genes
+    
+    Returns:
+        tuple: (results dict, sequences dict) 
+            - results: gene name -> [start_pos, end_pos]
+            - sequences: gene name -> list of nucleotides
+    """
     results = {}
     sequences = {}
-    for i, row in enumerate(samfile):
-        # Subtract 1 to convert target position to zero-base
-        target_pos = int(row[3]) - 1
-        query_pos = None
-        cigar = row[5]
-        for size, op in split_cigar(cigar):
-            # print(f'size: {size}, op: {op}')
-            # print(f'target_pos: {target_pos}, query_pos: {query_pos}')
-            size = int(size)
-            # If the first section is hard-clipped the query should start at
-            # the first non-hard-clipped-based. The target should also be offset
-            # by the size of the hard-clip
-            if op == 'H' and query_pos is None:
-                query_pos = size
-                print('=' * 50)
-                continue
-            elif query_pos is None:
-                query_pos = 0
-            if op == 'S':
-                query_pos += size
-                print('=' * 50)
-                continue
-            elif op in ('M', '=', 'X'):
-                for _ in range(size):
-                    try:
-                        target_nuc = target[target_pos]
-                    except IndexError:
-                        logger.warning(f'{target_pos} not in range of target')
-                        break
-                    query_nuc = query[query_pos]
-                    match = (target_nuc == query_nuc)
-                    genes = get_genes(annotation, target_pos)
-                    print(target_pos, query_pos, target_nuc, query_nuc, match,
-                          genes)
-                    for gene in genes:
-                        if gene not in results:
-                            results[gene] = [query_pos, query_pos]
-                            sequences[gene] = [query_nuc]
-                        elif query_pos > results[gene][1]:
-                            results[gene][1] = query_pos
-                            sequences[gene].append(query_nuc)
-                    query_pos += 1
-                    target_pos += 1
-            elif op == 'D':
-                target_pos += size
-                for _ in range(size):
-                    sequences[gene].append('-')
-                print('=' * 50)
-                continue
-            elif op == 'I':
-                query_pos += size
-                print('=' * 50)
-                continue
+    
+    for cigar_hit in cigar_hits:
+        # Use the coordinate mapping from CigarHit
+        mapping = cigar_hit.cigar.coordinate_mapping
+        
+        # Iterate through reference positions in the aligned region
+        # Note: CigarHit uses inclusive ranges
+        for ref_pos in range(cigar_hit.r_st, cigar_hit.r_ei + 1):
+            # Skip if reference position is outside target sequence
+            if ref_pos >= len(target):
+                logger.warning(f'{ref_pos} not in range of target')
+                break
+            
+            target_nuc = target[ref_pos]
+            
+            # Reference position relative to alignment start
+            ref_pos_in_alignment = ref_pos - cigar_hit.r_st
+            
+            # Get genes at this reference position
+            genes = get_genes(annotation, ref_pos)
+            
+            # Check if this reference position maps to a query position
+            if ref_pos_in_alignment in mapping.ref_to_query:
+                # Position maps - there's a nucleotide here
+                query_pos_in_alignment = mapping.ref_to_query[ref_pos_in_alignment]
+                query_pos = cigar_hit.q_st + query_pos_in_alignment
+                query_nuc = query[query_pos]
+                
+                print(ref_pos, query_pos, target_nuc, query_nuc, 
+                      target_nuc == query_nuc, genes)
+                
+                for gene in genes:
+                    if gene not in results:
+                        results[gene] = [query_pos, query_pos]
+                        sequences[gene] = [query_nuc]
+                    else:
+                        results[gene][0] = min(results[gene][0], query_pos)
+                        results[gene][1] = max(results[gene][1], query_pos)
+                        sequences[gene].append(query_nuc)
+            else:
+                # Position doesn't map - it's a deletion in the query
+                print(f'Deletion at ref pos {ref_pos}')
+                for gene in genes:
+                    if gene in sequences:
+                        sequences[gene].append('-')
+            
             print('=' * 50)
         print('new alignment row'.center(50, '~'))
+    
     return results, sequences
-
-
-def load_samfile(samfile_path: Path) -> List[List[str]]:
-    with open(samfile_path, 'r') as file:
-        reader = csv.reader(file, delimiter='\t')
-
-        result = []
-        for row in reader:
-            # Skip header lines (lines starting with '@')
-            if row[0].startswith('@'):
-                continue
-            result.append(row)
-
-    return result
-
-
-def aligner_available(aligner_path='minimap2'):
-    cmd = [aligner_path, '-h']
-    try:
-        process = sp.run(cmd, stderr=sp.PIPE, stdout=sp.PIPE)
-        if process.returncode == 0:
-            return True
-    except Exception:
-        return False
 
 
 # Removes all files in a directory
@@ -376,36 +353,86 @@ def clean_dir(directory):
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
+def mappy_hit_to_cigar_hit(hit, query_seq):
+    """
+    Convert a mappy alignment hit to aligntools CigarHit object.
+    
+    Args:
+        hit: mappy alignment hit object
+        query_seq: the query sequence string (unused, kept for compatibility)
+    
+    Returns:
+        CigarHit: aligntools CigarHit object
+    """
+    cigar = Cigar(hit.cigar)
+    
+    # Convert from half-open [r_st, r_en) to inclusive [r_st, r_ei]
+    return CigarHit(
+        cigar=cigar,
+        r_st=hit.r_st,
+        r_ei=hit.r_en - 1,
+        q_st=hit.q_st,
+        q_ei=hit.q_en - 1
+    )
+
+
 def align(target_seq,
           query_seq,
           query_name,
-          outdir=Path(os.getcwd()).resolve(),
-          aligner_path='minimap2'):
-    if not aligner_available(aligner_path):
-        raise FileNotFoundError(f'Aligner {aligner_path} not found.')
+          outdir=Path(os.getcwd()).resolve()):
+    """
+    Align query sequence to target sequence using mappy.
+    
+    Uses mappy (Python binding for minimap2) and returns aligntools CigarHit objects.
+    
+    Args:
+        target_seq: reference sequence to align to
+        query_seq: query sequence to align
+        query_name: name for the query sequence
+        outdir: output directory for alignment files (for logging)
+    
+    Returns:
+        List[CigarHit]: List of CigarHit objects, or empty list if alignment fails
+    """
     outdir = outdir / query_name
     if os.path.isdir(outdir):
         shutil.rmtree(outdir)
     os.makedirs(outdir)
-    # Write the query fasta
-    query_fasta_path = write_fasta({query_name: query_seq},
-                                   outdir / 'query.fasta')
-    # Write the target fasta
-    target_fasta_path = write_fasta({'MOD_HXB2': target_seq},
-                                    outdir / 'target.fasta')
-    cmd = [aligner_path, '-a', target_fasta_path, query_fasta_path]
-    alignment_path = outdir / 'alignment.sam'
+    
+    # Write the query and target fasta (for debugging/reference)
+    write_fasta({query_name: query_seq}, outdir / 'query.fasta')
+    write_fasta({'MOD_HXB2': target_seq}, outdir / 'target.fasta')
+    
     log_path = outdir / 'minimap2.log'
-    with alignment_path.open('w') as alignment, log_path.open('w') as log_file:
-        process = sp.run(cmd,
-                         stdout=alignment,
-                         stderr=log_file,
-                         check=True)
-    if process.returncode != 0:
-        logger.error('Alignment failed! Details in %s.', log_path)
-        return False
-    else:
-        return alignment_path
+    
+    try:
+        # Create aligner with no preset (matches minimap2 -a default behavior)
+        aligner = mappy.Aligner(seq=target_seq)
+        
+        if not aligner:
+            raise RuntimeError("Failed to create mappy aligner")
+        
+        # Perform alignment
+        hits = list(aligner.map(query_seq))
+        
+        # Write log file (for debugging)
+        with log_path.open('w') as log_file:
+            log_file.write("mappy alignment completed\n")
+            log_file.write(f"Query: {query_name} ({len(query_seq)} bp)\n")
+            log_file.write(f"Reference: MOD_HXB2 ({len(target_seq)} bp)\n")
+            log_file.write(f"Hits: {len(hits)}\n")
+        
+        # Convert mappy hits to CigarHit objects
+        cigar_hits = [mappy_hit_to_cigar_hit(hit, query_seq) for hit in hits]
+        
+        return cigar_hits
+        
+    except Exception as e:
+        # Write error to log
+        with log_path.open('w') as log_file:
+            log_file.write(f"mappy alignment failed: {str(e)}\n")
+        logger.error('Alignment with mappy failed! Details in %s.', log_path)
+        return []
 
 CFEINTACT_ERRORS_TABLE = [
     'UnknownNucleotide',
@@ -612,31 +639,49 @@ def generate_table_precursor_2(hivseqinr_resultsfile, filtered_file,
     return table_precursorfile
 
 
-def get_softclipped_region(query, alignment, alignment_path):
-    try:
-        first_match = alignment[0]
-    except IndexError:
-        logger.warning('No alignment in %s!', alignment_path)
-        return
+def get_softclipped_region(query, cigar_hits):
+    """
+    Extract the soft-clipped region from alignment if present.
+    
+    Mappy doesn't include soft-clipping in the CIGAR string - it's implicit.
+    If the alignment starts at q_st > 0, those bases are soft-clipped.
+    
+    Args:
+        query: query sequence string
+        cigar_hits: List of CigarHit objects
+    
+    Returns:
+        str or None: soft-clipped sequence if present, None otherwise
+    """
+    if not cigar_hits:
+        logger.warning('No alignment hits!')
+        return None
+    
+    first_hit = cigar_hits[0]
+    
+    # Soft-clipped bases are before q_st
+    if first_hit.q_st > 0:
+        return query[:first_hit.q_st]
+    
+    return None
 
-    cigar = first_match[5]
-    if cigar == '*':
-        logger.warning('No alignment in %s!', alignment_path)
-        return
 
-    size, op = split_cigar(cigar)[0]
-    if op != 'S':
-        return
-
-    size = int(size)
-    return query[:size]
-
-
-def sequence_to_coords(query, target, alignment_path, annotations):
-    aln = load_samfile(alignment_path)
-    softclip = get_softclipped_region(query, aln, alignment_path)
+def sequence_to_coords(query, target, cigar_hits, annotations):
+    """
+    Convert sequence to coordinates using soft-clipped region.
+    
+    Args:
+        query: query sequence string
+        target: reference sequence string
+        cigar_hits: List of CigarHit objects
+        annotations: annotation dictionary
+    
+    Returns:
+        dict or None: gene coordinates
+    """
+    softclip = get_softclipped_region(query, cigar_hits)
     if softclip is None:
-        return
+        return None
     import cfeproviral.probe_finder
     finder = cfeproviral.probe_finder.ProbeFinder(softclip, target)
     if not finder.valid:
