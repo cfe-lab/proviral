@@ -647,7 +647,7 @@ def run(contigs_csv,
                 cfeintact.check(
                     output_dir=working_path,
                     input_file=str(no_primers_fasta),
-                    subtype="B",
+                    subtype="all",
                     check_packaging_signal=True,
                     check_rre=True,
                     check_major_splice_donor_site=True,
