@@ -5,7 +5,7 @@ description = "Proviral pipeline"
 authors = [
     { name = "British Columbia Centre for Excellence in HIV/AIDS", email = "vmysak@bccfe.ca" },
 ]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.11,<3.13"
 license = {text = "MIT"}
 classifiers = [
     "License :: OSI Approved :: MIT License",
