@@ -8,11 +8,11 @@ resolution-markers = [
 
 [[package]]
 name = "aligntools"
-version = "1.2.1"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b7/14/c2d762eef7e6b9f9e85058faeeafe673422313c71228a4e2077876475ff6/aligntools-1.2.1.tar.gz", hash = "sha256:5c326e49a1914b9c7d4bdc039ae7fa627d40ba50fa415df51f78300024e687bc", size = 25685, upload-time = "2024-10-28T21:21:40.814Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/00/d04c844fc9a937c116742335fb37e16e2ea00ad89257872763c9e9e96ca3/aligntools-1.2.2.tar.gz", hash = "sha256:3d54f5603735daab059e93068642933390326992419ce2d0af4ed11689db7345", size = 25679, upload-time = "2026-01-09T01:20:10.822Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/40/a62efdd6ec214190915fe1b0c197849469e5819fd8361966a46b3ecb0d0a/aligntools-1.2.1-py2.py3-none-any.whl", hash = "sha256:621297622ce29d94b1fbca8fdc02f30f30d980ad28f2cf400b9386e321ea8bf6", size = 28891, upload-time = "2024-10-28T21:21:39.283Z" },
+    { url = "https://files.pythonhosted.org/packages/49/a0/4fe32e325d99de8ad02e2d8d5325a9a76ffc0974e8fb3420625b12a2dba2/aligntools-1.2.2-py2.py3-none-any.whl", hash = "sha256:015369c567e7abcef75dc6454b9a80126345468c95d408518ff471e71f0e6b11", size = 28895, upload-time = "2026-01-09T01:20:09.4Z" },
 ]
 
 [[package]]
@@ -54,12 +54,13 @@ wheels = [
 
 [[package]]
 name = "cfeintact"
-version = "1.23.2"
-source = { git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.23.2#6ae623ec57449b707e8df0081e2ce7235912bb5e" }
+version = "1.25.0"
+source = { git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.25.0#8c950dff9f31197b93982e39368ba2a93f86b85f" }
 dependencies = [
     { name = "aligntools" },
     { name = "biopython" },
     { name = "click" },
+    { name = "numpy" },
     { name = "scipy" },
 ]
 
@@ -84,7 +85,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.23.2" },
+    { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.25.0" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "gotoh", git = "https://github.com/cfe-lab/MiCall.git?subdirectory=micall%2Falignment&rev=v7.7.0" },
     { name = "numpy", specifier = "==2.4.1" },
