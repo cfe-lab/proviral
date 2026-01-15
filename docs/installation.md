@@ -28,18 +28,12 @@ Docker allows us to package all necessary components inside a container, ensurin
 With Docker installed and running, you can now download the pre-configured Docker image that contains the proviral sequence analysis pipeline:
 
 - Open your terminal or command prompt and execute the following command:
-
-  ```bash
-  docker pull cfelab/proviral
-  ```
-
-  This command downloads the latest version of the Docker image from the repository.
-  To test the image, execute:
   
   ```bash
   docker run --rm cfelab/proviral --version
   ```
   
+  This command downloads the latest version of the Docker image from the repository, and runs it.
   You should see a version number like this:
   
   ```
