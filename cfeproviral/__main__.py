@@ -9,7 +9,7 @@ from pathlib import Path
 from importlib.metadata import version
 
 
-PROGRAMS = ['sample', 'pipeline', 'study_summary', 'landscapes']
+PROGRAMS = ['sample', 'pipeline', 'study_summary', 'landscapes', 'hivseqinr']
 
 
 def get_version() -> str:

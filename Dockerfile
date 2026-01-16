@@ -10,4 +10,4 @@ RUN sh -- /opt/cfeproviral/scripts/install.sh
 
 WORKDIR /w
 
-ENTRYPOINT ["cfeproviral"]
+ENTRYPOINT ["uv", "--project", "/opt/cfeproviral", "run", "--", "cfeproviral"]

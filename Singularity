@@ -28,4 +28,4 @@ From: ubuntu:22.04
 
 %runscript
     cd -- /w
-    cfeproviral sample --cfeintact "$@"
+    uv --project /opt/cfeproviral run -- cfeproviral sample --cfeintact "$@"
