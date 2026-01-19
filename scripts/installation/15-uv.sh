@@ -10,4 +10,10 @@ wget -q https://astral.sh/uv/install.sh -O "/tmp/uv-install.sh"
 sh "/tmp/uv-install.sh"
 
 cp -v -- ~/.local/bin/uv ~/.local/bin/uvx /bin
-uv --version
+echo '#! /bin/sh
+export HOME=/opt/cfeproviral-home
+uv --project /opt/cfeproviral "$@"
+' > /bin/uvdo
+chmod +x /bin/uvdo
+
+uvdo --version
