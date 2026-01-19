@@ -54,8 +54,8 @@ wheels = [
 
 [[package]]
 name = "cfeintact"
-version = "1.25.0"
-source = { git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.25.0#8c950dff9f31197b93982e39368ba2a93f86b85f" }
+version = "1.26.0"
+source = { git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.26.0#9bd0ae4f25f4010d5e4bf7c1301574f1719f190f" }
 dependencies = [
     { name = "aligntools" },
     { name = "biopython" },
@@ -85,7 +85,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.25.0" },
+    { name = "cfeintact", git = "https://github.com/cfe-lab/CFEIntact.git?rev=v1.26.0" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "gotoh", git = "https://github.com/cfe-lab/MiCall.git?subdirectory=micall%2Falignment&rev=v7.7.0" },
     { name = "numpy", specifier = "==2.4.1" },

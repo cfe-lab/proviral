@@ -21,7 +21,7 @@ dependencies = [
     "requests==2.32.5",
     "pyyaml==6.0.3",
     "gotoh @ git+https://github.com/cfe-lab/MiCall.git@v7.7.0#egg=gotoh&subdirectory=micall/alignment",
-    "cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.25.0",
+    "cfeintact @ git+https://github.com/cfe-lab/CFEIntact.git@v1.26.0",
 ]
 
 [project.optional-dependencies]
