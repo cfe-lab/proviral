@@ -6,5 +6,5 @@ echo ===== Installing Python packages ===== >/dev/null
 
 set -x
 
-uvdo sync
-uvdo run -- cfeproviral --version
+pip3 install /opt/cfeproviral
+cfeproviral --version
