@@ -1,6 +1,6 @@
 # Generate the Singularity container to run PrimerFinder on Kive.
 Bootstrap: docker
-From: ubuntu:22.04
+From: ubuntu:24.04
 
 %help
     Search proviral consensus sequences for primers, then use CFEIntact to
