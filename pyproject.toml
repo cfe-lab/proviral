@@ -1,6 +1,6 @@
 [project]
 name = "cfeproviral"
-version = "2.5.2"
+version = "2.5.3"
 description = "Proviral pipeline"
 authors = [
     { name = "British Columbia Centre for Excellence in HIV/AIDS", email = "vmysak@bccfe.ca" },
