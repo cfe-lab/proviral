@@ -1,6 +1,6 @@
 [project]
 name = "cfeproviral"
-dynamic = ["version"]
+version = "2.5.2"
 description = "Proviral pipeline"
 authors = [
     { name = "British Columbia Centre for Excellence in HIV/AIDS", email = "vmysak@bccfe.ca" },
@@ -32,12 +32,6 @@ dev = [
 
 [project.scripts]
 cfeproviral = "cfeproviral.__main__:entry"
-
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.version.raw-options]
-fallback_version = "0.dev0"
 
 [tool.hatch.build]
 include = [
