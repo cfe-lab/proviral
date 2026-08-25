@@ -31,13 +31,105 @@ jobs:
       run: |
         uv run pytest
 
-  docker-build:
+  docker-test:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Fetch all history for git describe
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Derive image tags from git tags on this commit
+      id: metadata
+      shell: bash
+      run: |
+        git fetch --tags origin --quiet
+        image_tags="$(git tag --points-at HEAD | sed -n 's/^v\([0-9]\)/\1/p' | grep -E '^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$' || true)"
+        if [ -z "$image_tags" ]; then
+          image_tags="$(git describe | sed 's/^v//' | grep -E '^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$' || true)"
+        fi
+        primary="ghcr.io/cfe-lab/proviral:$(echo "$image_tags" | head -n1)"
+        {
+          echo "primary=$primary"
+          echo "tags<<EOF"
+          for tag in $image_tags; do
+            echo "ghcr.io/cfe-lab/proviral:$tag"
+          done
+          if [ "$GITHUB_REF" = "refs/heads/master" ]; then
+            echo "ghcr.io/cfe-lab/proviral:latest"
+          fi
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        echo "Publishing image tags:"
+        cat <<EOF
+        ${image_tags}
+        EOF
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
     - name: Build docker image
-      run: docker build -t proviral .
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Dockerfile
+        push: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+        load: true
+        tags: ${{ steps.metadata.outputs.tags }}
+        cache-from: type=gha,scope=docker-proviral
+        cache-to: type=gha,mode=max,scope=docker-proviral
     - name: Run the image
-      run: docker run --rm proviral --help
+      run: docker run --rm ${{ steps.metadata.outputs.primary }} --help
+
+  singularity-test:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Fetch all history for git describe
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.15.6'
+    - name: Run apt update
+      run: sudo apt-get update
+    - name: Install Singularity
+      run: |
+        sudo apt-get install -qq \
+            build-essential \
+            uuid-dev \
+            libgpgme-dev \
+            squashfs-tools \
+            libseccomp-dev \
+            wget \
+            pkg-config \
+            git \
+            cryptsetup-bin
+        git clone https://github.com/singularityware/singularity.git
+        cd singularity
+        git checkout -q tags/v3.7.1
+        ./mconfig && \
+            make -C ./builddir && \
+            sudo make -C ./builddir install
+        cd ..
+        rm -rf singularity
+        singularity --version
+    - name: Allow git access for the root user
+      run: sudo git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - name: Build Singularity image
+      run: |
+        sudo -E sh scripts/singularity_build.sh
+        sudo chown -R "$USER":"$USER" simgs
+    - name: Run the Singularity image
+      run: singularity run --contain --cleanenv ./simgs/proviral-latest.sif --help
+    - name: Upload Singularity Image
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: proviral.simg
+        path: ./simgs/proviral-latest.sif
