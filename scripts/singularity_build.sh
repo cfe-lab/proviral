@@ -1,24 +1,28 @@
 #!/bin/sh
 # Build a Singularity image from the freshly built docker image, the same way
 # MiCall does: docker save -> definition file with Bootstrap: docker-archive ->
-# singularity build. Results land in ./simgs with a proviral-latest.sif symlink.
+# singularity build.
+#
+# Results land in $SIMGS_DIR (default ./simgs) with a proviral-latest.sif
+# symlink pointing at the newest image.
 set -eu
 
 cd -- "$(git rev-parse --show-toplevel)"
-mkdir -p simgs
+simgs_dir="${SIMGS_DIR:-simgs}"
+mkdir -p "$simgs_dir"
 
 image_name="$(sh scripts/docker_build.sh)"
 container_sha="$(docker inspect --format '{{.Id}}' "$image_name" | sed 's/^sha256://; s/^\(.\{12\}\).*/\1/')"
-archive_path="simgs/proviral-$container_sha.tar"
-definition_path="simgs/proviral-$container_sha.def"
-image_path="simgs/proviral-$container_sha.sif"
+archive_path="$simgs_dir/proviral-$container_sha.tar"
+definition_path="$simgs_dir/proviral-$container_sha.def"
+image_path="$simgs_dir/proviral-$container_sha.sif"
 
 echo "Saving docker archive to $archive_path"
 docker save --output "$archive_path" "$image_name"
 
 cat > "$definition_path" <<EOF
 Bootstrap: docker-archive
-From: ./$archive_path
+From: $(pwd)/$archive_path
 
 %help
     Search proviral consensus sequences for primers, then use CFEIntact to
@@ -44,6 +48,6 @@ From: ./$archive_path
 EOF
 
 echo "Building $image_path"
-singularity build "$image_path" "$definition_path"
-ln -sf "$(basename "$image_path")" simgs/proviral-latest.sif
+sudo singularity build "$image_path" "$definition_path"
+ln -sf "$(basename "$image_path")" "$simgs_dir/proviral-latest.sif"
 echo "Built $image_path"

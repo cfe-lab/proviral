@@ -119,11 +119,9 @@ jobs:
         cd ..
         rm -rf singularity
         singularity --version
-    - name: Allow git access for the root user
-      run: sudo git config --global --add safe.directory "$GITHUB_WORKSPACE"
     - name: Build Singularity image
       run: |
-        sudo -E sh scripts/singularity_build.sh
+        sh scripts/singularity_build.sh
         sudo chown -R "$USER":"$USER" simgs
     - name: Run the Singularity image
       run: singularity run --contain --cleanenv ./simgs/proviral-latest.sif --help
