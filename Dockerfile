@@ -23,7 +23,8 @@ RUN apt-get install -y libz-dev libcurl4-openssl-dev libxml2-dev \
     && apt-get install --no-install-recommends -y r-base \
     && Rscript /opt/cfeproviral/cfeproviral/configure_r.sh
 
-COPY pyproject.toml cfeproviral/ /opt/cfeproviral/
+COPY pyproject.toml /opt/cfeproviral/
+COPY cfeproviral/ /opt/cfeproviral/cfeproviral/
 RUN pip3 install --break-system-packages /opt/cfeproviral \
     && cfeproviral --version
 
